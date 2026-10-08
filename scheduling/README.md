@@ -28,12 +28,13 @@
 4. 组装本地网页。
 5. 据仓库材料 + 理智恢复速度给理智分配建议。
 
-## 现状与阻塞
+## 现状
 
-- ⛔ **阻塞（最关键）**：**干员箱识别翻不动页** —— 见 `AGENTS.md` 坑 3。
-  MAA（脚本与 GUI）都只读到第一屏（14 个），拿不到全部 ~300+ 干员。没有完整箱子就无法生成正确排班。
-- 仓库识别：同样依赖翻页，需验证。
-- `tools/base_gap.py` / `tools/gen_plan*.py`：早期的"差距分析/自动生成"尝试，**结论是不如用一图流**（见 AGENTS 坑 7）。
+- ✅ **干员箱识别通了**：`OperBoxData.json` 337 个（根因见 `docs/FINDINGS.md` §5：`TouchMode` 改 `MaaTouch` +
+  识别前让 MAA 空闲）。
+- ✅ **仓库识别通了**：`DepotData.json` 60 项材料。
+- **下一步**：把 `OperBoxData.json` 导入一图流 `scheduleV3` → 生成 `333 搓玉`/`333 龙门币` 两份排班 + 精二建议。
+- 📌 `tools/base_gap.py` / `tools/gen_plan*.py`：早期"差距分析/自动生成"尝试，**结论是不如用一图流**（见 FINDINGS §8）。
 
 ## 目录
 
