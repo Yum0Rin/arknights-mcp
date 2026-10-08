@@ -3,6 +3,17 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 风格，
 版本号遵循 [语义化版本 SemVer](https://semver.org/lang/zh-CN/)。
 
+## [0.1.1] - 2026-10-09
+### Fixed
+- **序列号自动探测**：雷电同时暴露 `127.0.0.1:5555` 与 `emulator-5554`（同一设备），
+  导致 adb 报 `more than one device`；现优先选 `ARK_ADDR`，其次 `emulator-*`，并在每次 adb
+  调用前确保已选定（`_ensure_serial`）。
+- **修复截图损坏**：`exec-out screencap -p` 为二进制安全，去掉误加的 `\r\n → \n` 替换
+  （此前会损坏 PNG，导致 cv2 读取失败）。
+### Verified
+- MCP 客户端联调通过：`ark_version`(MaaCore v6.18.0) / `ark_list_tasks` / `ark_screenshot`(有效 PNG)
+  / `ark_find`（模板匹配阳性验证 score=1.0，位置精确）。
+
 ## [Unreleased]
 ### 计划
 - `ark_ocr`：接入 MAA 的 OCR，读取任意 ROI 文本。

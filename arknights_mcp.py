@@ -22,7 +22,7 @@ import pathlib
 import subprocess
 import threading
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 # ----------------------------------------------------------------------------
 # 配置（均可用环境变量覆盖）
@@ -133,7 +133,33 @@ def _ensure_asst():
 # ----------------------------------------------------------------------------
 # adb 辅助
 # ----------------------------------------------------------------------------
+def _detect_serial():
+    """选取 adb 目标序列号。雷电常同时暴露 127.0.0.1:5555 与 emulator-5554（同一设备），
+    优先用 ARK_ADDR，其次 emulator-*，避免 adb 报 'more than one device'。"""
+    global _serial
+    try:
+        r = subprocess.run([ADB_BIN, "devices"], capture_output=True, text=True, timeout=30)
+        devs = [ln.split()[0] for ln in r.stdout.splitlines() if "\tdevice" in ln]
+        if not devs:
+            _serial = None
+        elif ADB_ADDR in devs:
+            _serial = ADB_ADDR
+        else:
+            emu = [d for d in devs if d.startswith("emulator-")]
+            _serial = emu[0] if emu else devs[0]
+    except Exception as e:
+        log("detect serial 失败: %s" % e)
+        _serial = None
+    return _serial
+
+
+def _ensure_serial():
+    if not _serial:
+        _detect_serial()
+
+
 def _adb(*args, timeout: int = 60) -> subprocess.CompletedProcess:
+    _ensure_serial()
     cmd = [ADB_BIN]
     if _serial:
         cmd += ["-s", _serial]
@@ -142,20 +168,8 @@ def _adb(*args, timeout: int = 60) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, timeout=timeout)
 
 
-def _detect_serial():
-    global _serial
-    try:
-        r = subprocess.run([ADB_BIN, "devices"], capture_output=True, text=True, timeout=30)
-        for ln in r.stdout.splitlines():
-            if "\tdevice" in ln:
-                _serial = ln.split("\t")[0].strip()
-                return _serial
-    except Exception as e:
-        log("detect serial 失败: %s" % e)
-    return None
-
-
 def _screencap_bytes() -> bytes:
+    _ensure_serial()
     cmd = [ADB_BIN]
     if _serial:
         cmd += ["-s", _serial]
@@ -163,8 +177,8 @@ def _screencap_bytes() -> bytes:
     r = subprocess.run(cmd, capture_output=True, timeout=40)
     if r.returncode != 0 or not r.stdout:
         raise RuntimeError("screencap 失败: " + r.stderr.decode("utf-8", "ignore"))
-    # 修正 Windows 下 adb 对 png 的 \n -> \r\n 行为
-    return r.stdout.replace(b"\r\n", b"\n")
+    # exec-out 为二进制安全，切勿做 \r\n 替换（会损坏 PNG）
+    return r.stdout
 
 
 def _resolve_template(name: str):
