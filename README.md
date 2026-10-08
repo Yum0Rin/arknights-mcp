@@ -100,6 +100,7 @@ python -m pip install -r requirements.txt
 | `ark_depot` | 仓库识别（物品数量） |
 | `ark_list_tasks` | 列出 MAA 内置任务名 |
 | `ark_find` | 模板匹配（复用 MAA 模板库），返回命中矩形+中心点 |
+| `ark_where` | 页面识别：对一组"页面锚点"模板做匹配，判断当前在哪一屏 |
 | `ark_read_log` | 读取本 MCP 日志尾部 |
 
 ## 📝 用法示例

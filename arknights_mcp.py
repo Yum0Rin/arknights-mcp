@@ -22,7 +22,7 @@ import pathlib
 import subprocess
 import threading
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 # ----------------------------------------------------------------------------
 # 配置（均可用环境变量覆盖）
@@ -391,6 +391,50 @@ def ark_depot(timeout_s: int = 300, save_to: str = "") -> dict:
     return res
 
 
+# 页面锚点：页面名 -> MAA 模板（用于 ark_where；可被 custom 覆盖/追加）
+# 注意：默认锚点是"起始种子"，未必对所有页面都准（MAA 的 QuickSwitch/* 图标是
+#       快捷切换弹窗里的图标，不是各页常驻元素）。要精确识别某页，请用 custom 传
+#       {页面名: 模板名/绝对路径}，模板可为 MAA 自带，也可自行截图裁剪。
+DEFAULT_ANCHORS = {
+    "快捷切换-首页": "QuickSwitch/Home.png",
+    "快捷切换-终端": "QuickSwitch/Terminal.png",
+    "快捷切换-干员": "QuickSwitch/OperBox.png",
+    "快捷切换-基建": "QuickSwitch/Infrast.png",
+    "快捷切换-采购中心": "QuickSwitch/Mall.png",
+    "快捷切换-公开招募": "QuickSwitch/Recruit.png",
+    "快捷切换-干员寻访": "QuickSwitch/Gacha.png",
+    "快捷切换-菜单": "QuickSwitch/Menu.png",
+}
+
+
+def _grab_screen():
+    """截当前画面为 BGR ndarray。"""
+    shot = str(pathlib.Path(os.environ.get("TEMP", ".")) / "ark_screen.png")
+    with open(shot, "wb") as f:
+        f.write(_screencap_bytes())
+    return cv2.imread(shot, cv2.IMREAD_COLOR)
+
+
+def _match(screen, tpath):
+    """在 screen 上匹配模板，返回 (res_map, tw, th)。
+    4 通道模板先按 alpha 合成到中灰再匹配，并用 TM_CCOEFF_NORMED，
+    避免 TM_CCORR_NORMED 对亮模板产生的虚高假阳性。"""
+    tmpl = cv2.imread(str(tpath), cv2.IMREAD_UNCHANGED)
+    if tmpl is None:
+        raise RuntimeError("模板读取失败: %s" % tpath)
+    if tmpl.ndim == 3 and tmpl.shape[2] == 4:
+        a = tmpl[:, :, 3:4].astype(np.float32) / 255.0
+        bgr = tmpl[:, :, :3].astype(np.float32)
+        tmpl3 = (bgr * a + 128.0 * (1.0 - a)).astype(np.uint8)
+    elif tmpl.ndim == 3:
+        tmpl3 = tmpl
+    else:
+        tmpl3 = cv2.cvtColor(tmpl, cv2.COLOR_GRAY2BGR)
+    res = cv2.matchTemplate(screen, tmpl3, cv2.TM_CCOEFF_NORMED)
+    th, tw = tmpl3.shape[:2]
+    return res, tw, th
+
+
 @mcp.tool()
 def ark_find(template: str, threshold: float = 0.8, roi: list = None) -> dict:
     """在当前画面里做模板匹配（MAA 模板库里的 png），返回所有命中矩形。
@@ -400,30 +444,16 @@ def ark_find(template: str, threshold: float = 0.8, roi: list = None) -> dict:
     tpath = _resolve_template(template)
     if not tpath:
         return {"ok": False, "error": "模板未找到: %s" % template}
-    shot = str(pathlib.Path(os.environ.get("TEMP", ".")) / "ark_find_shot.png")
-    with open(shot, "wb") as f:
-        f.write(_screencap_bytes())
-    screen = cv2.imread(shot, cv2.IMREAD_COLOR)
-    tmpl = cv2.imread(str(tpath), cv2.IMREAD_UNCHANGED)
-    if screen is None or tmpl is None:
-        return {"ok": False, "error": "图像读取失败"}
+    screen = _grab_screen()
+    if screen is None:
+        return {"ok": False, "error": "截图读取失败"}
     ox, oy = 0, 0
     if roi and len(roi) == 4:
         ox, oy, w, h = roi
         screen = screen[oy:oy + h, ox:ox + w]
-    mask = None
-    if tmpl.ndim == 3 and tmpl.shape[2] == 4:
-        mask = tmpl[:, :, 3]
-        tmpl3 = tmpl[:, :, :3]
-    else:
-        tmpl3 = tmpl if tmpl.ndim == 3 else cv2.cvtColor(tmpl, cv2.COLOR_GRAY2BGR)
-    th, tw = tmpl3.shape[:2]
+    res, tw, th = _match(screen, tpath)
     if screen.shape[0] < th or screen.shape[1] < tw:
         return {"ok": True, "matches": [], "template": str(tpath)}
-    if mask is not None:
-        res = cv2.matchTemplate(screen, tmpl3, cv2.TM_CCORR_NORMED, mask=mask)
-    else:
-        res = cv2.matchTemplate(screen, tmpl3, cv2.TM_CCOEFF_NORMED)
     ys, xs = np.where(res >= threshold)
     matches = []
     for (x, y, score) in sorted(
@@ -436,6 +466,37 @@ def ark_find(template: str, threshold: float = 0.8, roi: list = None) -> dict:
             break
     log("find %s thr=%.2f -> %d" % (template, threshold, len(matches)))
     return {"ok": True, "template": str(tpath), "matches": matches}
+
+
+@mcp.tool()
+def ark_where(threshold: float = 0.85, custom: dict = None) -> dict:
+    """判断当前处于哪个页面：对一组"页面锚点"模板做匹配，返回命中页面（按分数降序）。
+    完全基于模板匹配，不需要 AI 读图。custom 可传 {页面名: 模板名} 覆盖/追加默认锚点。"""
+    if not _HAS_CV:
+        return {"ok": False, "error": "缺少 opencv/numpy"}
+    anchors = dict(DEFAULT_ANCHORS)
+    if custom:
+        anchors.update(custom)
+    screen = _grab_screen()
+    if screen is None:
+        return {"ok": False, "error": "截图读取失败"}
+    results = []
+    for page, tpl in anchors.items():
+        tpath = _resolve_template(tpl)
+        if not tpath:
+            results.append({"page": page, "template": tpl, "score": None})
+            continue
+        try:
+            res, tw, th = _match(screen, tpath)
+            results.append({"page": page, "template": tpl, "score": round(float(res.max()), 4)})
+        except Exception as e:
+            results.append({"page": page, "template": tpl, "score": None, "error": str(e)})
+    scored = [r for r in results if isinstance(r.get("score"), float)]
+    scored.sort(key=lambda r: -r["score"])
+    matched = [r for r in scored if r["score"] >= threshold]
+    best = scored[0] if scored else None
+    log("where -> matched=%s best=%s" % ([m["page"] for m in matched], best and best["page"]))
+    return {"ok": True, "matched": matched, "best": best, "all": scored}
 
 
 @mcp.tool()
