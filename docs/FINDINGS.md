@@ -179,3 +179,12 @@
 - **【关键】MCP 跑"驱动设备"的任务前必须先 `ark_connect`**：否则 MaaCore `Controller::swipe` 报 **`m_controller is not inited`**，滑动手势/Copilot 等**静默无效**（`ark_screenshot` 走 adb 仍正常，易误判）。
 - **活动商店/干员/仓库都是左右翻页**（用户口径）。翻页用 `Custom` + `SlowlySwipeToTheLeft/Right`（**先 connect**）：
   `ark_run_task("Custom", {"task_names":["SlowlySwipeToTheLeft","SlowlySwipeToTheLeft"]})`，实测可连续翻动商店。
+
+## 16. 干员培养推荐（按挂机作业出现率，2026-10-09）
+- 脚本 `scheduling/tools/oper_appearance.py`；skill `arknights-oper-training`。
+- 口径：从 `https://prts.maa.plus/copilot/query` 抓 **`document=挂机`** 的作业（`orderBy=views`，`limit=100` 翻页），
+  统计**顶层必选 opers** 出现次数 / 样本数 = 出现率；对照 `OperBoxData.json` → owned-not-E2 = 培养目标。
+- 实测 1500 作业：必选高频 煌34.5%/艾雅法拉33%/德克萨斯27%/乌尔比安23%/歌蕾蒂娅23%/塞雷娅22%/圣聆初雪19%；
+  **建议精二**(owned 未 E2)：德克萨斯、乌尔比安、伊芙利特、山、夜莺、拉普兰德、澄闪…；
+  **缺但高频**：煌、艾雅法拉、纯烬艾雅法拉、阿斯卡纶、黍。
+- 作业站 `document=` 参数 = 按标题/详情关键字筛（实测可用）；`orderBy=views|hot|hot_score`。

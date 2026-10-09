@@ -34,7 +34,9 @@
   按「关卡理智 / 每关代币产出 / 商店价与限购」算刷关次数、所需理智，对比活动期预算判断能否换完。
 - `run` 默认 `formation_index=4`（只用第四编队，不动用户其它编队）、`ignore_requirements=true`（练度不足可用）。
 - **opencode skills**（`.opencode/skills/`，分门别类留痕）：`arknights-event-copilot`、`arknights-event-economy`、
-  `maa-resource-sync`、`maa-copilot-internals` —— 把活动关/经济/资源/ Copilot 内部机制沉淀成可复用技能。
+  `maa-resource-sync`、`maa-copilot-internals`、`arknights-oper-training` —— 把活动关/经济/资源/Copilot/培养 沉淀成可复用技能。
+- **干员培养推荐**（`scheduling/tools/oper_appearance.py` + skill `arknights-oper-training`）：
+  抓作业站 `document=挂机` 的挂机作业统计干员出现率，对照干员箱 → 排"该优先精二谁"。
 ### Fixed
 - **`ark_run_task` 跑任务前自动 `connect`**：此前未 `ark_connect` 就 `ark_run_task` 时，MaaCore `Controller::swipe`
   报 `m_controller is not inited`，滑动/Copilot 等**静默失效**（`ark_screenshot` 走 adb 仍正常，极易误判）。

@@ -1,0 +1,1148 @@
+{
+  "sample": 1500,
+  "kw": "挂机",
+  "order": "views",
+  "opers": [
+    {
+      "name": "煌",
+      "required_count": 517,
+      "required_rate": 0.3447,
+      "group_count": 30,
+      "status": "缺"
+    },
+    {
+      "name": "艾雅法拉",
+      "required_count": 497,
+      "required_rate": 0.3313,
+      "group_count": 30,
+      "status": "缺"
+    },
+    {
+      "name": "德克萨斯",
+      "required_count": 405,
+      "required_rate": 0.27,
+      "group_count": 17,
+      "status": "E1"
+    },
+    {
+      "name": "乌尔比安",
+      "required_count": 346,
+      "required_rate": 0.2307,
+      "group_count": 24,
+      "status": "E1"
+    },
+    {
+      "name": "歌蕾蒂娅",
+      "required_count": 339,
+      "required_rate": 0.226,
+      "group_count": 6,
+      "status": "E2"
+    },
+    {
+      "name": "塞雷娅",
+      "required_count": 336,
+      "required_rate": 0.224,
+      "group_count": 395,
+      "status": "E2"
+    },
+    {
+      "name": "圣聆初雪",
+      "required_count": 278,
+      "required_rate": 0.1853,
+      "group_count": 7,
+      "status": "E2"
+    },
+    {
+      "name": "逻各斯",
+      "required_count": 274,
+      "required_rate": 0.1827,
+      "group_count": 36,
+      "status": "E2"
+    },
+    {
+      "name": "能天使",
+      "required_count": 246,
+      "required_rate": 0.164,
+      "group_count": 14,
+      "status": "E2"
+    },
+    {
+      "name": "桃金娘",
+      "required_count": 244,
+      "required_rate": 0.1627,
+      "group_count": 6,
+      "status": "E2"
+    },
+    {
+      "name": "纯烬艾雅法拉",
+      "required_count": 227,
+      "required_rate": 0.1513,
+      "group_count": 296,
+      "status": "缺"
+    },
+    {
+      "name": "阿斯卡纶",
+      "required_count": 226,
+      "required_rate": 0.1507,
+      "group_count": 32,
+      "status": "缺"
+    },
+    {
+      "name": "伊芙利特",
+      "required_count": 213,
+      "required_rate": 0.142,
+      "group_count": 2,
+      "status": "E0"
+    },
+    {
+      "name": "遥",
+      "required_count": 206,
+      "required_rate": 0.1373,
+      "group_count": 8,
+      "status": "E2"
+    },
+    {
+      "name": "山",
+      "required_count": 180,
+      "required_rate": 0.12,
+      "group_count": 15,
+      "status": "E0"
+    },
+    {
+      "name": "夜莺",
+      "required_count": 175,
+      "required_rate": 0.1167,
+      "group_count": 64,
+      "status": "E0"
+    },
+    {
+      "name": "黍",
+      "required_count": 172,
+      "required_rate": 0.1147,
+      "group_count": 411,
+      "status": "缺"
+    },
+    {
+      "name": "星熊",
+      "required_count": 157,
+      "required_rate": 0.1047,
+      "group_count": 15,
+      "status": "E2"
+    },
+    {
+      "name": "塑心",
+      "required_count": 143,
+      "required_rate": 0.0953,
+      "group_count": 19,
+      "status": "E2"
+    },
+    {
+      "name": "拉普兰德",
+      "required_count": 129,
+      "required_rate": 0.086,
+      "group_count": 10,
+      "status": "E0"
+    },
+    {
+      "name": "泥岩",
+      "required_count": 127,
+      "required_rate": 0.0847,
+      "group_count": 7,
+      "status": "缺"
+    },
+    {
+      "name": "斩业星熊",
+      "required_count": 115,
+      "required_rate": 0.0767,
+      "group_count": 10,
+      "status": "E2"
+    },
+    {
+      "name": "澄闪",
+      "required_count": 111,
+      "required_rate": 0.074,
+      "group_count": 25,
+      "status": "E1"
+    },
+    {
+      "name": "丰川祥子",
+      "required_count": 108,
+      "required_rate": 0.072,
+      "group_count": 7,
+      "status": "E2"
+    },
+    {
+      "name": "伊内丝",
+      "required_count": 101,
+      "required_rate": 0.0673,
+      "group_count": 7,
+      "status": "缺"
+    },
+    {
+      "name": "维什戴尔",
+      "required_count": 90,
+      "required_rate": 0.06,
+      "group_count": 9,
+      "status": "缺"
+    },
+    {
+      "name": "娜仁图亚",
+      "required_count": 87,
+      "required_rate": 0.058,
+      "group_count": 10,
+      "status": "E1"
+    },
+    {
+      "name": "棘刺",
+      "required_count": 78,
+      "required_rate": 0.052,
+      "group_count": 20,
+      "status": "E2"
+    },
+    {
+      "name": "闪灵",
+      "required_count": 68,
+      "required_rate": 0.0453,
+      "group_count": 151,
+      "status": "E1"
+    },
+    {
+      "name": "风笛",
+      "required_count": 66,
+      "required_rate": 0.044,
+      "group_count": 10,
+      "status": "E0"
+    },
+    {
+      "name": "凛御银灰",
+      "required_count": 65,
+      "required_rate": 0.0433,
+      "group_count": 4,
+      "status": "E2"
+    },
+    {
+      "name": "号角",
+      "required_count": 60,
+      "required_rate": 0.04,
+      "group_count": 11,
+      "status": "缺"
+    },
+    {
+      "name": "白面鸮",
+      "required_count": 57,
+      "required_rate": 0.038,
+      "group_count": 47,
+      "status": "E1"
+    },
+    {
+      "name": "浊心斯卡蒂",
+      "required_count": 53,
+      "required_rate": 0.0353,
+      "group_count": 5,
+      "status": "E0"
+    },
+    {
+      "name": "铃兰",
+      "required_count": 51,
+      "required_rate": 0.034,
+      "group_count": 7,
+      "status": "E0"
+    },
+    {
+      "name": "玛恩纳",
+      "required_count": 39,
+      "required_rate": 0.026,
+      "group_count": 2,
+      "status": "缺"
+    },
+    {
+      "name": "酒神",
+      "required_count": 38,
+      "required_rate": 0.0253,
+      "group_count": 13,
+      "status": "E2"
+    },
+    {
+      "name": "史尔特尔",
+      "required_count": 33,
+      "required_rate": 0.022,
+      "group_count": 6,
+      "status": "E2"
+    },
+    {
+      "name": "蕾缪安",
+      "required_count": 31,
+      "required_rate": 0.0207,
+      "group_count": 3,
+      "status": "E2"
+    },
+    {
+      "name": "怒潮凛冬",
+      "required_count": 24,
+      "required_rate": 0.016,
+      "group_count": 0,
+      "status": "缺"
+    },
+    {
+      "name": "提丰",
+      "required_count": 23,
+      "required_rate": 0.0153,
+      "group_count": 8,
+      "status": "缺"
+    },
+    {
+      "name": "Lancet-2",
+      "required_count": 22,
+      "required_rate": 0.0147,
+      "group_count": 23,
+      "status": "E0"
+    },
+    {
+      "name": "八幡海铃",
+      "required_count": 22,
+      "required_rate": 0.0147,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "荒芜拉普兰德",
+      "required_count": 18,
+      "required_rate": 0.012,
+      "group_count": 12,
+      "status": "E2"
+    },
+    {
+      "name": "砾",
+      "required_count": 17,
+      "required_rate": 0.0113,
+      "group_count": 1,
+      "status": "E2"
+    },
+    {
+      "name": "银灰",
+      "required_count": 16,
+      "required_rate": 0.0107,
+      "group_count": 4,
+      "status": "E2"
+    },
+    {
+      "name": "克洛丝",
+      "required_count": 16,
+      "required_rate": 0.0107,
+      "group_count": 6,
+      "status": "E1"
+    },
+    {
+      "name": "流明",
+      "required_count": 16,
+      "required_rate": 0.0107,
+      "group_count": 51,
+      "status": "E0"
+    },
+    {
+      "name": "水月",
+      "required_count": 14,
+      "required_rate": 0.0093,
+      "group_count": 19,
+      "status": "缺"
+    },
+    {
+      "name": "推进之王",
+      "required_count": 14,
+      "required_rate": 0.0093,
+      "group_count": 14,
+      "status": "E1"
+    },
+    {
+      "name": "予愿安洁莉娜",
+      "required_count": 13,
+      "required_rate": 0.0087,
+      "group_count": 0,
+      "status": "E2"
+    },
+    {
+      "name": "凯尔希·思衡托",
+      "required_count": 13,
+      "required_rate": 0.0087,
+      "group_count": 1,
+      "status": "E2"
+    },
+    {
+      "name": "刻俄柏",
+      "required_count": 12,
+      "required_rate": 0.008,
+      "group_count": 6,
+      "status": "缺"
+    },
+    {
+      "name": "Mon3tr",
+      "required_count": 10,
+      "required_rate": 0.0067,
+      "group_count": 4,
+      "status": "E2"
+    },
+    {
+      "name": "司霆惊蛰",
+      "required_count": 9,
+      "required_rate": 0.006,
+      "group_count": 0,
+      "status": "E2"
+    },
+    {
+      "name": "结城理",
+      "required_count": 9,
+      "required_rate": 0.006,
+      "group_count": 0,
+      "status": "E2"
+    },
+    {
+      "name": "蜜莓",
+      "required_count": 8,
+      "required_rate": 0.0053,
+      "group_count": 106,
+      "status": "E0"
+    },
+    {
+      "name": "夜刀",
+      "required_count": 7,
+      "required_rate": 0.0047,
+      "group_count": 1,
+      "status": "E0"
+    },
+    {
+      "name": "华法琳",
+      "required_count": 7,
+      "required_rate": 0.0047,
+      "group_count": 72,
+      "status": "E2"
+    },
+    {
+      "name": "蓝毒",
+      "required_count": 7,
+      "required_rate": 0.0047,
+      "group_count": 11,
+      "status": "E2"
+    },
+    {
+      "name": "Castle-3",
+      "required_count": 6,
+      "required_rate": 0.004,
+      "group_count": 10,
+      "status": "缺"
+    },
+    {
+      "name": "新约能天使",
+      "required_count": 6,
+      "required_rate": 0.004,
+      "group_count": 5,
+      "status": "缺"
+    },
+    {
+      "name": "伊桑",
+      "required_count": 6,
+      "required_rate": 0.004,
+      "group_count": 7,
+      "status": "E2"
+    },
+    {
+      "name": "赫德雷",
+      "required_count": 5,
+      "required_rate": 0.0033,
+      "group_count": 3,
+      "status": "E0"
+    },
+    {
+      "name": "老鲤",
+      "required_count": 5,
+      "required_rate": 0.0033,
+      "group_count": 0,
+      "status": "缺"
+    },
+    {
+      "name": "芬",
+      "required_count": 5,
+      "required_rate": 0.0033,
+      "group_count": 3,
+      "status": "E1"
+    },
+    {
+      "name": "絮雨",
+      "required_count": 5,
+      "required_rate": 0.0033,
+      "group_count": 17,
+      "status": "缺"
+    },
+    {
+      "name": "仇白",
+      "required_count": 5,
+      "required_rate": 0.0033,
+      "group_count": 6,
+      "status": "缺"
+    },
+    {
+      "name": "黑角",
+      "required_count": 5,
+      "required_rate": 0.0033,
+      "group_count": 1,
+      "status": "E0"
+    },
+    {
+      "name": "温蒂",
+      "required_count": 5,
+      "required_rate": 0.0033,
+      "group_count": 2,
+      "status": "E1"
+    },
+    {
+      "name": "Friston-3",
+      "required_count": 4,
+      "required_rate": 0.0027,
+      "group_count": 7,
+      "status": "E0"
+    },
+    {
+      "name": "W",
+      "required_count": 4,
+      "required_rate": 0.0027,
+      "group_count": 0,
+      "status": "缺"
+    },
+    {
+      "name": "重岳",
+      "required_count": 4,
+      "required_rate": 0.0027,
+      "group_count": 45,
+      "status": "缺"
+    },
+    {
+      "name": "林",
+      "required_count": 4,
+      "required_rate": 0.0027,
+      "group_count": 4,
+      "status": "E0"
+    },
+    {
+      "name": "梓兰",
+      "required_count": 4,
+      "required_rate": 0.0027,
+      "group_count": 2,
+      "status": "E1"
+    },
+    {
+      "name": "孑",
+      "required_count": 4,
+      "required_rate": 0.0027,
+      "group_count": 0,
+      "status": "E2"
+    },
+    {
+      "name": "凯尔希",
+      "required_count": 4,
+      "required_rate": 0.0027,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "红",
+      "required_count": 3,
+      "required_rate": 0.002,
+      "group_count": 2,
+      "status": "E1"
+    },
+    {
+      "name": "炎熔",
+      "required_count": 3,
+      "required_rate": 0.002,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "安赛尔",
+      "required_count": 3,
+      "required_rate": 0.002,
+      "group_count": 12,
+      "status": "E1"
+    },
+    {
+      "name": "焰影苇草",
+      "required_count": 3,
+      "required_rate": 0.002,
+      "group_count": 4,
+      "status": "E2"
+    },
+    {
+      "name": "烛煌",
+      "required_count": 3,
+      "required_rate": 0.002,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "安德切尔",
+      "required_count": 3,
+      "required_rate": 0.002,
+      "group_count": 4,
+      "status": "E0"
+    },
+    {
+      "name": "莱伊",
+      "required_count": 3,
+      "required_rate": 0.002,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "正义骑士号",
+      "required_count": 3,
+      "required_rate": 0.002,
+      "group_count": 18,
+      "status": "E0"
+    },
+    {
+      "name": "芙蓉",
+      "required_count": 3,
+      "required_rate": 0.002,
+      "group_count": 8,
+      "status": "E1"
+    },
+    {
+      "name": "阿米娅",
+      "required_count": 3,
+      "required_rate": 0.002,
+      "group_count": 5,
+      "status": "E2"
+    },
+    {
+      "name": "假日威龙陈",
+      "required_count": 3,
+      "required_rate": 0.002,
+      "group_count": 1,
+      "status": "缺"
+    },
+    {
+      "name": "THRM-EX",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 6,
+      "status": "E0"
+    },
+    {
+      "name": "余",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 42,
+      "status": "E2"
+    },
+    {
+      "name": "泡普卡",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 1,
+      "status": "E1"
+    },
+    {
+      "name": "缄默德克萨斯",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 0,
+      "status": "缺"
+    },
+    {
+      "name": "阿消",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 1,
+      "status": "E1"
+    },
+    {
+      "name": "琴柳",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 10,
+      "status": "缺"
+    },
+    {
+      "name": "临光",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 101,
+      "status": "缺"
+    },
+    {
+      "name": "古米",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 22,
+      "status": "E1"
+    },
+    {
+      "name": "梅",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 3,
+      "status": "E0"
+    },
+    {
+      "name": "狮蝎",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 15,
+      "status": "缺"
+    },
+    {
+      "name": "耀骑士临光",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 2,
+      "status": "缺"
+    },
+    {
+      "name": "斯卡蒂",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 0,
+      "status": "缺"
+    },
+    {
+      "name": "斑点",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 5,
+      "status": "E1"
+    },
+    {
+      "name": "灵知",
+      "required_count": 2,
+      "required_rate": 0.0013,
+      "group_count": 3,
+      "status": "缺"
+    },
+    {
+      "name": "玛露西尔",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 2,
+      "status": "缺"
+    },
+    {
+      "name": "傀影",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "异客",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 2,
+      "status": "E1"
+    },
+    {
+      "name": "暮落",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 1,
+      "status": "E0"
+    },
+    {
+      "name": "波卜",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "麒麟X夜刀",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 1,
+      "status": "缺"
+    },
+    {
+      "name": "弑君者",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "妮芙",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "缺"
+    },
+    {
+      "name": "极境",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 10,
+      "status": "E1"
+    },
+    {
+      "name": "安洁莉娜",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 3,
+      "status": "缺"
+    },
+    {
+      "name": "蛇屠箱",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 7,
+      "status": "E2"
+    },
+    {
+      "name": "宴",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "CONFESS-47",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 6,
+      "status": "E0"
+    },
+    {
+      "name": "青枳",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 1,
+      "status": "E0"
+    },
+    {
+      "name": "四月",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 2,
+      "status": "缺"
+    },
+    {
+      "name": "爱丽丝",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "豆苗",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E2"
+    },
+    {
+      "name": "杜林",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "白金",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 6,
+      "status": "E0"
+    },
+    {
+      "name": "骋风",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "麒麟R夜刀",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 2,
+      "status": "E2"
+    },
+    {
+      "name": "U-Official",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 10,
+      "status": "E0"
+    },
+    {
+      "name": "巡林者",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 1,
+      "status": "E0"
+    },
+    {
+      "name": "卡达",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E1"
+    },
+    {
+      "name": "褐果",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E2"
+    },
+    {
+      "name": "莫斯提马",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "隐现",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 3,
+      "status": "E0"
+    },
+    {
+      "name": "圣约送葬人",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 1,
+      "status": "缺"
+    },
+    {
+      "name": "铅踝",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "罗宾",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 1,
+      "status": "E0"
+    },
+    {
+      "name": "红豆",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 1,
+      "status": "E0"
+    },
+    {
+      "name": "格拉尼",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 1,
+      "status": "E0"
+    },
+    {
+      "name": "锡兰",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 1,
+      "status": "E0"
+    },
+    {
+      "name": "年",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 52,
+      "status": "E0"
+    },
+    {
+      "name": "锏",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "缺"
+    },
+    {
+      "name": "调香师",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 5,
+      "status": "E2"
+    },
+    {
+      "name": "幽灵鲨",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "空爆",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "卡夫卡",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E1"
+    },
+    {
+      "name": "鸿雪",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "斥罪",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 2,
+      "status": "缺"
+    },
+    {
+      "name": "泰拉大陆调查团",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 6,
+      "status": "E0"
+    },
+    {
+      "name": "远山",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E1"
+    },
+    {
+      "name": "白雪",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "流星",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 2,
+      "status": "E0"
+    },
+    {
+      "name": "米格鲁",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 4,
+      "status": "E1"
+    },
+    {
+      "name": "玫兰莎",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 2,
+      "status": "E1"
+    },
+    {
+      "name": "若叶睦",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 2,
+      "status": "E2"
+    },
+    {
+      "name": "子月",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "缺"
+    },
+    {
+      "name": "归溟幽灵鲨",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 1,
+      "status": "缺"
+    },
+    {
+      "name": "艾拉",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 1,
+      "status": "E2"
+    },
+    {
+      "name": "凛冬",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 4,
+      "status": "缺"
+    },
+    {
+      "name": "三角初华",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E0"
+    },
+    {
+      "name": "可露希尔",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 1,
+      "status": "E2"
+    },
+    {
+      "name": "隐德来希",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 4,
+      "status": "缺"
+    },
+    {
+      "name": "瑕光",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 2,
+      "status": "E0"
+    },
+    {
+      "name": "雷蛇",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 1,
+      "status": "缺"
+    },
+    {
+      "name": "杰西卡",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 2,
+      "status": "E1"
+    },
+    {
+      "name": "芙兰卡",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "缺"
+    },
+    {
+      "name": "赤刃明霄陈",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 0,
+      "status": "E2"
+    },
+    {
+      "name": "史都华德",
+      "required_count": 1,
+      "required_rate": 0.0007,
+      "group_count": 3,
+      "status": "E0"
+    }
+  ]
+}
