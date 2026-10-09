@@ -1,0 +1,35 @@
+{
+ "event_id": "act52side",
+ "name": "昨日海",
+ "region": "雷亚-伊比利亚",
+ "token": {"name": "未来瞻望镜", "item_id": "act52side_token_scope"},
+ "start": "2026-10-09",
+ "end": "2026-10-30",
+ "exchange_end": "2026-10-30",
+ "note": "代币=未来瞻望镜。实测：YW-8 三星 +21（=理智），YW-5 二星 +6（≈半）。→ 代币/次 按『理智×星』，三星=理智、二星=理智/2。刷代币务必三星。",
+ "stages": [
+  {"code": "YW-1", "name": "互助会",  "level_id": "act52side_01", "sanity": 9,  "token_per_run": 9,  "verified": false},
+  {"code": "YW-2", "name": "浮浮沉沉", "level_id": "act52side_02", "sanity": 9,  "token_per_run": 9,  "verified": false},
+  {"code": "YW-3", "name": "破手铐",  "level_id": "act52side_03", "sanity": 12, "token_per_run": 12, "verified": false},
+  {"code": "YW-4", "name": "走上街道", "level_id": "act52side_04", "sanity": 12, "token_per_run": 12, "verified": false},
+  {"code": "YW-5", "name": "三岔路口", "level_id": "act52side_05", "sanity": 12, "token_per_run": 12, "verified": false, "note": "2星实测+6(=半)；三星应=12"},
+  {"code": "YW-6", "name": "大人物",  "level_id": "act52side_06", "sanity": 21, "token_per_run": 21, "verified": false},
+  {"code": "YW-7", "name": "殉葬品",  "level_id": "act52side_07", "sanity": 21, "token_per_run": 21, "verified": false},
+  {"code": "YW-8", "name": "鳞的记忆", "level_id": "act52side_08", "sanity": 21, "token_per_run": 21, "verified": true, "note": "三星实测+21"}
+ ],
+ "shop": [
+  {"name": "旅骨的信物",       "price": 360, "limit": 5,  "kind": "干员信物", "priority": "高"},
+  {"name": "模组数据块",       "price": 75,  "limit": 2,  "kind": "模组", "priority": "高"},
+  {"name": "精炼溶剂",         "price": 35,  "limit": 10, "kind": "精英材料", "priority": "中"},
+  {"name": "阿戈尔风格演讲台",  "price": 45,  "limit": 1,  "kind": "家具", "priority": "低"},
+  {"name": "诗人的假日",       "price": 500, "limit": 1,  "kind": "时装", "priority": "中"},
+  {"name": "聚合剂",           "price": 100, "limit": 5,  "kind": "精英材料", "priority": "高"},
+  {"name": "手性屈光体",       "price": 35,  "limit": 10, "kind": "精英材料", "priority": "中"},
+  {"name": "藻类培养池",       "price": 50,  "limit": 1,  "kind": "家具", "priority": "低"},
+  {"name": "寻访凭证",         "price": 150, "limit": 3,  "kind": "寻访", "priority": "高"},
+  {"name": "异铁块",           "price": 40,  "limit": 10, "kind": "精英材料", "priority": "中"},
+  {"name": "全域广播扬声器",    "price": 40,  "limit": 1,  "kind": "家具", "priority": "低"},
+  {"name": "一体式鞋架",       "price": 55,  "limit": 1,  "kind": "家具", "priority": "低"}
+ ],
+ "shop_note": "上面只录了商店第 1 屏；完整清单(其余家具/龙门币/作战记录/高级素材等)需在游戏内『劳工配给所』继续翻页补录到本文件。"
+}

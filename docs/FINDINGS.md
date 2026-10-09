@@ -1,7 +1,7 @@
 # 开发发现 / 踩坑记录（留痕）
 
 > AGENTS.md 只保留铁律；详细踩坑、证据、复现步骤都放这里。
-> 最后更新：2026-10-09。
+> 最后更新：2026-10-09（新增 §14 活动关作业工作流）。
 
 ## 1. MAA 原理与组成（本 MCP 借用其能力）
 
@@ -145,3 +145,34 @@
 4. UIAutomation：选 `小工具` Tab → 选 `干员识别`/`仓库识别` 子 Tab → `Invoke` `开始识别` 按钮
    （按钮须 enabled）。
 5. 等待：干员识别 ~50s；结果落 `C:\MAA\data\OperBoxData.json`（本轮 337 个）/ `DepotData.json`（60 项）。
+
+## 14. 活动关作业工作流（MAA Copilot，2026-10-09 跑通）
+> 完整工作流文档见 **`docs/WORKFLOW-活动关作业.md`**；脚本 `scripts/event-copilot/event_copilot.py`。
+
+- **MAA Copilot 任务本身不含关卡导航**（读 `Interface/CopilotTask.cpp`）：8 个子任务第 2 个就是找 `BattleStartPre`，
+  即"你已站在关卡准备界面"。**导航只在多作业路径** `params["copilot_list"]=[{id,filename,nav_name_override,is_raid}]`，
+  由 `MultiCopilotTaskPlugin::navigate_to_stage` 实现：有模板走模板，否则**图像分析+OCR 找关卡代号**（如 `YW-5`）点击、
+  找不到就 `Copilot@StageNavigationSlowlySwipeLeft` 翻页。⇒ **单作业 `filename` 模式不会自动走到关卡**。
+- **`Not support stage` 根因**：`BattleProcessTask::set_stage_name` 用 `resource/Arknights-Tile-Pos/overview.json` 索引校验关卡；
+  MAA 资源只随 OTA 更新而 `ota.maa.plus` 本机不可达(000) → 资源停在旧版、不认识新活动。
+  修复：从 **GitHub `MaaResource/main/resource`** 整体替换 `overview.json` + 补该活动 Tile-Pos。改完要**重启已在跑的 MCP/MAA 实例**（缓存）。
+- **作业必须带非空 `actions`**：`/copilot/query` 列表接口的 `content` **不含 actions**，须用 **`/copilot/get/<id>`** 取完整版，
+  否则 MaaCore `Json parse failed ... invalid map<K,T> key`、`append_task` 返回 0。
+- **练度不够** → 自动编队 `OperatorMissing`（`reason=Unavailable`）：`check_oper_level` 不过。加 `"ignore_requirements":true` 跳过。
+- **失败退理智**：非三星时 MAA 找不到 `StageDrops-Stars-3` → `TaskChainError`(msg 10000)；游戏显示"理智返还"。失败不亏，可换候选重试。
+- 作业站 API 基址 `https://prts.maa.plus`；MAA GUI 代码里写死的就是它（`MAA.dll` 字符串 `https://prts.maa.plus/copilot/get/`）。
+- 本轮 act52side：YW-5 通关(2星)、YW-6/7/8 三星；同一关首个候选未必过（YW-5 首候选失败，换"挂件兼容"系列才过）。
+- **活动经济**（刷多少关换道具）：见 `scheduling/tools/event_economy.py` + `scheduling/data/event_<id>.json`。
+  数据来源：关卡理智→PRTS 关卡页；**代币/次 游戏内不显示**，只能"打一关看余额增量"或等 PRTS/一图流；商店价/限购→游戏内活动商店。
+  新活动当天 web/PRTS/企鹅都还没有商店与代币数据（本轮 act52side 实测：PRTS 无商店页、企鹅 matrix 为空）。
+  **实测代币规律**：代币=理智×星——YW-8 三星 +21(=理智21)、YW-5 二星 +6(=理智12 的一半) → **刷代币必须三星**。
+- **刷关**：`run --loop N`（Copilot `loop_times=N`）。**编队**：`formation_index=4`（只用第四编队，避免覆盖用户其它编队）。
+
+## 15. MAA 任务/操作 补充（2026-10-09）
+- **adb 滑动在本机彻底失效**：`adb shell input swipe` 与 `input touchscreen swipe` 都**不滚动**（实测商店纹丝不动）。翻页/滑动只能用 **MAA（MaaTouch）**。→ 别再用 `ark_swipe` 那类 adb 滑动。
+- **MaaCore 只认注册过的任务类型**：`append_task("SlowlySwipeToTheUp", {})` 报 `invalid type`（ProcessTask 名字不能直接 append）。
+- **`Custom` 类型可以跑 tasks.json 里的任意任务**：`append_task("Custom", {"task_names": ["SwipeToTheUp"]})` → MaaCore 用 ProcessTask 执行这些任务（内部 `CustomTask::set_params` 校验 `task_names` 存在）。
+  于是可用 MAA 的 `SwipeToTheUp/Down/Left/Right`、`SlowlySwipeToThe*`、`ChapterSlowlySwipeToThe*` 等**通用滑动任务**，走 MaaTouch 完成 adb 做不到的滑动。
+  实测：`Custom`+`SwipeToTheUp` 对活动商店**未翻动**（疑商店非该方向/仅一屏），翻页方案待定。
+- **作业站 prts.maa.plus 的 `query` 列表接口 content 不含 `actions`**，完整版在 `/copilot/get/<id>`（见 §14）。
+- 活动商店（act52side「劳工配给所」）第 1 屏 12 件已录（见 `scheduling/data/event_act52side.json`）；翻页未解决。

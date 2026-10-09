@@ -1,9 +1,10 @@
 # AGENTS.md
 
 `arknights-mcp` —— 把 MAA(MaaCore) 的识别 + 操作封装成 MCP，让 Agent 能**确定性**观察/操作明日方舟
-（识别全走 MAA 的模板匹配/OCR，不用 AI 读图）。子功能：智能基建排班（`scheduling/`）。
+（识别全走 MAA 的模板匹配/OCR，不用 AI 读图）。子功能：智能基建排班（`scheduling/`）、
+活动关作业自动化（`scripts/event-copilot/`，工作流见 `docs/WORKFLOW-活动关作业.md`）。
 
-> 详细的踩坑记录在 **`docs/FINDINGS.md`**（遇到问题先查它）。
+> 详细的踩坑记录在 **`docs/FINDINGS.md`**（遇到问题先查它，§14 是活动关作业）。
 > 取数/数据来源与 API 用法看 **`docs/DATA-SOURCES.md`**（企鹅物流 API、PRTS 数值、一图流、MAA）。
 > 本仓库是 **monorepo**：`arknights_mcp.py`=MCP 本体；`scheduling/`=排班/报告/理智规划；
 > `scripts/maa-autoclose/`=MAA 跑完自动关雷电（桌面有快捷方式 `MAA跑完自动关雷电.lnk`）。

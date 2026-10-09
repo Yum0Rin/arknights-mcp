@@ -25,6 +25,16 @@
   / `ark_find`（模板匹配阳性验证 score=1.0，位置精确）。
 
 ## [Unreleased]
+### Added
+- **活动关作业工作流**（`scripts/event-copilot/event_copilot.py` + `docs/WORKFLOW-活动关作业.md`）：
+  抓 `prts.maa.plus` 作业 → 比对 `OperBoxData.json` 干员箱 → MAA **多作业**(`copilot_list`)自动战斗逐关通关。
+  子命令 `events` / `sync`(补 MAA 资源) / `plan`(推荐) / `run`(执行，`--try` 逐候选重试，`--loop` 刷关) / `goto`(简易导航)。
+  首次跑通 act52side（YW-5 通关、YW-6/7/8 三星）。踩坑详见 `docs/FINDINGS.md` §14。
+- **活动经济规划器**（`scheduling/tools/event_economy.py` + `scheduling/data/event_act52side.json`）：
+  按「关卡理智 / 每关代币产出 / 商店价与限购」算刷关次数、所需理智，对比活动期预算判断能否换完。
+- `run` 默认 `formation_index=4`（只用第四编队，不动用户其它编队）、`ignore_requirements=true`（练度不足可用）。
+- **opencode skills**（`.opencode/skills/`，分门别类留痕）：`arknights-event-copilot`、`arknights-event-economy`、
+  `maa-resource-sync`、`maa-copilot-internals` —— 把活动关/经济/资源/ Copilot 内部机制沉淀成可复用技能。
 ### 计划
 - `ark_ocr`：接入 MAA 的 OCR，读取任意 ROI 文本。
 - 任务序列编排（一次调用跑多个任务并返回分步结果）。
