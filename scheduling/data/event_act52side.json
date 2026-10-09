@@ -33,8 +33,8 @@
   {"name": "化合切削液",       "price": 12,  "limit": 10,  "kind": "精英材料", "priority": "中"},
   {"name": "特种芯片",         "price": 6,   "limit": 5,   "kind": "芯片", "priority": "中"},
   {"name": "聚酸酯组",         "price": 8,   "limit": 15,  "kind": "材料", "priority": "中"},
-  {"name": "初级作战记录",      "price": 7,   "limit": 120, "kind": "经验", "priority": "中"},
-  {"name": "技巧概要·卷2",     "price": 3,   "limit": 50,  "kind": "技能书", "priority": "中"},
+  {"name": "初级作战记录",      "price": 1,   "limit": 120, "kind": "经验", "priority": "中"},
+  {"name": "技巧概要·卷2",     "price": 2,   "limit": 50,  "kind": "技能书", "priority": "中"},
   {"name": "家具零件",         "price": 2,   "limit": 200, "kind": "家具", "priority": "中"},
   {"name": "糖",               "price": 3,   "limit": 25,  "kind": "材料", "priority": "中"},
   {"name": "聚酸酯",           "price": 3,   "limit": 25,  "kind": "材料", "priority": "中"},
@@ -43,7 +43,7 @@
   {"name": "扭转醇",           "price": 25,  "limit": 0, "unlimited": true, "kind": "精英材料", "priority": "中"},
   {"name": "研磨石",           "price": 35,  "limit": 0, "unlimited": true, "kind": "精英材料", "priority": "中"},
   {"name": "轻锰矿",           "price": 30,  "limit": 0, "unlimited": true, "kind": "精英材料", "priority": "中"},
-  {"name": "龙门币",           "price": 1,   "limit": 0, "unlimited": true, "kind": "龙门币", "priority": "高"},
+  {"name": "龙门币",           "price": 7,   "limit": 100, "kind": "龙门币", "priority": "高", "note": "7代币/5000龙门币"},
   {"name": "阿戈尔风格演讲台",  "price": 45,  "limit": 1,   "kind": "家具", "priority": "低"},
   {"name": "藻类培养池",       "price": 50,  "limit": 1,   "kind": "家具", "priority": "低"},
   {"name": "全域广播扬声器",    "price": 40,  "limit": 1,   "kind": "家具", "priority": "低"},
@@ -52,5 +52,5 @@
   {"name": "经文抄写台",       "price": 60,  "limit": 1,   "kind": "家具", "priority": "低"},
   {"name": "诗人的假日",       "price": 500, "limit": 1,   "kind": "时装", "priority": "中"}
  ],
- "shop_note": "全量 OCR 自游戏内『劳工配给所』（左右翻页，用 MAA Custom+SlowlySwipeToTheLeft）。**价格/限购为 OCR 初判，易串位，务必以 PRTS/企鹅物流核对**。limit=0 且 unlimited=true 者为无限库存(按需买)。"
+ "shop_note": "全量 OCR 自游戏内『劳工配给所』(左右翻页, MAA Custom+SlowlySwipeToTheLeft)。价格/限购部分「看图核准」(作战记录/技巧概要/龙门币/材料页)，仍**建议以 PRTS/企鹅物流最终核对**。limit=0 且 unlimited=true 者为无限库存(按需买)。"
 }
