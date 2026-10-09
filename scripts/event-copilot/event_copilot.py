@@ -356,6 +356,54 @@ def _adb_tap(xy: str):
     subprocess.run([ADB, "-s", ADDR, "shell", "input", "tap", str(x), str(y)], capture_output=True)
 
 
+def _screencap_png(path: str):
+    import subprocess
+    with open(path, "wb") as f:
+        subprocess.run([ADB, "-s", ADDR, "exec-out", "screencap", "-p"], stdout=f, timeout=40)
+
+
+def _ocr_local(png: str) -> str:
+    """调用本地 OCR 工具取字（仅文本，省 token）。可用 ARK_OCR_TOOL 覆盖路径。"""
+    import subprocess
+    tool = os.environ.get("ARK_OCR_TOOL", r"C:\Users\<user>\.config\opencode\tools\ocr\ocr.py")
+    try:
+        r = subprocess.run([sys.executable, tool, png], capture_output=True, timeout=120)
+        return r.stdout.decode("utf-8", "replace")
+    except Exception as e:
+        return "[ocr error] %s" % e
+
+
+def cmd_shop(args):
+    """翻活动商店：逐页截图+OCR 落盘（供人工/Agent 整理成数据文件的 shop）。
+    前提：游戏停在活动商店页；**同一时刻只让一个程序驱动设备**（先关 MCP/MAA GUI）。
+    翻页用 MaaCore 的 Custom 任务(SlowlySwipeToTheLeft)，因为本机 adb 滑动失效。"""
+    outdir = pathlib.Path(args.outdir or (pathlib.Path(os.environ.get("TEMP", ".")) / "event-shop"))
+    outdir.mkdir(parents=True, exist_ok=True)
+    a = _make_asst(lambda m, d, x: None)
+    prev = None
+    for i in range(args.pages):
+        png = str(outdir / ("shop_%02d.png" % i))
+        _screencap_png(png)
+        txt = _ocr_local(png)
+        (outdir / ("shop_%02d.txt" % i)).write_text(txt, encoding="utf-8")
+        first = " | ".join(txt.split("\n")[:6])
+        log("[shop] page %d: %s" % (i, first[:300]))
+        if prev is not None and txt.strip() == prev:
+            log("  (与上页一致 → 可能到末尾/方向不对)")
+        prev = txt.strip()
+        tid = a.append_task("Custom", {"task_names": ["SlowlySwipeToTheLeft"]})
+        if not tid:
+            log("  swipe append 失败，停止"); break
+        a.start()
+        t0 = time.time()
+        while a.running() and time.time() - t0 < 20:
+            time.sleep(0.2)
+        if a.running():
+            a.stop()
+        time.sleep(1.5)
+    log("[shop] 截图+文本已落盘：%s" % outdir)
+
+
 def cmd_goto(args):
     """简易导航：主页按钮 -> 当期活动 banner -> 活动主页的『关卡地图』入口。
     坐标是事件/分辨率相关的经验值；换活动/分辨率请用 --home-xy/--banner-xy/--hub-xy 覆盖。
@@ -394,6 +442,11 @@ def main():
     g.add_argument("--banner-xy", default="1770,205", help="当期活动 banner 坐标")
     g.add_argument("--hub-xy", default="1400,860", help="活动主页里『关卡地图』入口坐标")
     g.set_defaults(func=cmd_goto)
+
+    s = sub.add_parser("shop", help="翻活动商店：逐页截图+OCR 落盘(左右翻页, 用 MAA Custom 滑动)")
+    s.add_argument("--pages", type=int, default=8)
+    s.add_argument("--outdir", default="")
+    s.set_defaults(func=cmd_shop)
 
     ap.set_defaults(func=None)
 

@@ -165,6 +165,10 @@ python scheduling/tools/event_economy.py scheduling/data/event_act52side.json --
 
 > 实测：act52side **开活动当天** PRTS 无商店页、企鹅 stages/matrix 无 act52、PRTS 搜索 0 命中 → 当天只能游戏内实测；隔几天再查 PRTS/企鹅 就有。
 
+**游戏内翻商店（一键）**：`python scripts/event-copilot/event_copilot.py shop --pages 8`
+→ 逐页截图+OCR 落盘到 `%TEMP%\event-shop`（**商店/干员/仓库都是左右翻页**，用 MAA `Custom`+`SlowlySwipeToTheLeft`；本机 adb 滑动失效）。
+前提：游戏停在活动商店页 + 单客户端。翻出来的文本再整理进 `scheduling/data/event_<id>.json` 的 `shop`。
+
 **当前 act52side 已知**：理智 YW-1/2=9、YW-3/4/5=12、YW-6/7/8=21；**代币=理智 1:1（三星）**——实测 YW-8 三星 +21、YW-5 二星 +6（≈半）→ **刷代币必须三星**（二星只给一半）。商店第 1 屏已录入（旅骨的信物360/模组数据块75/精炼溶剂35/聚合剂100/寻访凭证150…），其余翻页待补。
 
 **样例行**：高优先级 4 件需 1460 代币（已有 206）→ 差 1254 → 刷 YW-8 **60 次 = 1260 理智**；活动期自然+周常预算 ≈ 5760 理智 → 够换完。

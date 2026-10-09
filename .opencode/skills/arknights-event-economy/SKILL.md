@@ -22,9 +22,9 @@ python scheduling/tools/event_economy.py scheduling/data/event_act52side.json --
 | 代币/次 | **企鹅物流**掉落矩阵（`/result/matrix?server=CN&stageFilter=actNNside_XX`，`quantity/times`）；PRTS 只写"固定掉落"不给数；**都没出**再游戏内实测（打一关看代币余额增量） |
 | 商店价/限购 | **PRTS 活动商店页**（活动开几天后才有）；没出再游戏内商店 OCR |
 
-> **游戏内翻商店（商店/干员/仓库都是左右翻页）**：先 `ark_connect`（否则 MaaCore `m_controller is not inited`，滑动无效），
-> 再用 `ark_run_task("Custom", {"task_names":["SlowlySwipeToTheLeft","SlowlySwipeToTheLeft"]})` 连续翻页 + OCR。
-> 详见 `docs/FINDINGS.md` §15。
+> **游戏内翻商店（商店/干员/仓库都是左右翻页）**：一键 `event_copilot.py shop --pages 8`（逐页截图+OCR 落盘到 %TEMP%\event-shop）；
+> 或手动 `ark_connect` 后用 `ark_run_task("Custom", {"task_names":["SlowlySwipeToTheLeft","SlowlySwipeToTheLeft"]})` 连续翻页 + OCR。
+> 先 `ark_connect` 否则 MaaCore `m_controller is not inited` 滑动无效。详见 `docs/FINDINGS.md` §15。
 
 > 实测 act52side **开活动当天**：PRTS 无商店页、企鹅 stages/matrix 均无 act52、PRTS 搜索 0 命中 → 只能游戏内实测。**隔几天再查 PRTS/企鹅**就能拿到。
 
