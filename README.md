@@ -31,18 +31,24 @@
 - 任务流水线：`C:\MAA\resource\tasks\tasks.json`（MAA 自带）。
 - 设备操作：`adb shell input tap/swipe/keyevent`。
 
-## 📁 目录结构
+## 📁 目录结构（monorepo：MCP 为核心，方舟相关子项目都收在此仓库）
 
 ```
 arknights-mcp/
-├─ arknights_mcp.py     # MCP 服务器本体（stdio）
-├─ requirements.txt
-├─ CHANGELOG.md         # 版本迭代记录
-├─ README.md
+├─ arknights_mcp.py       # MCP 服务器本体（stdio，可独立发布）
 ├─ docs/
-│  └─ FINDINGS.md       # 开发过程中的关键发现（留痕）
+│  ├─ FINDINGS.md         # 踩坑 / 留痕
+│  └─ DATA-SOURCES.md     # 数据来源与取数方法（企鹅物流 / PRTS / 一图流）
+├─ scheduling/            # 子项目：基建排班 + 报告 + 理智规划
+│  ├─ 一图流产物/  报告/  tools/  旧333排班/
+├─ scripts/
+│  └─ maa-autoclose/      # 子项目：MAA 跑完自动关雷电（双击启动.cmd）
+├─ CHANGELOG.md   README.md   requirements.txt
 └─ .gitignore
 ```
+
+> 说明：`scheduling/` 与 `scripts/maa-autoclose/` 是围绕本 MCP 的**方舟专用子项目**（强耦合同一套
+> MAA / 雷电环境），统一收在此 monorepo；只有 `arknights_mcp.py`（MCP 本体）考虑对外发布。
 
 ## 🔧 依赖
 

@@ -1,0 +1,72 @@
+{
+  "params": {
+    "regenPerDay": 240,
+    "sanityCap": 205,
+    "loginIntervalH": 12,
+    "regenPerInterval": 120,
+    "safeLeaveBelow": 85,
+    "weeklyTaskSanity": 240,
+    "weeklyBudget": 1920,
+    "capNote": "12h回复120<上限205：每次上线把理智花到≤85即不溢出；道具可临时突破上限(≤999)。"
+  },
+  "anni": {
+    "san_per_run": 25,
+    "orundum_per_run": 370,
+    "week_cap": 1800
+  },
+  "plans": {
+    "grow6": {
+      "label": "养成向（6★配比 1.63）",
+      "ratio": 1.63,
+      "allocation": {
+        "anni": 125,
+        "anniRuns": 5,
+        "ce": 1132.4,
+        "ls": 662.6
+      },
+      "fromBaseAndTasks": {
+        "lmd": 480485,
+        "exp": 303721
+      },
+      "total": {
+        "lmd": 795054,
+        "exp": 487763
+      },
+      "sixStarEquivPerWeek": 1.35,
+      "orundumPerWeek": 3000
+    },
+    "grow5": {
+      "label": "养成向（5★配比 1.55）",
+      "ratio": 1.55,
+      "allocation": {
+        "anni": 125,
+        "anniRuns": 5,
+        "ce": 1077.4,
+        "ls": 717.6
+      },
+      "fromBaseAndTasks": {
+        "lmd": 480485,
+        "exp": 303721
+      },
+      "total": {
+        "lmd": 779752,
+        "exp": 503066
+      },
+      "sixStarEquivPerWeek": 1.32,
+      "orundumPerWeek": 3000
+    },
+    "orundum": {
+      "label": "搓玉向",
+      "allocation": {
+        "anni": 125,
+        "anniRuns": 5,
+        "stage17": 1795
+      },
+      "rockPerWeek": 372.5,
+      "shardsPerWeek": 186.2,
+      "craftOrundum": 1862,
+      "baseCraftCap": 3402,
+      "orundumTotalPerWeek": 4862
+    }
+  }
+}

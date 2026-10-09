@@ -4,6 +4,9 @@
 （识别全走 MAA 的模板匹配/OCR，不用 AI 读图）。子功能：智能基建排班（`scheduling/`）。
 
 > 详细的踩坑记录在 **`docs/FINDINGS.md`**（遇到问题先查它）。
+> 取数/数据来源与 API 用法看 **`docs/DATA-SOURCES.md`**（企鹅物流 API、PRTS 数值、一图流、MAA）。
+> 本仓库是 **monorepo**：`arknights_mcp.py`=MCP 本体；`scheduling/`=排班/报告/理智规划；
+> `scripts/maa-autoclose/`=MAA 跑完自动关雷电（桌面有快捷方式 `MAA跑完自动关雷电.lnk`）。
 
 ## 环境
 
