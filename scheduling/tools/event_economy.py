@@ -55,7 +55,9 @@ def build(args):
 
     # 目标集
     sel = [it for it in shop if PRI_ORDER.get(it.get("priority", "低"), 2) <= PRI_ORDER.get(args.min_priority, 2)]
-    need = sum(it["price"] * it["limit"] for it in sel)
+    limited = [it for it in sel if not it.get("unlimited")]
+    unlim = [it for it in sel if it.get("unlimited")]
+    need = sum(it["price"] * it["limit"] for it in limited)
     remain = max(0, need - have_tokens)
 
     print("=" * 74)
@@ -77,12 +79,15 @@ def build(args):
     elif rank:
         farm = rank[0]
 
-    print("\n[目标道具]  优先级<=%s   共 %d 项" % (args.min_priority, len(sel)))
-    for it in sel:
-        print("  %-12s 价%-4d 限购%-2d 需%-6d  [%s] %s" % (
+    print("\n[目标道具]  优先级<=%s   有限 %d 项 + 无限 %d 项" % (args.min_priority, len(limited), len(unlim)))
+    for it in limited:
+        print("  %-12s 价%-4d 限购%-3d 需%-6d  [%s] %s" % (
             it["name"], it["price"], it["limit"], it["price"] * it["limit"],
             it.get("kind", ""), it.get("priority", "")))
-    print("  —— 需代币合计 %d，已有 %d，还差 %d" % (need, have_tokens, remain))
+    for it in unlim:
+        print("  %-12s 价%-4d 限购∞    按需     [%s] %s" % (
+            it["name"], it["price"], it.get("kind", ""), it.get("priority", "")))
+    print("  —— 有限道具需代币合计 %d，已有 %d，还差 %d（无限道具按剩余代币再买）" % (need, have_tokens, remain))
 
     print("\n[结论]")
     if not farm or not farm.get("token_per_run"):

@@ -78,6 +78,7 @@ _serial = None
 _callbacks: list = []          # [(msg:int, details:str), ...]
 _latest: dict = {}             # 最近一次 OperBox / Depot 结果
 _lock = threading.Lock()
+_connected = False
 
 try:
     from asst.asst import Asst
@@ -226,7 +227,7 @@ def ark_version() -> dict:
 @mcp.tool()
 def ark_connect(address: str = "", adb_path: str = "", touch: str = "", config: str = "General") -> dict:
     """连接模拟器。默认连雷电 LDPlayer9（127.0.0.1:5555, maatouch）。address/adb_path/touch 可覆盖。"""
-    global ADB_ADDR, ADB_BIN, TOUCH_MODE
+    global ADB_ADDR, ADB_BIN, TOUCH_MODE, _connected
     if address:
         ADB_ADDR = address
     if adb_path:
@@ -239,6 +240,7 @@ def ark_connect(address: str = "", adb_path: str = "", touch: str = "", config: 
     except Exception as e:
         log("set touch 失败: %s" % e)
     ok = a.connect(ADB_BIN, ADB_ADDR, config)
+    _connected = bool(ok)
     _detect_serial()
     log("connect %s ok=%s serial=%s touch=%s" % (ADB_ADDR, ok, _serial, TOUCH_MODE))
     return {"connected": bool(ok), "address": ADB_ADDR, "touch": TOUCH_MODE, "serial": _serial}
@@ -253,7 +255,7 @@ def ark_status() -> dict:
             running = bool(_asst.running())
         except Exception:
             running = None
-    return {"serial": _serial, "address": ADB_ADDR, "connected": _asst is not None, "running": running}
+    return {"serial": _serial, "address": ADB_ADDR, "connected": _connected, "running": running}
 
 
 @mcp.tool()
@@ -306,7 +308,17 @@ def ark_list_tasks(keyword: str = "") -> dict:
 
 def _run_sequence(tasks: list, timeout_s: int) -> dict:
     """依次 append 多个任务并运行到结束。返回结果摘要。"""
+    global _connected
     a = _ensure_asst()
+    # 关键：任务要驱动设备必须先 connect，否则 MaaCore 报 m_controller is not inited（滑动/战斗静默失效）
+    if not _connected:
+        try:
+            a.set_instance_option(InstanceOptionType.touch_type, TOUCH_MODE)
+        except Exception as e:
+            log("auto set touch 失败: %s" % e)
+        ok = a.connect(ADB_BIN, ADB_ADDR, "General")
+        _connected = bool(ok)
+        log("auto-connect %s ok=%s" % (ADB_ADDR, ok))
     with _lock:
         _callbacks.clear()
     tids = []

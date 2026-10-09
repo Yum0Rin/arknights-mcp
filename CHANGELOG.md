@@ -35,6 +35,11 @@
 - `run` 默认 `formation_index=4`（只用第四编队，不动用户其它编队）、`ignore_requirements=true`（练度不足可用）。
 - **opencode skills**（`.opencode/skills/`，分门别类留痕）：`arknights-event-copilot`、`arknights-event-economy`、
   `maa-resource-sync`、`maa-copilot-internals` —— 把活动关/经济/资源/ Copilot 内部机制沉淀成可复用技能。
+### Fixed
+- **`ark_run_task` 跑任务前自动 `connect`**：此前未 `ark_connect` 就 `ark_run_task` 时，MaaCore `Controller::swipe`
+  报 `m_controller is not inited`，滑动/Copilot 等**静默失效**（`ark_screenshot` 走 adb 仍正常，极易误判）。
+  `ark_status.connected` 也改为反映真实连接态。
+- 活动商店数据全量录入 + 规划器支持"无限库存"道具（按需买，不计入"买满"）。
 ### 计划
 - `ark_ocr`：接入 MAA 的 OCR，读取任意 ROI 文本。
 - 任务序列编排（一次调用跑多个任务并返回分步结果）。

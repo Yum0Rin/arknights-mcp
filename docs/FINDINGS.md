@@ -176,3 +176,6 @@
   实测：`Custom`+`SwipeToTheUp` 对活动商店**未翻动**（疑商店非该方向/仅一屏），翻页方案待定。
 - **作业站 prts.maa.plus 的 `query` 列表接口 content 不含 `actions`**，完整版在 `/copilot/get/<id>`（见 §14）。
 - 活动商店（act52side「劳工配给所」）第 1 屏 12 件已录（见 `scheduling/data/event_act52side.json`）；翻页未解决。
+- **【关键】MCP 跑"驱动设备"的任务前必须先 `ark_connect`**：否则 MaaCore `Controller::swipe` 报 **`m_controller is not inited`**，滑动手势/Copilot 等**静默无效**（`ark_screenshot` 走 adb 仍正常，易误判）。
+- **活动商店/干员/仓库都是左右翻页**（用户口径）。翻页用 `Custom` + `SlowlySwipeToTheLeft/Right`（**先 connect**）：
+  `ark_run_task("Custom", {"task_names":["SlowlySwipeToTheLeft","SlowlySwipeToTheLeft"]})`，实测可连续翻动商店。
