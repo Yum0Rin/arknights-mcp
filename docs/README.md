@@ -3,7 +3,13 @@
 > **本仓库做什么**：让 AI 每天接管你的《明日方舟》账号——读账号状态 → 按判据决策 → 执行日常/活动 → 回写进度，形成闭环、长期自主运转。<br>
 > 本仓库的规划 / 决策 / 工作流 / 踩坑文档都在这里。<br>
 > **读法**：先读根 [`README.md`](../README.md) 了解项目能做什么，再按下表顺序读；急用可直接跳到对应文件。<br>
-> **建议阅读顺序**：根 README → MASTER-PLAN → STATE → state.json / ops_manual.json → DAILY-CHECKLIST → WORKFLOW-*；FINDINGS / DATA-SOURCES 当参考手册查，不用通读。
+> **建议阅读顺序**：根 README → FEATURES（功能/用法）→ MASTER-PLAN → STATE → state.json / ops_manual.json → DAILY-CHECKLIST → WORKFLOW-*；FINDINGS / DATA-SOURCES 当参考手册查，不用通读。
+
+## 〇、功能与用法
+
+| 文件 | 定位 |
+|---|---|
+| [`FEATURES.md`](FEATURES.md) | 能做什么 / `ark_*` 工具一览 / 用法示例（含异步长任务）/ 依赖·配置·注册 / 已知限制 |
 
 ## 一、先读（决策主链）
 
