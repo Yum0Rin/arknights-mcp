@@ -26,6 +26,19 @@
 
 ## [Unreleased]
 ### Added
+- **森空岛在线取数接入 MCP（免模拟器）**：新增 MCP 工具 `ark_operbox_online`（干员箱，**多带技能等级/专精**）
+  与 `ark_infrast_status`（基建状态，原先没有此查询）。适配器 `scripts/skland/skland_box.py` 把森空岛数据转成
+  MAA `OperBoxData.json` **同构**，`event-copilot` / `oper_appearance` / `base_gap` / 一图流导入 **零改动换源**。
+  实测与 MAA 对拷 337 干员 elite/level/rarity 全一致。文档：`AGENTS.md`「账号数据两条路」+ `docs/DATA-SOURCES.md` §7。
+- **森空岛看板**（`scripts/skland/`，本地自用工具）：登录森空岛（密码/验证码两法）→ 拉本人账号
+  数据 → 看板渲染。核心 `skland_client.py`（仅标准库，登录/cred/取数/存凭证）+ GUI `skland_gui.py`
+  （CustomTkinter，界面/线程/主题逻辑照搬 cx-downloader）+ CLI `skland_cli.py`（login/status/dump/checkin）。
+  数据覆盖 概览 / 干员养成 / 基建 / 公招 / 剿灭·保全·肉鸽 / 任务 / 签到 / 原始 JSON。
+  仅读自己账号，凭证存 `~/.arknights_skland.json`。**注意：森空岛接口无「抽卡记录」，本工具也拿不到。**
+  - 读数据需带 `sign` 签名头（`md5(hmac_sha256(sign_token, path+query/body+ts+header))`）；`dId` 随机值即可（服务端不校验）。
+  - 干员页支持按 **星级 / 职业** 筛选，按 **等级 / 技能等级 / 星级** 升降序排序；**专精按技能分别显示**
+    （技能等级 1–7 是三个技能共享的一个数，专精每个技能独立）。列表用原生 `ttk.Treeview`
+    （一行一数据项，筛选/排序 <10ms；此前每行 6 个 CTk 控件、341 行近 2000 控件，明显卡顿）。
 - **活动关作业工作流**（`scripts/event-copilot/event_copilot.py` + `docs/WORKFLOW-活动关作业.md`）：
   抓 `prts.maa.plus` 作业 → 比对 `OperBoxData.json` 干员箱 → MAA **多作业**(`copilot_list`)自动战斗逐关通关。
   子命令 `events` / `sync`(补 MAA 资源) / `plan`(推荐) / `run`(执行，`--try` 逐候选重试，`--loop` 刷关) / `goto`(简易导航)。

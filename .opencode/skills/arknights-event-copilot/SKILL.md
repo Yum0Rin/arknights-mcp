@@ -33,4 +33,6 @@ python scripts/event-copilot/event_copilot.py run    act52side --stages 8 --loop
 
 ## 干员比对口径
 - 干员箱 `C:\MAA\data\OperBoxData.json` 只有 elite/level（**无技能等级**）→ 能否过只能实跑验证。
+  > 干员箱可换**在线源**（免模拟器）：MCP `ark_operbox_online` 或 `scripts/skland/skland_box.py`
+  > 的 `fetch_operbox()`（形态同构、多带技能/专精）。但"能否过"仍要 MAA 实机验证。
 - 排序键：`(未拥有干员数, 无可用成员的组数, 低练(E<2)数, ...)`。用户口径：**精二(E2) 算可用**；缺的干员 ≤1 可借。

@@ -97,3 +97,42 @@
 - PRTS 页面巨大 → **交子代理提取**（用户有 copilot 额度，研究类走便宜模型）。
 - 企鹅 `dropRate` 字段常为 null → 自己用 `quantity/times` 算均值。
 - 一图流是 SPA：`webfetch` 拿不到动态表格；要交互/数据用 firefox MCP（作用域快照见 FINDINGS §10）。
+
+---
+
+## 7. 森空岛在线取数（**免模拟器**读本人账号）
+
+- 接口：`https://zonai.skland.com`（鹰角官方社区 API）；登录走 `https://as.hypergryph.com`。
+- 实现：`scripts/skland/skland_client.py`（**仅标准库**）。登录换 `cred` → 取数，凭证存
+  `~/.arknights_skland.json`（含 `cred`/`token`/`uid`/`did`）。
+- **登录链**：
+  1. `POST as.hypergryph.com/user/auth/v1/token_by_phone_password` `{phone,password}`（或
+     `general/v1/send_phone_code` + `user/auth/v2/token_by_phone_code`）→ `token`
+  2. `POST as.hypergryph.com/user/oauth2/v2/grant` `{token, appCode:"4ca99fa6b56cc2ba", type:0}` → `code`
+  3. `POST zonai.skland.com/api/v1/user/auth/generate_cred_by_code` `{code,kind:1}` → `cred` + `token`(签名密钥)
+- **读数据必须带 `sign` 头**（不带 → `401 code=10000 请求异常`，**不是** `10002 未登录`，别误判）：
+  ```
+  sign = md5( hmac_sha256(sign_token, path + query/body + timestamp + json(header)) )
+  header = {platform:"3", timestamp, dId, vName:"1.0.0"}
+  ```
+  **`dId` 用随机值即可**（服务端不校验真伪），本地生成一次持久化，无需数美/cryptography。
+  POST 记得 `Content-Type: application/json`（漏了会 `400 参数错误`）。
+- **关键端点**：
+
+  | 用途 | 端点 |
+  |---|---|
+  | 绑定角色 | `GET /api/v1/game/player/binding` |
+  | 全量玩家数据 | `GET /api/v1/game/player/info?uid=` → `status`/`chars`/`skins`/`building`/`recruit`/`campaign`/`tower`/`rogue`/`routine` |
+  | 干员养成 | `GET /api/v1/game/cultivate/player?uid=`（与 chars 同源） |
+  | 签到 | `GET/POST /api/v1/game/attendance` |
+
+- **转 MAA 形态**：`scripts/skland/skland_box.py` → `fetch_operbox()`（`OperBoxData.json` **同构**）、
+  `fetch_base()`（基建状态）。字段映射（**两处 off-by-one**）：
+  `id=charId`、`name=charInfoMap[charId].name`、`elite=evolvePhase`、`level=level`、
+  `rarity=charInfoMap.rarity **+1**`、`potential=potentialRank **+1**`、`own=True`；
+  超集（MAA 无）：`skill_lvl=mainSkillLvl`、`spec=skills[].specializeLevel`、`favor`。
+- **与 MAA 对拷**（账号「博士」337 干员）：elite/level/rarity **全一致**；potential 332/337 一致，
+  不一致的是 MAA 识别误差（**以在线为准**）。Skland 还会比 MAA 多出"本地资源未收录的新干员"。
+- **拿不到**：抽卡记录（接口无此项）、仓库 Depot（只有 MAA 有）。
+- CLI：`python scripts/skland/skland_cli.py {login,status,dump,checkin}`；GUI：`scripts/skland/skland_gui.py`。
+- 踩坑详见 `docs/FINDINGS.md` §17。

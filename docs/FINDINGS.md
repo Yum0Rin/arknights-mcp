@@ -1,7 +1,7 @@
 # 开发发现 / 踩坑记录（留痕）
 
 > AGENTS.md 只保留铁律；详细踩坑、证据、复现步骤都放这里。
-> 最后更新：2026-10-09（新增 §14 活动关作业工作流）。
+> 最后更新：2026-10-10（新增 §17 森空岛在线接口）。
 
 ## 1. MAA 原理与组成（本 MCP 借用其能力）
 
@@ -188,3 +188,19 @@
   **建议精二**(owned 未 E2)：德克萨斯、乌尔比安、伊芙利特、山、夜莺、拉普兰德、澄闪…；
   **缺但高频**：煌、艾雅法拉、纯烬艾雅法拉、阿斯卡纶、黍。
 - 作业站 `document=` 参数 = 按标题/详情关键字筛（实测可用）；`orderBy=views|hot|hot_score`。
+
+## 17. 森空岛在线接口（免模拟器读本人账号，2026-10-10）
+- 实现 `scripts/skland/skland_client.py`（**仅标准库**）；适配 MAA 形态 `scripts/skland/skland_box.py`；
+  MCP 工具 `ark_operbox_online` / `ark_infrast_status`。用法/映射见 `docs/DATA-SOURCES.md` §7。
+- 登录：手机号+密码 / 短信验证码 → 鹰角 `token` → `oauth2/v2/grant` → `generate_cred_by_code` 换 `cred` + 签名密钥 `token`。
+- **三个必踩的坑**：
+  1. 数据请求**必须带 `sign`**：不带 → `401 code=10000 请求异常`（**不是** `10002 未登录`，
+     极易误判成"凭证过期"而白折腾）。`sign = md5(hmac_sha256(sign_token, path + query/body + ts + json(header)))`，
+     `header = {platform,timestamp,dId,vName}`。
+  2. **`dId` 用随机值就能过**（服务端不校验真伪）→ 不必引数美 / `cryptography`；本地生成一次持久化即可。
+  3. POST 漏 `Content-Type: application/json` → `400 参数错误`（`generate_cred_by_code`、签到都中招）。
+- 数据与 MAA 同源：对拷账号「博士」337 干员，elite/level/rarity **全一致**；potential 5/337 不一致
+  （MAA 识别误差，**以在线为准**）。Skland 还会多出"本地资源未收录的新干员"。
+- **接口没有**：抽卡记录、仓库 Depot（Depot 仍只能靠 MAA）。
+- GUI `scripts/skland/skland_gui.py`（照 cx-downloader：配色/线程/主题/标题栏）。**干员列表别用 CTk 控件逐行渲染**
+  （341 行 × 每行 6 控件 ≈ 2000 控件，明显卡顿）；改用原生 `ttk.Treeview`（一行一 item）→ 筛选/排序 <10ms。

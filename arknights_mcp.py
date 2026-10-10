@@ -403,6 +403,53 @@ def ark_depot(timeout_s: int = 300, save_to: str = "") -> dict:
     return res
 
 
+# ----------------------------------------------------------------------------
+# 森空岛在线取数（**免模拟器**）：走 zonai.skland.com 的账号接口，不碰 MAA/雷电。
+# 适配器 scripts/skland/skland_box.py 把结果转成与 OperBoxData.json 同构的形态。
+# 取数/登录细节见 docs/DATA-SOURCES.md §7；与 MAA 路径的取舍见仓库 AGENTS.md。
+# ----------------------------------------------------------------------------
+def _skland_box():
+    """惰性加载 scripts/skland/skland_box.py（不需要 MAA，也不需要模拟器）。"""
+    p = str(pathlib.Path(__file__).resolve().parent / "scripts" / "skland")
+    if p not in sys.path:
+        sys.path.insert(0, p)
+    import skland_box  # noqa: PLC0415
+    return skland_box
+
+
+@mcp.tool()
+def ark_operbox_online(save_to: str = "") -> dict:
+    """在线读干员箱（走森空岛接口，**免模拟器/MAA**）。
+
+    返回与 `ark_operbox` 同构的 `own_opers`（id/name/elite/level/potential/rarity/own），
+    另带 MAA 给不了的 `skill_lvl`（技能等级 1–7）与 `spec`（各技能专精等级）。
+    需先登录存凭证：`python scripts/skland/skland_cli.py login`。
+    只读查询，不用开模拟器；数据来源与字段映射见 `docs/DATA-SOURCES.md` §7。
+    """
+    try:
+        data = _skland_box().fetch_operbox()
+    except Exception as e:  # noqa: BLE001
+        return {"error": str(e)}
+    if save_to:
+        with io.open(save_to, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        data["saved_to"] = save_to
+    return data
+
+
+@mcp.tool()
+def ark_infrast_status() -> dict:
+    """读当前基建状态（走森空岛接口，免模拟器）。
+
+    返回各设施槽位等级 + 进驻干员（控制中枢/贸易站/制造站/发电站/宿舍/会客室/办公室/训练室）、
+    无人机、家具数、疲劳干员。MCP 原先没有这个"查询"（只有 `Infrast` 任务=改基建）。
+    """
+    try:
+        return _skland_box().fetch_base()
+    except Exception as e:  # noqa: BLE001
+        return {"error": str(e)}
+
+
 # 页面锚点：页面名 -> MAA 模板（用于 ark_where；可被 custom 覆盖/追加）
 # 注意：默认锚点是"起始种子"，未必对所有页面都准（MAA 的 QuickSwitch/* 图标是
 #       快捷切换弹窗里的图标，不是各页常驻元素）。要精确识别某页，请用 custom 传

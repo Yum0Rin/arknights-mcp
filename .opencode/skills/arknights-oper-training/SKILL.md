@@ -23,6 +23,8 @@ python scheduling/tools/oper_appearance.py --pages 15 --top 25
   - `limit=100` + `page` 翻页（每页 100，无需 `/copilot/get`，列表 content 已含 opers）。
 - 出现率 = 该干员(作业**顶层必选** opers)出现次数 / 样本作业数；替选组(groups)成员单独统计。
 - 对照 `C:\MAA\data\OperBoxData.json`：owned-not-E2 = 培养目标；缺 = 无法练。
+  > 干员箱可换**在线源**（免模拟器，无需开雷电）：`ark_operbox_online`（MCP）或
+  > `scripts/skland/skland_box.py` 的 `fetch_operbox()`，形态与 `OperBoxData.json` 同构。
 
 ## 实测结论（2026-10-09，1500 个热门挂机作业）
 - 必选高频：煌34.5%、艾雅法拉33.1%、德克萨斯27%、乌尔比安23%、歌蕾蒂娅23%、塞雷娅22%、圣聆初雪19%…
