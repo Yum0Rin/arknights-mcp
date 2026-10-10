@@ -6,7 +6,7 @@ description: MAA「自动战斗(Copilot)」内部机制与踩坑——导航只�
 # MAA Copilot 机制与坑
 
 源码依据（branch `dev-v2`）：`src/MaaCore/Task/Interface/CopilotTask.cpp`、`Task/Miscellaneous/MultiCopilotTaskPlugin.cpp`。
-留痕：`docs/FINDINGS.md` §14、§15。
+留痕：`docs/FINDINGS.md` §14、§15。**完整机制与全部任务参数见 [`docs/MAA-INTERNALS.md`](../../../docs/MAA-INTERNALS.md)**。
 
 ## 机制
 - **Copilot 任务本身不导航**：8 个子任务第 2 个直接找 `BattleStartPre`（=已站在关卡准备界面才行）。
