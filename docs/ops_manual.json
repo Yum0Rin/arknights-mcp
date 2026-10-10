@@ -42,7 +42,15 @@
       "note": "完整坐标/OCR 裁剪区见 docs/WORKFLOW-仓库取数.md：ark_depot 导航到仓库 -> 点『消耗物品』tab(978,57) -> 网格点道具 -> 详情面板◀(95,520)▶(1845,520)翻页 -> 裁剪(330,195,1700,255)放大2x跑OCR。",
       "steps": []
     },
-    "领每日奖励": {"status": "MAA内置", "class": "A", "note": "ark_run_task('Award')"},
+    "公招(Recruit)": {
+      "status": "待修/待建",
+      "class": "A+B",
+      "note": "MAA Recruit 当前 append_task 失败（2026-10-10 实测：Award/Mall/Depot 正常，唯 Recruit 返回 id=0，空参/全参均失败）→ 待查 MaaCore v6.18.0 该任务；MAA 也做不了'补图鉴'。",
+      "select_rule": "用户 2026-10-10 定：**① 优先补图鉴**——在公招 tag 组合里选'出未拥有干员概率最大'的；**② 其次星最多**——同等情况选可产出星级最高（换黄票）；**③ 高级资深干员/资深干员 tag 必选**。",
+      "impl_idea": "用 gamedata gacha_table.json 的公招 tag→干员映射 + 森空岛 owned 差集，对每个 tag 组合算 P(new) 与期望星级，选最优组合，再驱动 UI/MAA。",
+      "steps": []
+    },
+    "领每日奖励": {"status": "MAA内置", "class": "A", "note": "**放最后做**（先任务才有奖领）。ark_run_task('Award')"},
     "森空岛签到": {"status": "脚本", "class": "A", "note": "python scripts/skland/skland_cli.py checkin"},
     "剿灭": {"status": "MAA内置", "class": "A", "note": "ark_run_task('Fight', {'stage':'Annihilation'...}) 或对应剿灭任务"},
     "刷1-7": {"status": "MAA内置", "class": "A", "note": "ark_run_task('Fight', {'stage':'1-7','times':N})"},

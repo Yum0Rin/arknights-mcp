@@ -13,6 +13,7 @@
     "annihilation_week_reset": "每周一（周上限 1800 玉）",
     "event_combat_end": "2026-10-23 03:59",
     "event_exchange_end": "2026-10-30",
+    "event_ex_open": "2026-10-16 16:00（活动主页 EX 入口显示『10月16日 16:00:00 后开启』，实机 OCR 2026-10-10）",
     "daily_decision_floor": "每天至少决策一次（醒来即算，周期兜底）"
   },
   "plan": {
