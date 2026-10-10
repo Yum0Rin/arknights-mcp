@@ -30,6 +30,18 @@
 | [`DATA-SOURCES.md`](DATA-SOURCES.md) | 数据源与取数方法：企鹅物流 API / PRTS 数值 / 一图流 / MAA / 森空岛 |
 | [`FINDINGS.md`](FINDINGS.md) | 踩坑留痕（§14/§15 活动关、§16 培养推荐、§17 森空岛接口） |
 
+## 另见：`.opencode/skills/`（不在 docs 下）
+
+`.opencode/skills/` 是 **opencode 的 skill**——agent **按需加载**的操作手册，**不在 `docs/` 下**，故不列入本索引。
+每个 skill 把一类流程沉淀成可复用步骤，用到哪条加载哪条：<br>
+
+- `arknights-data-library`：明日方舟靠谱数据源总目录（查资料时用）。
+- `arknights-event-copilot`：用 MAA 抄作业打活动关。
+- `arknights-event-economy`：活动商店 / 理智 / 代币规划。
+- `arknights-oper-training`：干员培养推荐（按作业出现率排）。
+- `maa-copilot-internals`：MAA 自动战斗内部机制与踩坑。
+- `maa-resource-sync`：MAA 不认当期新活动时补本地资源。
+
 ## 彼此关系
 
 - **[`MASTER-PLAN.md`](MASTER-PLAN.md)**：怎么算、怎么选——判据与公式的唯一出处。

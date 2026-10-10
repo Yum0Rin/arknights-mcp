@@ -19,11 +19,15 @@
 
 ## 1. 每天必做（不花理智）
 
+> **顺序铁律（2026-10-10 用户定）**：**领奖 `Award` 尽量往后排** —— 先做任务（刷关/公招/基建产出）才产生可领的奖励，先领会漏。
+
 1. **基建**：收菜；到点（≥12h，下次 2026-10-11 01:15，方向 队列2→队列1）先菲亚梅塔置换"但书"心情，再 13 房间逐个切队列；写 `scheduling/data/infrast_rotation_log.jsonl`。
+   > **换班必须用用户的方法，禁止用 MAA 自带排班**（否则会覆盖《搓玉》方案）。
 2. **森空岛签到**：`python scripts/skland/skland_cli.py checkin`。
-3. **领奖**：`ark_run_task("Award")`。
-4. **公招**：`ark_run_task("Recruit")`（有券就挂）。
-5. **信用商店**：`ark_run_task("Mall")`。
+3. **公招**：`ark_run_task("Recruit")`（有券就挂）。
+4. **信用商店**：`ark_run_task("Mall")`。
+5. **刷关**：活动 YW-6 / 1-7（见 §3、§4）。
+6. **领奖（放最后）**：`ark_run_task("Award")`。
 
 ## 2. 每周固定
 

@@ -77,9 +77,11 @@ python -m http.server 8123 --bind 0.0.0.0 --directory scheduling\报告
 ```
 scheduling/
 ├─ README.md            # 本文件
-├─ 一图流产物/           # 导出：两方案 MAA JSON、结果页文本、预览图
+├─ tools/               # 脚本 + 中间数据：build_report / render_report、sanity_plan、event_economy、
+│                       #   oper_appearance、parse_training、convert_to_maa（另含早期弃用的 base_gap* / gen_plan*）
+├─ data/                # 活动经济数据与约束、活动切栏坐标、基建轮换日志（infrast_rotation_log.jsonl）
+├─ 一图流产物/           # 243 两方案导出：MAA JSON、结果页文本、预览图、培养建议 cards
 ├─ 报告/                 # index.html 自包含单文件报告（手机可看）
-├─ tools/               # build_report.py / render_report.py（解析+渲染）
-├─ MAA基建排班/          # 早期手搓生成器产物（仅参考）
-└─ tools/(早期)          # base_gap.py / gen_plan*.py（不如一图流，弃用参考）
+├─ MAA基建排班/          # 一图流「MAA 基建排班」导出（早期 333：333_搓玉_定制.json / 333_搓龙门币_定制.json）
+└─ 旧333排班/            # 早期 333 布局的手搓排班，仅参考（现状已核准为 243）
 ```

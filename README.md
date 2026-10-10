@@ -103,6 +103,17 @@ ark_run_task("StartUp", {"enable": true, "client_type": "Official", "start_game_
 ark_run_task("Fight",  {"enable": true, "stage": "CE-6", "times": 5})
 ```
 
+5. 长任务（自动战斗 / 刷图）用**异步 + 轮询**（0.3.0+；超时不再掐断任务）：
+
+```
+ark_run_task("Copilot", {"copilot_list": [...], "formation": true}, wait=False)
+# → 立即返回，任务在后台跑
+ark_task_result()      # 稍后再问
+# → {running: true, done: false, elapsed: ...}
+ark_task_result()
+# → {running: false, done: true, chains: [...], errors: []}   # errors 为空 = 正常结束
+```
+
 ## 📁 目录结构（monorepo）
 
 ```
