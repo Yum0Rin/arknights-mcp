@@ -3,40 +3,6 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 风格，
 版本号遵循 [语义化版本 SemVer](https://semver.org/lang/zh-CN/)。
 
-## [0.2.0] - 2026-10-09
-### Added
-- **`ark_where`**：页面识别工具。用 MAA 模板做"页面锚点"（`QuickSwitch/*` 底部导航 +
-  `Depot/DepotAllTab` + `InfrastPic/InfrastOverview` 等），模板匹配判断"当前在哪一屏"，
-  返回命中页面与分数字段；支持 `custom` 传入 `{页面名: 模板名}` 覆盖/追加锚点。
-  → Agent 无需 AI 读图即可知道所处页面。
-- `DEFAULT_ANCHORS` 锚点表（首页/终端/干员/基建/采购中心/公开招募/干员寻访/菜单/仓库/基建总览）。
-### Changed
-- 抽出 `_grab_screen()` / `_match()` 复用逻辑，`ark_find` 改为调用之（行为不变）。
-
-## [0.1.1] - 2026-10-09
-### Fixed
-- **序列号自动探测**：雷电同时暴露 `127.0.0.1:5555` 与 `emulator-5554`（同一设备），
-  导致 adb 报 `more than one device`；现优先选 `ARK_ADDR`，其次 `emulator-*`，并在每次 adb
-  调用前确保已选定（`_ensure_serial`）。
-- **修复截图损坏**：`exec-out screencap -p` 为二进制安全，去掉误加的 `\r\n → \n` 替换
-  （此前会损坏 PNG，导致 cv2 读取失败）。
-### Verified
-- MCP 客户端联调通过：`ark_version`(MaaCore v6.18.0) / `ark_list_tasks` / `ark_screenshot`(有效 PNG)
-  / `ark_find`（模板匹配阳性验证 score=1.0，位置精确）。
-
-## [0.3.0] - 2026-10-10
-### Added
-- **`ark_task_result`**：长任务轮询工具。返回 `running` / `done` / `elapsed` 与 TaskChain
-  完成（`chains`）/ 出错（`errors`）列表，供自动战斗等长任务用。
-### Changed
-- **`ark_run_task` 超时不再掐断任务**：原实现在 `timeout_s`（默认 300s）到点即 `stop()`，
-  会把已进队的自动战斗（导航→点关→编队→开打）掐在编队/战斗中间界面。
-  新增 `wait`（`False`=启动即返回的**异步**模式，长战斗推荐）与 `stop_on_timeout`
-  （仅当 `True` 才恢复旧"超时即停"）。默认 `stop_on_timeout=False`：超时后任务继续跑，
-  改用 `ark_task_result()` 轮询结果。
-### Fixed
-- 长任务（`Copilot` 自动战斗）不再被 MCP 硬超时中断导致卡在中间画面。
-
 ## [Unreleased]
 ### Added
 - **森空岛在线取数接入 MCP（免模拟器）**：新增 MCP 工具 `ark_operbox_online`（干员箱，**多带技能等级/专精**）
@@ -72,6 +38,40 @@
 - `ark_ocr`：接入 MAA 的 OCR，读取任意 ROI 文本。
 - 任务序列编排（一次调用跑多个任务并返回分步结果）。
 - `ark_find` 支持模板批量匹配与去重阈值。
+
+## [0.3.0] - 2026-10-10
+### Added
+- **`ark_task_result`**：长任务轮询工具。返回 `running` / `done` / `elapsed` 与 TaskChain
+  完成（`chains`）/ 出错（`errors`）列表，供自动战斗等长任务用。
+### Changed
+- **`ark_run_task` 超时不再掐断任务**：原实现在 `timeout_s`（默认 300s）到点即 `stop()`，
+  会把已进队的自动战斗（导航→点关→编队→开打）掐在编队/战斗中间界面。
+  新增 `wait`（`False`=启动即返回的**异步**模式，长战斗推荐）与 `stop_on_timeout`
+  （仅当 `True` 才恢复旧"超时即停"）。默认 `stop_on_timeout=False`：超时后任务继续跑，
+  改用 `ark_task_result()` 轮询结果。
+### Fixed
+- 长任务（`Copilot` 自动战斗）不再被 MCP 硬超时中断导致卡在中间画面。
+
+## [0.2.0] - 2026-10-09
+### Added
+- **`ark_where`**：页面识别工具。用 MAA 模板做"页面锚点"（`QuickSwitch/*` 底部导航 +
+  `Depot/DepotAllTab` + `InfrastPic/InfrastOverview` 等），模板匹配判断"当前在哪一屏"，
+  返回命中页面与分数字段；支持 `custom` 传入 `{页面名: 模板名}` 覆盖/追加锚点。
+  → Agent 无需 AI 读图即可知道所处页面。
+- `DEFAULT_ANCHORS` 锚点表（首页/终端/干员/基建/采购中心/公开招募/干员寻访/菜单/仓库/基建总览）。
+### Changed
+- 抽出 `_grab_screen()` / `_match()` 复用逻辑，`ark_find` 改为调用之（行为不变）。
+
+## [0.1.1] - 2026-10-09
+### Fixed
+- **序列号自动探测**：雷电同时暴露 `127.0.0.1:5555` 与 `emulator-5554`（同一设备），
+  导致 adb 报 `more than one device`；现优先选 `ARK_ADDR`，其次 `emulator-*`，并在每次 adb
+  调用前确保已选定（`_ensure_serial`）。
+- **修复截图损坏**：`exec-out screencap -p` 为二进制安全，去掉误加的 `\r\n → \n` 替换
+  （此前会损坏 PNG，导致 cv2 读取失败）。
+### Verified
+- MCP 客户端联调通过：`ark_version`(MaaCore v6.18.0) / `ark_list_tasks` / `ark_screenshot`(有效 PNG)
+  / `ark_find`（模板匹配阳性验证 score=1.0，位置精确）。
 
 ## [0.1.0] - 2026-10-09
 ### Added

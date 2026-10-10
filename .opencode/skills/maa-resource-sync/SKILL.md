@@ -31,5 +31,10 @@ curl.exe -s -L --ssl-no-revoke <base>/Arknights-Tile-Pos/overview.json -o <MAA>/
 
 ## 注意
 - 改完资源后，**已在运行的 MCP/MAA 实例仍用旧缓存** → 要**重启**它（本机重启过 arknights MCP 进程）。
-- `resource/stages.json` **不含**活动关，别指望它；索引就是 `overview.json`。
+- `resource/stages.json`：**本地那份会过期**。实测（2026-10-10）本地旧版**没有 YW-/act52side**，
+  导致 `ark_run_task("Fight", {"stage":"YW-6"})` **append_task 失败(id=0)**；而 MaaResource main 的
+  `stages.json`（616 条）**已含 YW-1..8**。→ 更新资源后 `Fight` 就能直接刷活动关（**需重启 MCP 生效**）。
+  Copilot 的关卡索引则一直是 `overview.json`。
+- **一键检查/更新 MAA 资源/软件**：`python scripts/maa-update/maa_update.py check|apply`（见该脚本头注释）。
+  软件目前是最新 v6.18.0；资源靠它从 GitHub MaaResource 覆盖更新。**建议每天先跑一次 check**。
 - `overview.json` 每条含 `code`(如 YW-5) / `name`(三岔路口) / `levelId` / `filename`，也是取关卡清单的来源。

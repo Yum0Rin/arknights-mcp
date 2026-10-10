@@ -84,6 +84,7 @@ B 类操作（培养干员：升级/精英化/技能/模组；进商店翻页；
 
 ## 6. 标准序列（每次醒来的动作）
 
+0. **MAA 更新检查**：`python scripts/maa-update/maa_update.py check`；有更新则 `apply`（资源更新后**需重启 MCP 生效**）。
 1. 读 `docs/state.json` + 本协议 + `infrast_rotation_log.jsonl`。
 2. 森空岛取数：`ark_infrast_status`（基建当前班）+ `ark_operbox_online`（干员箱）。
 3. 判 §1 触发 → 触发就跑 MASTER-PLAN 决策链，更新 plan。
