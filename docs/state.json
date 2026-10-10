@@ -47,7 +47,7 @@
       "first_clear_note": "普通 8 关全部首通（用户 2026-10-10 告知 + 我记账）。此后首通/刷关进度由 agent 自行记录在 state.json。",
       "ex_pending": 8,
       "raid_pending": 8,
-      "tokens_owned": null,
+      "tokens_owned": 206,
       "shop_redeemed": [],
       "shop_todo": [
         "家具 6 件 310 代币（必满）",
@@ -83,7 +83,7 @@
     "rock_固源岩": null,
     "ap_supply_理智药": "≈1200 理智（浓缩液+120×5、加强剂+60×10、月饼×1）；其中约 480 理智（浓缩液×2 + 加强剂×4）到期 10/12，其余 10/19",
     "ap_supply_来源": "docs/WORKFLOW-仓库取数.md §5（2026-10-10 游戏内仓库 OCR 实测）",
-    "sanity_实机": "171/205（2026-10-10 14:45 实机；森空岛 ap 是旧快照，勿用）",
+    "sanity_实机": "1/205（2026-10-10 16:43 实机；1-7 批量刷 178 理智清空，待吃药刷 YW-6）",
     "note": "仓库只有 MAA 有（DepotData.json）。理智药到期自动转理智（上限 999），只要 sanity<999 不会浪费。"
   },
   "ops_learning": {
@@ -109,6 +109,16 @@
       },
       "triggers_hit": ["周期兜底（每日决策）"],
       "triggers_not_hit": ["基建换班到期（未到点）", "剿灭周重置（本周已满）", "活动数据变动（EX 未开）", "凭证 401（正常）", "干员箱变化（341 未变）"]
+    },
+    {
+      "ts": "2026-10-10 16:44",
+      "action": "接棒会话：日常执行 + 资源修复",
+      "result": "签到✓ 1-7搓玉(178→1)✓ 基建收菜+无人机✓ 干员休整(4名)✓ 公招✓ 信用商店✓；复制 YW.json 修复活动导航资源",
+      "observations": {
+        "资源": "YW.json 已从主仓库复制到 C:\\MAA\\resource\\tasks\\Stages\\YW.json（YW-4/6/7/8 导航任务，之前缺失致 Fight(stage=YW-6) 报 Cannot set stage）。但 kill MCP 后 opencode 未自动重连 → 需重启 opencode 恢复 arknights 工具，新 MCP 进程才会 Asst.load 加载 YW 资源",
+        "活动商店": "代币 206，家具 310 待刷 YW-6 攒够再换；导航路径已记 ops_manual(终端→昨日海→劳工配给所)",
+        "待办": ["刷 YW-6 代币(重启后，Fight stage=YW-6 series=0)", "活动商店兑换(家具310必守)", "Award(最后)", "保全派驻SSS"]
+      }
     }
   ]
 }
