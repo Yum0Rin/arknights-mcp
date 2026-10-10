@@ -307,6 +307,27 @@ def ark_list_tasks(keyword: str = "") -> dict:
         return {"ok": False, "error": str(e)}
 
 
+# MaaCore 部分任务的 set_params 要求**特定参数**，缺失时 append_task 静默返回 0（易误判为"任务不可用"）。
+# 按源码（docs/MAA-INTERNALS.md §2，MaaCore v6.18.0）：
+#   StartUp 必填 client_type（非空且合法，如 "Official"）；Infrast 必填 facility（字符串数组）；
+#   Recruit 必填 select/confirm（**整数数组**，不是 tag 名）。enable 由 Core 默认 true，非必填。
+# Infrast 默认 mode=20000（Rotation：Mfg/Trade/Reception 不换班，仅收菜/无人机/会客室），
+#   避免 mode=0（Default 自动换班）覆盖《搓玉》手排方案（铁律：禁用 MAA 自带排班）。
+TASK_DEFAULTS = {
+    "Recruit": {"select": [3, 4, 5, 6], "confirm": [3, 4, 5, 6], "times": 4},
+    "StartUp": {"client_type": "Official"},
+    "Infrast": {"mode": 20000, "facility": ["Mfg", "Trade", "Reception"]},
+    "Depot": {"enable": True},
+    "OperBox": {"enable": True},
+}
+
+
+def _merge_params(name: str, params: dict):
+    p = dict(TASK_DEFAULTS.get(name, {}))
+    p.update(params or {})
+    return p
+
+
 def _start_tasks(tasks: list):
     """connect（若未连）+ append 多个任务 + start。返回 (asst, tids)；append 失败抛 RuntimeError。"""
     global _connected, _last_run
@@ -324,7 +345,7 @@ def _start_tasks(tasks: list):
         _callbacks.clear()
     tids = []
     for name, params in tasks:
-        tid = a.append_task(name, params or {})
+        tid = a.append_task(name, _merge_params(name, params))
         tids.append({"task": name, "id": tid})
         if not tid:
             _last_run = {"tasks": tids, "started_at": time.time(), "done": True}
