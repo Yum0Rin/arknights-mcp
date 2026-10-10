@@ -63,7 +63,7 @@ PRTS = "https://prts.maa.plus"
 RES_RAW = "https://raw.githubusercontent.com/MaaAssistantArknights/MaaResource/main/resource"
 TILE_DIR = pathlib.Path(MAA) / "resource" / "Arknights-Tile-Pos"
 COPILOT_DIR = pathlib.Path(MAA) / "config" / "copilot"
-BOX_FILE = pathlib.Path(MAA) / "data" / "OperBoxData.json"
+BOX_FILE = pathlib.Path(os.environ.get("ARK_BOX", str(pathlib.Path(MAA) / "data" / "OperBoxData.json")))
 
 MAX_CORE = (6, 18, 0)  # 本机 MaaCore 版本 upper-bound，作业 minimum_required 更高则跳过
 
@@ -185,8 +185,15 @@ def score(c, own):
     return (not_owned, empty, low, glow)
 
 
-def candidates_for(level_id: str, name: str, own, limit: int = 80):
-    """返回按 [未拥有→空组→低练→热度] 排序的候选作业 [(score, id, content_dict), ...]"""
+def copyable(sc) -> bool:
+    """用户铁律(2026-10-10)：作业要求的每个干员槽都是精二(E2)+ 才算「可抄」。
+    等价于 未拥有=0 且 空组=0 且 低练=0 且 低练组=0。"""
+    return tuple(sc) == (0, 0, 0, 0)
+
+
+def candidates_for(level_id: str, name: str, own, limit: int = 80, strict: bool = False):
+    """返回按 [未拥有→空组→低练→热度] 排序的候选作业 [(score, id, content_dict), ...]
+    strict=True 时只保留「全员/全组 E2+」的可抄候选（用户口径）。"""
     q = http_json("%s/copilot/query?%s" % (PRTS, urllib.parse.urlencode(
         {"page": 1, "limit": limit, "levelKeyword": name, "type": "PRTS"})))
     out = []
@@ -207,6 +214,8 @@ def candidates_for(level_id: str, name: str, own, limit: int = 80):
             continue
         out.append((score(full, own), -it.get("views", 0), it["id"], full,
                     (full.get("doc") or {}).get("title", "")))
+    if strict:
+        out = [x for x in out if copyable(x[0])]
     out.sort(key=lambda x: (x[0], x[1]))
     return out
 
@@ -316,8 +325,9 @@ def cmd_plan(args):
         log("=" * 70)
         log("%s %s  候选 %d" % (code, name, len(cands)))
         for i, (sc, negv, cid, content, title) in enumerate(cands[:args.top]):
-            log("  #%d id=%-7d 未拥有=%d 空组=%d 低练=%d 低练组=%d  %s" % (
-                i + 1, cid, sc[0], sc[1], sc[2], sc[3], title))
+            mark = "★可抄" if copyable(sc) else "  不可抄"
+            log("  #%d id=%-7d %s 未拥有=%d 空组=%d 低练=%d 低练组=%d  %s" % (
+                i + 1, cid, mark, sc[0], sc[1], sc[2], sc[3], title))
 
 
 def cmd_run(args):
@@ -337,9 +347,9 @@ def cmd_run(args):
     for code, name, level_id, _fn in stages:
         if not selected(code):
             continue
-        cands = candidates_for(level_id, name, own)
+        cands = candidates_for(level_id, name, own, strict=getattr(args, "strict", True))
         if not cands:
-            log("[!] %s 无可用候选" % code)
+            log("[!] %s 无可用候选（可抄*）" % code)
             continue
         plan.append(((code, name, level_id),
                      [(sc, content, title, cid) for (sc, negv, cid, content, title) in cands]))
@@ -436,6 +446,8 @@ def main():
     p.add_argument("--loop", type=int, default=1, help="重复次数(=1 通关一次；>1 刷代币)")
     p.add_argument("--formation", type=int, default=FORMATION_INDEX,
                    help="自动编队用第几个编队(默认 4=第四编队，不会动其它编队)")
+    p.add_argument("--no-strict", dest="strict", action="store_false", default=True,
+                   help="放宽准入：不要求全员/全组精二(默认严格=只用可抄作业)")
     p.set_defaults(func=cmd_run)
 
     g = sub.add_parser("goto", help="从当前画面导航到活动关卡列表(首页→活动→关卡)")

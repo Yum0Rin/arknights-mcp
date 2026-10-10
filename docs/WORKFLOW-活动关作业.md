@@ -46,6 +46,8 @@ python event_copilot.py run   act52side --stages 8 --loop 30   # 刷代币：同
 - 可选环境变量覆盖：`ARK_MAA_PATH` / `ARK_ADB` / `ARK_ADDR` / `ARK_TOUCH` / `ARK_FORMATION_INDEX`。
 - **编队**：`run` 默认 `formation_index=4` —— **自动编队只会写「第四编队」**，绝不碰其它编队（默认约定）。要改用 `--formation N`。
 - `plan` 的排序键：`(未拥有干员数, 无可用成员的组数, 低练(E<2)干员数, 低练组数, -热度)` —— 越靠前越"能凑齐"。
+- **准入（用户铁律）**：只有 `score == (0,0,0,0)`（全员/组都 E2+）的候选才算"**可抄**"；其余一律跳过。
+  干员箱以**森空岛在线**为准（见坑 4）。
 - 选关时游戏**必须停在活动地图(关卡列表)**；`run` 里 MAA 用 OCR 找关卡代号（如 `YW-5`）并点击，找不到会左右翻页。
 
 ---
@@ -101,10 +103,16 @@ ark_run_task("Copilot", {copilot_list:[...], formation:true, ignore_requirements
 - 导航原理：优先用 `StageNavigation` 模板；无模板则**图像分析+OCR** 找关卡代号（`nav_name`，缺省取 overview 里的 `code`，如 `YW-5`）并点击；找不到就 `Copilot@StageNavigationSlowlySwipeLeft` 翻页。
 - 所以 `run` 里游戏**必须停在活动关卡列表**，否则 OCR 找不到、导航失败。
 
-### 坑 4：练度/技能不够 → 自动编队 `Unavailable`/`Missing`
+### 坑 4：练度/技能不够 → 自动编队 `Unavailable`/`Missing`；**用户口径：练度不齐的作业一律不抄**
 - 症状：`BattleFormationTask` 报 `why=OperatorMissing`，细节如 `{"奶盾":[{"name":"塞雷娅","reason":"Unavailable"}]}`。
 - 根因：`check_oper_level()` / 技能检查不通过 → `OperStatus::Unavailable`；名字不在名单 → `Missing`。
-- 修复：`run` 里固定带 **`"ignore_requirements": true`**（跳过未满足的属性要求），正对"练度不那么够"。
+- **口径（2026-10-10 用户铁律）**：**只抄"作业要求的每个干员槽都是精二(E2)+"的作业**。个人槽必须 owned 且
+  `elite>=2`；备选组至少 1 名成员 E2+。即 `score == (0,0,0,0)`。**不用 `ignore_requirements` 硬凑**
+  （实测核心 `澄闪` Lv1 硬打 GO-EX-4 → 卡编队/翻车）。
+- 数据源用**森空岛在线**（`ark_operbox_online`）；401 先 `python scripts/skland/skland_cli.py status` 续期。
+  兜底才用 MAA 干员箱 `C:\MAA\data\OperBoxData.json`（无技能/专精）。
+- `ignore_requirements` 仍保留在 `run` 里作**执行层**开关（避免作业里极小练度差异被 MAA 卡住），
+  但**选作业的准入**由上面的 E2 口径把关。
 
 ### 坑 5：失败**退理智**，可以放心换作业重试
 - 战斗失败/非三星时 MAA 找不到 `StageDrops-Stars-3`（相似度不足）→ `TaskChainError`；游戏结算显示"理智返还"。

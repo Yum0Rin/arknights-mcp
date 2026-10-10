@@ -22,7 +22,7 @@ import pathlib
 import subprocess
 import threading
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 # ----------------------------------------------------------------------------
 # 配置（均可用环境变量覆盖）
@@ -79,6 +79,7 @@ _callbacks: list = []          # [(msg:int, details:str), ...]
 _latest: dict = {}             # 最近一次 OperBox / Depot 结果
 _lock = threading.Lock()
 _connected = False
+_last_run: dict = {}            # 最近一次 ark_run_task 的 {tasks, started_at, done}
 
 try:
     from asst.asst import Asst
@@ -306,9 +307,9 @@ def ark_list_tasks(keyword: str = "") -> dict:
         return {"ok": False, "error": str(e)}
 
 
-def _run_sequence(tasks: list, timeout_s: int) -> dict:
-    """依次 append 多个任务并运行到结束。返回结果摘要。"""
-    global _connected
+def _start_tasks(tasks: list):
+    """connect（若未连）+ append 多个任务 + start。返回 (asst, tids)；append 失败抛 RuntimeError。"""
+    global _connected, _last_run
     a = _ensure_asst()
     # 关键：任务要驱动设备必须先 connect，否则 MaaCore 报 m_controller is not inited（滑动/战斗静默失效）
     if not _connected:
@@ -326,14 +327,16 @@ def _run_sequence(tasks: list, timeout_s: int) -> dict:
         tid = a.append_task(name, params or {})
         tids.append({"task": name, "id": tid})
         if not tid:
-            return {"ok": False, "error": "append_task 失败: %s" % name, "tasks": tids}
+            _last_run = {"tasks": tids, "started_at": time.time(), "done": True}
+            raise RuntimeError("append_task 失败: %s" % name)
     a.start()
-    end = time.time() + timeout_s
-    while a.running() and time.time() < end:
-        time.sleep(0.2)
-    timed_out = bool(a.running())
-    if timed_out:
-        a.stop()
+    _last_run = {"tasks": tids, "started_at": time.time(), "done": False}
+    log("start tasks=%s" % tids)
+    return a, tids
+
+
+def _collect(a) -> dict:
+    """读取回调，汇总 TaskChain 完成(chains) / 出错(errors)。"""
     with _lock:
         cbs = list(_callbacks)
     chains, errors = [], []
@@ -346,15 +349,66 @@ def _run_sequence(tasks: list, timeout_s: int) -> dict:
             chains.append(o.get("taskchain"))
         elif m == 10000:  # TaskChainError
             errors.append(o.get("taskchain"))
-    return {"ok": not timed_out, "timed_out": timed_out,
-            "tasks": tids, "chains": chains, "errors": errors, "callback_count": len(cbs)}
+    return {"chains": chains, "errors": errors, "callback_count": len(cbs)}
+
+
+def _run_sequence(tasks: list, timeout_s: int, wait: bool = True, stop_on_timeout: bool = False) -> dict:
+    """append+start 一组任务。
+    - wait=False：启动后立即返回（**异步**，长任务推荐；用 ark_task_result() 轮询）。
+    - wait=True ：阻塞至多 timeout_s 秒；**默认超时不杀任务**（stop_on_timeout=False），
+      以便调用方继续轮询，避免把已进队的长任务（如战斗）掐断在中间画面。"""
+    global _last_run
+    try:
+        a, tids = _start_tasks(tasks)
+    except RuntimeError as e:
+        return {"ok": False, "error": str(e), "tasks": _last_run.get("tasks", [])}
+    if not wait:
+        return {"ok": True, "async": True, "running": True, "done": False, "tasks": tids,
+                "note": "已后台启动，请用 ark_task_result() 轮询；或 ark_status() 看 running"}
+    end = time.time() + timeout_s
+    while a.running() and time.time() < end:
+        time.sleep(0.2)
+    timed_out = bool(a.running())
+    if timed_out and stop_on_timeout:
+        a.stop()
+        log("timeout -> stop tasks=%s" % tids)
+    done = not a.running()
+    _last_run["done"] = done
+    return {"ok": not timed_out, "async": False, "timed_out": timed_out, "done": done,
+            "running": timed_out and not stop_on_timeout,
+            "tasks": tids, **_collect(a)}
 
 
 @mcp.tool()
-def ark_run_task(name: str, params: dict = None, timeout_s: int = 300) -> dict:
-    """运行一个 MAA 任务（如 StartUp / Fight / Infrast / Recruit / Mall / Award / OperBox / Depot 等）。
-    params 为该任务参数（见 MAA 集成文档）。任务跑完返回摘要。"""
-    return _run_sequence([(name, params or {})], timeout_s)
+def ark_run_task(name: str, params: dict = None, timeout_s: int = 300,
+                 wait: bool = True, stop_on_timeout: bool = False) -> dict:
+    """运行一个 MAA 任务（如 StartUp / Fight / Infrast / Recruit / Mall / Award / Copilot 等）。
+    - wait=True（默认）：阻塞至多 timeout_s 秒；**超时不杀任务**，可继续用 ark_task_result() 轮询。
+    - wait=False：启动后立即返回（长任务/战斗/自动战斗推荐），随后用 ark_task_result() 轮询。
+    - stop_on_timeout=True：恢复旧行为（超时即 stop 任务）。
+    params 为该任务参数（见 MAA 集成文档）。"""
+    return _run_sequence([(name, params or {})], timeout_s, wait=wait, stop_on_timeout=stop_on_timeout)
+
+
+@mcp.tool()
+def ark_task_result() -> dict:
+    """轮询当前/最近一次 ark_run_task 的状态与结果（供长任务用）。
+    返回 running(是否仍在跑) / done / elapsed，以及 TaskChain 完成(chains)与出错(errors)。
+    done=True 且 errors 为空 = 正常结束。"""
+    if _asst is None:
+        return {"ok": False, "error": "尚未运行任何任务（先 ark_connect 或 ark_run_task）"}
+    try:
+        running = bool(_asst.running())
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+    started = _last_run.get("started_at")
+    out = {"ok": True, "running": running, "done": not running,
+           "tasks": _last_run.get("tasks", []),
+           "elapsed": round(time.time() - started, 1) if started else None}
+    if not running:
+        _last_run["done"] = True
+        out.update(_collect(_asst))
+    return out
 
 
 @mcp.tool()

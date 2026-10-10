@@ -60,7 +60,11 @@ description: 资料库——明日方舟靠谱民间数据源总目录（PRTS wi
 
 | 资产 | 路径 | 说明 |
 |---|---|---|
+| **总指挥文档** | `docs/MASTER-PLAN.md` | **运筹总纲**：目标→数据→决策→执行→复盘五层闭环、铁律、每日清单模板、养谁/理智/活动/基建/抄作业判据。规划类问题先读它 |
+| 仓库取数流程 | `docs/WORKFLOW-仓库取数.md` | 游戏内仓库 OCR 读库存（理智药等 MAA/森空岛拿不到的）：进仓库→切 tab→点道具→◀▶翻页→裁剪 OCR |
 | 活动关作业脚本 | `scripts/event-copilot/event_copilot.py` | `events/sync/plan/run/goto/shop`，抓作业+比干员箱+自动战斗 |
+| **培养优先级表(战斗向)** | `scheduling/tools/oper_appearance.json` | 别名「干员培养优先级表 / 战斗方向培养倾向表 / 抄作业高频干员」；`opers[].status`=缺/E0/E1/E2，「要养」=E0∪E1。**用户一提这张表就读它**。见 skill `arknights-oper-training` |
+| 基建培养建议 | `scheduling/tools/training.json`、`scheduling/tools/report_data.json`(`advice`) | **仅基建向**（一图流培养建议卡片解析），别与上面的战斗向表混淆 |
 | 干员箱 | `C:\MAA\data\OperBoxData.json` | MAA 识别产出（own/elite/level/potential，**无技能等级**） |
 | **在线干员箱/基建** | `scripts/skland/` | **免模拟器**：`ark_operbox_online`（含技能/专精）、`ark_infrast_status`；核心 `skland_client.py`、适配器 `skland_box.py` |
 | MAA 资源 | `C:\MAA\resource\` | `stages.json`(关卡) / `template\`(模板) / `Arknights-Tile-Pos\` |

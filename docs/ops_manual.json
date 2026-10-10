@@ -1,0 +1,51 @@
+{
+  "_schema": "arknights-ops-manual-v1",
+  "_doc": "游戏 UI 操作手册（边做边记）。A 类 = MAA 内置任务，直接 ark_run_task；B 类 = MAA 无内置，须 agent 用 MCP 原语手点，每实操一步就把『判据+坐标/模板+动作+验证』记进 steps，下次直接复用。",
+  "_how_to_learn": "对 B 类操作（学习模式）：1) ark_screenshot 截图 -> 2) ark_where/ark_find/本地OCR 定位按钮 -> 3) ark_tap 点击 -> 4) ark_screenshot 验证生效 -> 5) 把该步写进对应 ops[].steps。坐标基于 1920x1080；识别成功一次即记下复用。翻页用 MAA Custom+SlowlySwipeToThe*（本机 adb swipe 失效）。",
+  "classes": {
+    "A_maa_builtin": "Fight刷关 / Infrast基建换班 / Recruit公招 / Award领奖 / Gacha寻访 / Mall信用商店 / Annihilation剿灭 / Copilot自动战斗 / Depot仓库识别 / OperBox干员识别",
+    "B_manual_tap": "培养干员(升级/精英化/技能/模组) / 进活动商店翻页 / 活动普通EX切栏 / 基建手动换班(菲亚梅塔+队列切换)"
+  },
+  "ops": {
+    "培养干员": {
+      "status": "待学",
+      "class": "B",
+      "前置": "终端主界面；MAA 空闲；单客户端；目标干员已定（见 state.json.progress.oper_train）",
+      "note": "路径：终端->干员->选干员->升级/精英化/技能升级/模组。MAA 无内置，每步坐标待实操记录。",
+      "steps": []
+    },
+    "活动普通EX切栏": {
+      "status": "部分会",
+      "class": "B",
+      "前置": "活动地图页",
+      "note": "已记 act37side（见 scheduling/data/event_tab_switch.json：normal 1560,985 / ex 1730,880）。act52side 待记。",
+      "steps": []
+    },
+    "进活动商店翻页": {
+      "status": "部分会",
+      "class": "B",
+      "前置": "活动主页->商店(劳工配给所之类)",
+      "note": "翻页已会：ark_connect 后 ark_run_task('Custom', {'task_names':['SlowlySwipeToTheLeft',...]})（FINDINGS §15）。进商店入口坐标待记。",
+      "steps": []
+    },
+    "基建手动换班": {
+      "status": "部分会",
+      "class": "B",
+      "前置": "基建->进驻总览",
+      "note": "skill arknights-event-copilot 有步骤（先菲亚梅塔置换但书心情，再13房间逐个切队列）。两按钮语义(⇄ 与 ⟫)待实机截图复核后记入 steps。",
+      "steps": []
+    },
+    "游戏内仓库取数(读理智药)": {
+      "status": "已会",
+      "class": "B",
+      "前置": "主界面；MAA 空闲",
+      "note": "完整坐标/OCR 裁剪区见 docs/WORKFLOW-仓库取数.md：ark_depot 导航到仓库 -> 点『消耗物品』tab(978,57) -> 网格点道具 -> 详情面板◀(95,520)▶(1845,520)翻页 -> 裁剪(330,195,1700,255)放大2x跑OCR。",
+      "steps": []
+    },
+    "领每日奖励": {"status": "MAA内置", "class": "A", "note": "ark_run_task('Award')"},
+    "森空岛签到": {"status": "脚本", "class": "A", "note": "python scripts/skland/skland_cli.py checkin"},
+    "剿灭": {"status": "MAA内置", "class": "A", "note": "ark_run_task('Fight', {'stage':'Annihilation'...}) 或对应剿灭任务"},
+    "刷1-7": {"status": "MAA内置", "class": "A", "note": "ark_run_task('Fight', {'stage':'1-7','times':N})"},
+    "刷CE-6": {"status": "MAA内置", "class": "A", "note": "ark_run_task('Fight', {'stage':'CE-6','times':N})"}
+  }
+}

@@ -24,6 +24,19 @@
 - MCP 客户端联调通过：`ark_version`(MaaCore v6.18.0) / `ark_list_tasks` / `ark_screenshot`(有效 PNG)
   / `ark_find`（模板匹配阳性验证 score=1.0，位置精确）。
 
+## [0.3.0] - 2026-10-10
+### Added
+- **`ark_task_result`**：长任务轮询工具。返回 `running` / `done` / `elapsed` 与 TaskChain
+  完成（`chains`）/ 出错（`errors`）列表，供自动战斗等长任务用。
+### Changed
+- **`ark_run_task` 超时不再掐断任务**：原实现在 `timeout_s`（默认 300s）到点即 `stop()`，
+  会把已进队的自动战斗（导航→点关→编队→开打）掐在编队/战斗中间界面。
+  新增 `wait`（`False`=启动即返回的**异步**模式，长战斗推荐）与 `stop_on_timeout`
+  （仅当 `True` 才恢复旧"超时即停"）。默认 `stop_on_timeout=False`：超时后任务继续跑，
+  改用 `ark_task_result()` 轮询结果。
+### Fixed
+- 长任务（`Copilot` 自动战斗）不再被 MCP 硬超时中断导致卡在中间画面。
+
 ## [Unreleased]
 ### Added
 - **森空岛在线取数接入 MCP（免模拟器）**：新增 MCP 工具 `ark_operbox_online`（干员箱，**多带技能等级/专精**）

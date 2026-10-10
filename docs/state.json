@@ -1,0 +1,88 @@
+{
+  "_schema": "arknights-decision-state-v1",
+  "_doc": "机器可读的决策状态（单一事实源）。agent 每次醒来：读它 -> 判触发 -> 执行 -> 回写。循环协议见 docs/STATE.md，判据/公式见 docs/MASTER-PLAN.md。",
+  "updated_at": "2026-10-10",
+  "cycle": {
+    "strategy": "搓玉向（合成玉最高优先，长期不停）",
+    "last_decision_at": null,
+    "last_execution_at": null
+  },
+  "triggers": {
+    "infrast_next_swap_at": "2026-10-11 01:15",
+    "infrast_next_swap_direction": "队列2->队列1",
+    "annihilation_week_reset": "每周一（周上限 1800 玉）",
+    "event_combat_end": "2026-10-23 03:59",
+    "event_exchange_end": "2026-10-30",
+    "daily_decision_floor": "每天至少决策一次（醒来即算，周期兜底）"
+  },
+  "plan": {
+    "active_strategy": "搓玉向",
+    "daily_todo_priority": [
+      "1. 基建换班检查/执行（trigger 到期才做，先菲亚梅塔置换但书心情）",
+      "2. 森空岛签到（skland_cli.py checkin）",
+      "3. 剿灭打满（周上限 1800 玉）",
+      "4. 活动期：首通未打关 -> 刷 YW-6 换商店",
+      "5. 1-7 固源岩保库存 >= 1000（搓玉日耗 92.4）",
+      "6. 长草期：CE-6 补龙门币 / 芯片 / 红票 / 技巧概要 / 经验（按缺口 G）"
+    ],
+    "pending_decisions": [
+      "EX/突袭各关理智单价（企鹅 stages?server=CN 取 act52side_09..16；EX 未开放，开放后再取）",
+      "干员信物阶梯价明细（本期只差最后 1 张，价待核）"
+    ],
+    "resolved_2026-10-10": [
+      "待养前 N 值 = 4（德克萨斯/乌尔比安/伊芙利特/山）",
+      "活动时间（官方 activity_table + PRTS 双证）：作战结束 2026-10-23 03:59；活动/商店结束 2026-10-30 03:59",
+      "理智药存量 ≈1200 理智（已实测）",
+      "本周剿灭已满（1800/1800）"
+    ]
+  },
+  "progress": {
+    "event_act52side": {
+      "first_clear_done": ["YW-5(2星)", "YW-6(3星)", "YW-7(3星)", "YW-8(3星)"],
+      "first_clear_pending": ["YW-1", "YW-2", "YW-3", "YW-4"],
+      "ex_pending": 8,
+      "raid_pending": 8,
+      "tokens_owned": null,
+      "shop_redeemed": [],
+      "shop_todo": [
+        "家具 6 件 310 代币（必满）",
+        "龙门币 7代币=5000 x 限100（50万）",
+        "干员信物（首发换满拿黄票）",
+        "寻访凭证、模组数据块、聚合剂、技巧概要卷3、高级作战记录"
+      ],
+      "farm_stage": "YW-6（全新装置 14 人用 + 改量装置 31 人前置）"
+    },
+    "oper_train": {
+      "candidates_by_rate": [
+        "德克萨斯 27%", "乌尔比安 23%", "伊芙利特 14%", "山 12%",
+        "夜莺 12%", "拉普兰德 8.6%", "澄闪 7.4%"
+      ],
+      "targets_topN": ["德克萨斯(E1)", "乌尔比安(E1)", "伊芙利特(E0)", "山(E0)"],
+      "N": 4,
+      "N_by": "用户 2026-10-10 拍板 N=4（按 required_rate 降序取前 4）"
+    },
+    "annihilation": {
+      "week_earned": 1800,
+      "week_cap": 1800,
+      "week_done": true,
+      "checked_at": "2026-10-10 森空岛 campaign.reward=1800/1800（本周已满，周一 04:00 重置）"
+    }
+  },
+  "inventory": {
+    "lmd": null,
+    "rock_固源岩": null,
+    "ap_supply_理智药": "≈1200 理智（浓缩液5瓶=600 + 加强剂10瓶=600，另有月饼1）",
+    "ap_supply_来源": "docs/WORKFLOW-仓库取数.md §5（2026-10-10 游戏内仓库 OCR 实测）",
+    "note": "仓库只有 MAA 有（DepotData.json）；理智药已实测，见 WORKFLOW-仓库取数.md"
+  },
+  "ops_learning": {
+    "doc": "docs/ops_manual.json",
+    "pending": [
+      "培养干员(升级/精英化/技能/模组) —— B类，全空白，下次实操走学习模式",
+      "活动普通EX切栏(act52side) —— 已记act37side坐标，act52side待记",
+      "进活动商店翻页入口坐标 —— 翻页动作已会，入口待记",
+      "基建换班两按钮语义(⇄与⟫) —— 待实机截图复核"
+    ]
+  },
+  "log": []
+}

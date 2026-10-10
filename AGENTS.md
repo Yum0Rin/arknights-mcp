@@ -39,6 +39,16 @@
 - 改 MAA 配置：改 `C:\MAA\config\gui.new.json`（活动的连接/设置都在这），**MAA 运行中改会被覆盖**，
   需先退出再改。
 
+## 抄作业 & 基建：两条用户铁律（2026-10-10 定）
+
+1. **作业筛选：只抄「全部干员槽都精二(E2)+」的作业**。个人槽必须 owned 且 `elite>=2`，备选组至少 1 名 E2+。
+   取数**一律用森空岛**（`ark_operbox_online`，含技能/专精）；**仅当森空岛不可用**才退回 MAA 干员箱。
+   森空岛 401 = 凭证过期 → `python scripts/skland/skland_cli.py status` 续期。
+   **不许用 `ignore_requirements` 硬凑练度不齐的作业。**
+2. **基建一律用《搓玉 · 合成玉》方案**（`C:\Users\39007\Desktop\明日方舟排班报告.html`，A/B 班各 720min）。
+   核对：森空岛 `ark_infrast_status` 拉当前进驻 → 与方案逐设施比对（宿舍「自动填充」不校验）。
+   > 详见 skill `arknights-event-copilot` 与 `docs/WORKFLOW-活动关作业.md`。
+
 ## 账号数据两条路：MAA 识别 vs 森空岛在线（**选之前先读这条**）
 
 要拿"本人账号数据"，有**两套来源**，**优先用在线**（免模拟器、免等识别）：
