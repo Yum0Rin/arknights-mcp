@@ -78,8 +78,11 @@ python -m http.server 8123 --bind 0.0.0.0 --directory scheduling\报告
 scheduling/
 ├─ README.md            # 本文件
 ├─ tools/               # 脚本 + 中间数据：build_report / render_report、sanity_plan、event_economy、
-│                       #   oper_appearance、parse_training、convert_to_maa（另含早期弃用的 base_gap* / gen_plan*）
-├─ data/                # 活动经济数据与约束、活动切栏坐标、基建轮换日志（infrast_rotation_log.jsonl）
+│                       #   oper_appearance、parse_training、convert_to_maa、
+│                       #   revenue_ledger（收益账本日结差分）/ revenue_weekly（周报聚合渲染）
+│                       #   （另含早期弃用的 base_gap* / gen_plan*）
+├─ data/                # 活动经济数据与约束、活动切栏坐标、基建轮换日志（infrast_rotation_log.jsonl）、
+│                       #   收益账本（revenue_ledger.jsonl）；周报设计与采集接口见 docs/收益账本与周报.md
 ├─ 一图流产物/           # 243 两方案导出：MAA JSON、结果页文本、预览图、培养建议 cards
 ├─ 报告/                 # index.html 自包含单文件报告（手机可看）
 ├─ MAA基建排班/          # 一图流「MAA 基建排班」导出（早期 333：333_搓玉_定制.json / 333_搓龙门币_定制.json）

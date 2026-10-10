@@ -29,7 +29,17 @@
   `maa-resource-sync`、`maa-copilot-internals`、`arknights-oper-training` —— 把活动关/经济/资源/Copilot/培养 沉淀成可复用技能。
 - **干员培养推荐**（`scheduling/tools/oper_appearance.py` + skill `arknights-oper-training`）：
   抓作业站 `document=挂机` 的挂机作业统计干员出现率，对照干员箱 → 排"该优先精二谁"。
+- **保全派驻（SSS）操作手册**：`docs/ops_manual.json` 新增「保全派驻(SSS)」条目（完整入口链路 + 各按钮坐标：
+  终端(1451,239)→底部「常态事务」(1120,1005)→保全派驻「进入」(1542,868)→#12 副本详情→**「开始保全作战」(1663,987)**
+  →选导能元件(确认 1722,990)/装备确认(1721,989)/阵容确认(1721,988)）。MAA `SSSCopilot` 已验证可全自动跑通：
+  自动选 buff→装备确认→阵容确认→开打（**编队 20 人必须手动选**，MAA 源码里 SSS 自动编队 `set_enable(false)`）。
+  作业在 `C:\MAA\resource\copilot\`（含 `old/`，共 75 个）；#12 废都安保派驻 内为「日达诺夫园区」。
+- **收益账本 + 周报**（`scheduling/tools/revenue_ledger.py`、`revenue_weekly.py`、`docs/收益账本与周报.md`）：
+  按结算段(04:00~次日03:59)记「基建收益/刷关所得/资源消耗/练度变化」的**物品差额**（省 token，不存全量快照），
+  周报三块：本周练度提升 / 本周踩坑 / 下周优化。
 ### Fixed
+- **活动商店选择性兑换**：记录 MaaCore **v6.18.0 不支持** `params.event_shop.blacklist`（勿拿 dev-v2 源码当运行版接口依据），
+  `SS@Store@Begin` 会按其固定 ROI 无脑买 → 选择性兑换改**手动 tap**（见 `FINDINGS.md §19`；本次 6 件家具 310 已手动买齐）。
 - **`ark_run_task` 跑任务前自动 `connect`**：此前未 `ark_connect` 就 `ark_run_task` 时，MaaCore `Controller::swipe`
   报 `m_controller is not inited`，滑动/Copilot 等**静默失效**（`ark_screenshot` 走 adb 仍正常，极易误判）。
   `ark_status.connected` 也改为反映真实连接态。

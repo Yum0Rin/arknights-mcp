@@ -204,3 +204,35 @@
 - **接口没有**：抽卡记录、仓库 Depot（Depot 仍只能靠 MAA）。
 - GUI `scripts/skland/skland_gui.py`（照 cx-downloader：配色/线程/主题/标题栏）。**干员列表别用 CTk 控件逐行渲染**
   （341 行 × 每行 6 控件 ≈ 2000 控件，明显卡顿）；改用原生 `ttk.Treeview`（一行一 item）→ 筛选/排序 <10ms。
+
+## 18. 「arknights 工具从会话里消失」的根因与恢复（2026-10-10）
+- **症状**：主会话与 `task` 委派的 game 子 agent 里**都没有** `arknights_ark_*` 工具（`godot_*` 正常、agent 配置没动），
+  但 `arknights_mcp.py` 进程仍在跑。工具名实际是 **`arknights_ark_connect` / `arknights_ark_run_task` …**
+  （opencode 给 MCP 工具加 **server key 前缀**：`<mcp配置key>_<函数名>`，不是裸 `ark_*`）。
+- **根因**：上一会话为让 MCP 重载资源 **kill 了 MCP 子进程**；opencode **不会自动重启**该 MCP server
+  （实测 kill 后 8s+ 无新进程），且即便 MCP 进程「健康」（`opencode mcp list` 显示 connected），
+  **已断开的 serve 也不会把工具重新注入新会话**。工具是在 **opencode 进程启动时**建立连接并注入的，
+  之后不会再动态重连 → 新会话拿不到工具。
+- **误判排行（别浪费时间）**：
+  1. `opencode mcp list` 显示 `arknights connected` **不代表当前会话能用**——它是**独立进程**自己新起的连接，只是证明 server 本身健康。
+  2. 把工具名当成 `ark_*` 去改 `tools` 前缀 → 无用。opencode 的前缀是 `<server key>_`，即 `arknights_`，配置里本来就写对了。
+  3. 反复 kill MCP 进程 → 只会让状态更坏。
+- **唯一恢复**：**重启 opencode**（关掉重开 opencode 进程；serve 重新启动会重新起 MCP 子进程并注入工具）。
+  重启后 `%TEMP%\arknights-mcp.log` 会新增一行 `===== arknights-mcp 0.3.0 启动 =====`，且新 `arknights_mcp.py` 的父进程 = 新 `opencode serve`。
+- **快速自检**（判断当前会话有没有工具）：直接在会话里看有没有 `arknights_ark_*` 工具（或让其 `ark_version`）；
+  外部验证：`Get-CimInstance Win32_Process` 看 `opencode.exe serve` 与 `arknights_mcp.py` 是否**成对、同启动时刻**。
+- **教训**：改完 MAA 资源别急着手动 kill MCP；要重载就**整体重启 opencode**，一步到位。
+
+## 19. 活动商店：MaaCore v6.18.0 **不支持** `params.event_shop.blacklist`（2026-10-10 实测踩坑）
+- **做了什么**：想「只买 6 件家具(310)」，按 dev-v2 源码 `CustomTask::parse_and_register_event_shop` 的读法传
+  `ark_run_task("Custom", {"task_names":["SS@Store@Begin"], "params":{"event_shop":{"blacklist":[...]}}})`。
+- **结果**：`CustomTask::set_params` 只跑 1ms、**无 `Parsed and registered EventShop task` 日志**、**无 `EventShop` 插件日志** →
+  黑名单没注册；跑的是**原生 `SS@Store` 流水线**（ClickItem→ChooseMaxAmount→Purchase→PurchasedConfirm），
+  **按 MAA 固定 ROI（`SS@Store@ClickItem` roi x∈[0,690]，只有左半屏）无脑买**，花掉约 424 代币（773→349）买了 2 件，
+  第 3 件遇到「货币不足(ReceivedAllMail)」才 Stop。
+- **根因（推断）**：本机运行 **MaaCore v6.18.0**，而 `blacklist` 特性只在 **dev-v2 源码**（比 release 新）。
+  → **别拿 dev-v2 源码当运行版的接口依据**；用某个 param 前先确认运行版是否支持（看日志有没有对应注册行）。
+- **对策/教训**：
+  1. 选择性买活动商店**不要**用 `SS@Store@Begin`(+blacklist)——v6.18.0 会**按 ROI 无脑买**。
+  2. 想精确买：**手动点**（tap 商品卡→选数量→支付），或升级 MAA 到支持 blacklist 的版本再评估。
+  3. 用 `SS@Store` 前先看日志有没有 `Parsed and registered EventShop task`——没有就别放它自己跑。
