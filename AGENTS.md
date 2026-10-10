@@ -7,6 +7,8 @@
 
 > 详细的踩坑记录在 **`docs/FINDINGS.md`**（遇到问题先查它，§14 是活动关作业，§17 是森空岛接口）。
 > 取数/数据来源与 API 用法看 **`docs/DATA-SOURCES.md`**（企鹅物流 API、PRTS 数值、一图流、MAA、森空岛）。
+> 运筹/自治闭环文档也在 `docs/`：总指挥判据 **`docs/MASTER-PLAN.md`**、循环协议 `docs/STATE.md`、
+> 机器状态 `docs/state.json`、操作手册 `docs/ops_manual.json`；文档索引见 **[`docs/README.md`](docs/README.md)**。
 > 本仓库是 **monorepo**：`arknights_mcp.py`=MCP 本体；`scheduling/`=排班/报告/理智规划；
 > `scripts/skland/`=森空岛在线取数；`scripts/maa-autoclose/`=MAA 跑完自动关雷电。
 

@@ -234,6 +234,8 @@ python scheduling/tools/oper_appearance.py --pages 15 --top 25
 3. 森空岛 `sign` 不带 → `401 code=10000`（非"未登录"，别误判）；POST 漏 Content-Type → 400。
 4. 单客户端；adb 滑动本机失效 → 用 MAA(MaaTouch) 滑动（`Custom`+`SlowlySwipeToThe*`）；tap 可用。
 5. MAA 资源不认新活动 → `Not support stage` → `sync` 补，改完重启 MCP/MAA 实例。
+6. **森空岛的 `status.ap`（理智）是旧快照，会明显偏低（实测实机 171 而接口 15）→ 理智一律以实机/游戏内为准**；森空岛的干员箱/基建可信度高，理智不可信。
+7. 理智药**到期自动转理智**（上限 999），只要 理智<999 就不会浪费；`仓库→消耗物品` 详情页可看到期时间。
 6. 一图流导入要裸干员数组（顶层 `own_opers`），不能直接喂 `OperBoxData.json` 对象。
 
 ---

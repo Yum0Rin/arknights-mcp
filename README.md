@@ -15,12 +15,15 @@
 | **让 AI 看懂当前画面** | 截图 → MAA 模板/OCR → 说出"现在在哪一屏、按钮在哪、识别到什么" | `ark_screenshot` / `ark_where` / `ark_find` |
 | **让 AI 操作游戏** | 点按 / 滑动 / 按键，或整段交给 MAA 跑 | `ark_tap` / `ark_swipe` / `ark_key` / `ark_run_task` |
 | **挂日常** | 一条调用跑 MAA 内置任务：刷理智 / 收菜 / 公招 / 领奖励 / 肉鸽… | `ark_run_task("Fight"/"StartUp"/"Infrast"/…)` |
+| **运筹决策 / 日常自动化** | 读状态 → 判触发 → 执行 → 回写，跑"养谁 / 理智怎么分 / 刷哪关 / 换什么"的自治闭环 | [`docs/MASTER-PLAN.md`](docs/MASTER-PLAN.md) + [`docs/state.json`](docs/state.json) + [`docs/STATE.md`](docs/STATE.md) |
 | **查自己的账号数据** | 干员箱（含精英/等级/潜能，在线版还有技能/专精）、仓库、基建状态 | `ark_operbox` / `ark_depot` / **`ark_operbox_online`** / **`ark_infrast_status`** |
 | **自动打活动关（抄作业）** | 抓作业站 → 比对本人干员箱 → MAA 逐关自动战斗通关 | `scripts/event-copilot/` |
 | **基建智能排班 + 收益报告** | 一图流算最优排班、精二收益、理智规划，输出单文件报告 | `scheduling/` |
 | **该练谁** | 按作业站挂机作业的干员出现率，排"优先精二/培养"名单 | `scheduling/tools/oper_appearance.py` |
 
 一句话：**把"打开模拟器手动点方舟"这件事，变成 AI 能帮你做的工具调用。**
+
+> 📚 **文档索引**：判据、决策循环、状态、工作流都在 `docs/`——从 **[`docs/README.md`](docs/README.md)** 进入。
 
 ## 🧭 账号数据两条路（重要）
 
@@ -57,7 +60,8 @@
 | `ark_status` | 连接 / 运行状态 |
 | `ark_screenshot` | 截图存 PNG，返回路径 |
 | `ark_tap` / `ark_swipe` / `ark_key` | 点击 / 滑动 / 按键 |
-| `ark_run_task` | 运行任意 MAA 任务（可带 params） |
+| `ark_run_task` | 运行任意 MAA 任务（可带 params）；**长任务用 `wait=False` 异步启动** |
+| `ark_task_result` | 轮询长任务状态：`running` / `done` / `elapsed` + TaskChain `chains` / `errors`（配合 `ark_run_task(wait=False)`） |
 | `ark_operbox` | 干员箱识别（MAA，精英/等级/潜能） |
 | `ark_depot` | 仓库识别（MAA，物品数量） |
 | `ark_operbox_online` | **在线**干员箱（森空岛，**免模拟器**，含技能/专精） |
@@ -104,15 +108,27 @@ ark_run_task("Fight",  {"enable": true, "stage": "CE-6", "times": 5})
 ```
 arknights-mcp/
 ├─ arknights_mcp.py         # MCP 服务器本体（stdio）
-├─ docs/
-│  ├─ FINDINGS.md           # 踩坑 / 留痕
-│  ├─ DATA-SOURCES.md       # 数据来源与取数方法（企鹅物流 / PRTS / 一图流 / 森空岛）
-│  └─ WORKFLOW-活动关作业.md
+├─ docs/                    # 文档（入口 = docs/README.md 索引）
+│  ├─ README.md             # 文档索引（定位 / 阅读顺序 / 彼此关系）
+│  ├─ MASTER-PLAN.md        # 运筹总指挥：目标→数据→决策→执行→复盘 + 铁律 + 判据
+│  ├─ STATE.md              # 决策循环协议（何时决策/执行/调整/学习）
+│  ├─ state.json            # 机器可读状态（单一事实源：triggers/plan/progress/inventory/log）
+│  ├─ ops_manual.json       # 游戏 UI 操作手册（A 类 MAA 内置 / B 类手点）
+│  ├─ DAILY-CHECKLIST-act52side.md  # 当期活动每日清单
+│  ├─ WORKFLOW-活动关作业.md  # MAA 抄作业打活动关工作流
+│  ├─ WORKFLOW-仓库取数.md    # 游戏内仓库 OCR 读库存（理智药实测 ≈1200）
+│  ├─ DATA-SOURCES.md       # 数据来源与取数方法（企鹅物流 / PRTS / 一图流 / MAA / 森空岛）
+│  └─ FINDINGS.md           # 踩坑 / 留痕
 ├─ scripts/
 │  ├─ event-copilot/        # 子项目：自动打活动关（抄作业）
 │  ├─ skland/               # 子项目：森空岛在线取数（免模拟器）+ GUI 看板
 │  └─ maa-autoclose/        # 子项目：MAA 跑完自动关雷电
-├─ scheduling/              # 子项目：基建排班 + 报告 + 理智规划
+├─ scheduling/              # 子项目：基建排班 + 报告 + 理智规划 + 活动经济
+│  ├─ tools/                # 脚本：报告/理智/活动经济/培养推荐等
+│  ├─ data/                 # 活动经济约束、基建轮换日志等
+│  └─ 一图流产物/ 报告/      # 排班导出与单文件报告
+├─ debug/                   # 调试用活动地图截图
+├─ .opencode/skills/        # opencode skills（把流程沉淀成可复用技能）
 ├─ CHANGELOG.md  README.md  requirements.txt  AGENTS.md
 └─ .gitignore
 ```
@@ -164,6 +180,7 @@ python -m pip install -r requirements.txt
 - `OperBox` / `Depot` 等识别依赖 MAA 与游戏 UI 版本匹配；识别不全时先排查起始页面与游戏 UI 主题（见 `docs/FINDINGS.md`）。
 - 同一时刻**只应有一个客户端**（本 MCP 或 MAA GUI）驱动同一台设备，否则会争抢 adb / 触控。
 - 在线取数**拿不到抽卡记录**（接口无此项），也**拿不到仓库**（只有 MAA 有）；凭证会过期，需重新登录。
+- 森空岛 `status.ap`（理智）是**旧快照**，会明显偏低（实测实机 171 而接口 15）——**理智一律以实机为准**；干员箱 / 基建状态可信度高。
 - MCP 服务器为长驻进程，MaaCore 只加载一次。
 
 ## 📜 版本
