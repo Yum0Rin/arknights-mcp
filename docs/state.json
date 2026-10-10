@@ -1,15 +1,15 @@
 {
   "_schema": "arknights-decision-state-v1",
   "_doc": "机器可读的决策状态（单一事实源）。agent 每次醒来：读它 -> 判触发 -> 执行 -> 回写。循环协议见 docs/STATE.md，判据/公式见 docs/MASTER-PLAN.md。",
-  "updated_at": "2026-10-10",
+  "updated_at": "2026-10-11 02:40",
   "cycle": {
     "strategy": "搓玉向（合成玉最高优先，长期不停）",
     "last_decision_at": "2026-10-10 演练（森空岛在线取数，未驱动设备）",
-    "last_execution_at": null
+    "last_execution_at": "2026-10-11 02:40"
   },
   "triggers": {
-    "infrast_next_swap_at": "2026-10-11 01:15",
-    "infrast_next_swap_direction": "队列2->队列1",
+    "infrast_next_swap_at": "2026-10-11 14:33",
+    "infrast_next_swap_direction": "队列1->队列2",
     "annihilation_week_reset": "每周一（周上限 1800 玉）",
     "event_combat_end": "2026-10-23 03:59",
     "event_exchange_end": "2026-10-30",
@@ -47,7 +47,7 @@
       "first_clear_note": "普通 8 关全部首通（用户 2026-10-10 告知 + 我记账）。此后首通/刷关进度由 agent 自行记录在 state.json。",
       "ex_pending": 8,
       "raid_pending": 8,
-      "tokens_owned": 206,
+      "tokens_owned": 39,
       "shop_redeemed": [],
       "shop_todo": [
         "家具 6 件 310 代币（必满）",
@@ -83,7 +83,7 @@
     "rock_固源岩": null,
     "ap_supply_理智药": "≈1200 理智（浓缩液+120×5、加强剂+60×10、月饼×1）；其中约 480 理智（浓缩液×2 + 加强剂×4）到期 10/12，其余 10/19",
     "ap_supply_来源": "docs/WORKFLOW-仓库取数.md §5（2026-10-10 游戏内仓库 OCR 实测）",
-    "sanity_实机": "1/205（2026-10-10 16:43 实机；1-7 批量刷 178 理智清空，待吃药刷 YW-6）",
+    "sanity_实机": "2/205（2026-10-10 17:44 实机，刷完 YW-6 共27场后）",
     "note": "仓库只有 MAA 有（DepotData.json）。理智药到期自动转理智（上限 999），只要 sanity<999 不会浪费。"
   },
   "ops_learning": {
@@ -91,8 +91,7 @@
     "pending": [
       "培养干员(升级/精英化/技能/模组) —— B类，全空白，下次实操走学习模式",
       "活动普通EX切栏(act52side) —— 已记act37side坐标，act52side待记",
-      "进活动商店翻页入口坐标 —— 翻页动作已会，入口待记",
-      "基建换班两按钮语义(⇄与⟫) —— 待实机截图复核"
+      "进活动商店翻页入口坐标 —— 翻页动作已会，入口待记"
     ]
   },
   "log": [
@@ -118,6 +117,120 @@
         "资源": "YW.json 已从主仓库复制到 C:\\MAA\\resource\\tasks\\Stages\\YW.json（YW-4/6/7/8 导航任务，之前缺失致 Fight(stage=YW-6) 报 Cannot set stage）。但 kill MCP 后 opencode 未自动重连 → 需重启 opencode 恢复 arknights 工具，新 MCP 进程才会 Asst.load 加载 YW 资源",
         "活动商店": "代币 206，家具 310 待刷 YW-6 攒够再换；导航路径已记 ops_manual(终端→昨日海→劳工配给所)",
         "待办": ["刷 YW-6 代币(重启后，Fight stage=YW-6 series=0)", "活动商店兑换(家具310必守)", "Award(最后)", "保全派驻SSS"]
+      }
+    },
+    {
+      "ts": "2026-10-10 16:58",
+      "action": "接棒会话：读档 + 诊断 MCP 工具可用性",
+      "result": "发现 arknights MCP 工具不可用（主会话与 game 子 agent 均无 ark_* 工具）——上一会话 kill MCP 后 opencode 未重连的延续。已 kill 僵死的 arknights_mcp.py 进程(37208)，实测 opencode serve 不会自动重启 MCP。",
+      "observations": {
+        "诊断": "opencode mcp list(独立进程)显示 arknights connected=server 本身健康；但 serve 28652 未把工具注入会话。godot_* 正常、arknights_* 缺失，主会话与 task 委派的 game 子 agent 均无 ark 工具。",
+        "资源": "YW.json 已确认就位(C:\\MAA\\resource\\tasks\\Stages\\YW.json 1584B，含 YW-4/6/7/8 任务定义)。Asst.load 为懒加载(ark_connect 时触发)。",
+        "结论": "需重启 opencode 恢复 arknights 工具；重启后首步=ark_connect 再试 Fight stage=YW-6 看 task id 是否非 0 验证 YW 资源生效。"
+      }
+    },
+    {
+      "ts": "2026-10-10 17:07",
+      "action": "用户重启 opencode → arknights 工具恢复",
+      "result": "新 opencode serve(PID 6352, 17:06, port 52208) + 新 arknights_mcp.py(PID 23404, 17:06:47, 父=6352) 成对启动；本会话 arknights_ark_* 工具全部回来，ark_version 实测 OK（MaaCore v6.18.0）。",
+      "observations": {
+        "坑已记录": "docs/FINDINGS.md §18：MCP 工具丢失根因=kill MCP 后 opencode 不自动重连/不重注入，唯一恢复=整体重启 opencode；工具名实为 arknights_ark_*(server key 前缀)。",
+        "下一步": "转新会话执行日常（首位=验证 YW-6 资源）。"
+      }
+    },
+    {
+      "ts": "2026-10-10 17:15",
+      "action": "验证 YW 资源生效 + 启动阶段1刷 YW-6",
+      "result": "ark_connect 成功(Asst.load True, MaaCore v6.18.0)；Fight(stage=YW-6,times=1) task_id=1 非0，日志无 not found/Cannot set stage → YW.json 资源已加载生效。随后启动 Fight(stage=YW-6, series=0, times=30, medicine=6, medicine_expire_days=2, stone=0) 吃临期药刷代币，战斗正常运行。",
+      "observations": {
+        "验证": "YW-4/6/7/8 导航资源已生效，后续可直导航刷活动关",
+        "理智节奏": "用户定：临期480(10/12到期)优先吃完；非临期720(10/19到期)留到后面；活动到10/23还很长，活动任务会给成百上千代币，不一步到位刷满",
+        "商店第一屏OCR": "代币206；信物18/余2、模组数据块360/余10、精炼溶剂75/余35、聚合剂500/余5、手性屈光体100/余10、寻访凭证150/余3、异铁块40/余10；家具：阿戈尔风格演讲台35/余5、藻类培养池35/余5、全域广播扬声器40/余10、一体式鞋架55/余10"
+      }
+    },
+    {
+      "ts": "2026-10-10 17:35",
+      "action": "阶段1刷 YW-6 结束（吃临期药）",
+      "result": "Fight(id=2) 结束：times_finished=30，但 StageDrops 仅 4 批有效结算(8+7+6+3=24场)，+504代币(206->710)、+6048龙门币、+15全新装置；结束理智 63/205。",
+      "observations": {
+        "代理中断": "用户提醒『代理中断了』。日志证实：5 次战斗结束只有 4 批有效结算，其中一次 stars=0(line3814,~17:31)，即发生一次未三星中断；MAA 其后恢复并继续。下次刷 YW-6 需验证代理记录是否仍有效。",
+        "吃药明细": "medicine=6 用满（约6瓶）：多数 MAA 报 expire_days:-1，仅最后一次 expire_days:2(is_expiring:true) 吃到临期药 → medicine_expire_days=2 并未让 MAA『只吃临期药』，语义待核(FINDINGS)。",
+        "times语义": "times=30 上限触顶但只结算 24 场，差额 6 场为中断/重试；下次可 series=0 + 更大 times 或按需给药。"
+      }
+    },
+    {
+      "ts": "2026-10-10 17:44",
+      "action": "验证代理有效 + 补刷3场",
+      "result": "Fight(id=3, times=3, series=0, medicine=0) 完成：3/3 全三星、+63代币，理智 63->2。证明上面 stars=0 是单场偶发、代理记录仍有效。累计 206->773（27场）。",
+      "observations": {
+        "代理结论": "代理中断=偶发单场，MAA 已自恢复，无需重建 YW-6 代理记录。",
+        "下一步": "活动商店兑换（先读全店物品/价/限购，再按 家具310必换 + 龙门币 + 寻访凭证 规划）；Award；保全SSS；基建换班 10-11 01:15。"
+      }
+    },
+    {
+      "ts": "2026-10-10 17:48",
+      "action": "活动商店：尝试 MAA SS@Store+blacklist 只买家具 → 失败",
+      "result": "MaaCore v6.18.0 不支持 params.event_shop.blacklist（plugin 未注册、无 EventShop 日志），跑到原生 SS@Store 流水线无脑买了 2 件，花约 424 代币（773→349）；家具(310)未买到。详见 FINDINGS §19。",
+      "observations": {
+        "教训": "别拿 dev-v2 源码当 v6.18.0 的接口依据；选择性买活动商店要改手动 tap，或升级 MAA。",
+        "代币": "当前 349。家具 310 仍未换（用户指定必换项）。",
+        "待办": "改手动方式换家具6件(310)；Award；SSS；基建换班 10-11 01:15。"
+      }
+    },
+    {
+      "ts": "2026-10-10 18:40",
+      "action": "活动商店：手动补买 6 件家具（310 必换项）",
+      "result": "手动逐件买齐 6 件家具：阿戈尔风格演讲台45+藻类培养池50+全域广播扬声器40+一体式鞋架55+立式经书台60+经文抄写台60=310；代币 349→39。全部显示「已拥有」。",
+      "observations": {
+        "可用方法": "商品卡网格坐标(4列x3行): 名字 y=379/620/862；列 x≈170/686/1187/1762；第2页用 QuicklySwipe?→实测 Custom+['SlowlySwipeToTheRight'] 才翻得动(Left 不翻)。买: tap卡片→tap支付(1380,824)→tap安全区(600,150)关弹窗。",
+        "已记ops_manual": "进活动商店翻页 补 steps",
+        "当前代币": "39；已跟用户确认的必换家具已完成。"
+      }
+    },
+    {
+      "ts": "2026-10-10 18:52",
+      "action": "Award 领奖 + SSS 获取方式探索",
+      "result": "Award(award+mail) 完成无 error。SSS：确认 MAA 自带保全作业 57 个 / 13 张地图，位于 C:\\MAA\\resource\\copilot\\old\\<地图>\\SSS_*.json（交战荒野/塔山农业/多索雷斯/尚蜀夜市/玉门市集/约翰老妈/自走机械/艺术馆旧址/荒地群兽/边地移动/阿卡胡拉丛林/阿尔斯特甜品等）。",
+      "observations": {
+        "SSS用法": "ark_run_task('SSSCopilot', {'filename':'<绝对路径>', 'loop_times':N})；作业需与当前保全地图对应且干员练度匹配（不支持自动编队）。",
+        "SSS待定": "需知道当前保全地图/进度才能选『合适』作业；13 张图作业已在本地可选。",
+        "作业站": "prts.maa.plus 无 SSS 类型(type=SSS→0，仅 PRTS)，SSS 作业靠 MAA 自带。",
+        "SSS筛选(10-10)": "57 作业对本人 337 干员箱做『全员 E2+』筛选：0 个全过。缺核心: 维什戴尔/泥岩/重岳/提丰/纯烬艾雅法拉/阿斯卡纶/锏/斥罪；未 E2: 澄闪/浊心斯卡蒂/铃兰/乌尔比安/安哲拉/温蒂。最接近: 阿卡胡拉丛林『澄闪+荒芜拉普兰德+Mon3tr+逻各斯』(仅 澄闪 未 E2)，澄闪精二即可解锁(澄闪本为培养候选 7.4%)。",
+        "SSS入口(已确认)": "终端页底部第4个标签「常态事务」(≈1120,1005) → 保全派驻卡片「进入」(≈1542,868)。当前 #12 废都安保派驻(周期至 2026/12/16)。",
+        "SSS筛选(修正)": "只扫 old 目录漏了新图；全量 75 作业重筛 → 4 个全 E2+ 通过。选: 荒废灯塔(SSS_（新）荒废灯塔_圣聆初雪+遥_战地援护无人机.json) —— 与 #12 废都内出现的『荒废灯塔』对应；干员 圣聆初雪(2技)+遥(2技) 均 E2 ✓。",
+        "SSS结论": "作业已选定；但 doc 明说『只能手动编队』：需 导能原件=战地援护无人机、战术装备 术士B+其余A、手动配队(先锋4/重装3/狙击4/术士3/辅助4) 后，再 ark_run_task('SSSCopilot',{'filename':<绝对路径>,'loop_times':1})。"
+      }
+    },
+    {
+      "ts": "2026-10-10 20:25",
+      "action": "SSS 保全派驻 真正跑通（MAA SSSCopilot 自动打）",
+      "result": "关键更正: 当前 #12 废都安保派驻 内的副本是『日达诺夫园区(索罗科夫集团)』,不是荒废灯塔;对应作业 = SSS_日达诺夫园区_圣聆初雪+遥+斩业星熊_可充能督战音响.json(核心 斩业星熊+圣聆初雪+遥; 工具人 先锋3/重装2/狙击4/术士3/辅助5; buff=可充能督战音响)。用户手动配好 20 人编队后, ark_run_task('SSSCopilot',{filename,loop_times:1}) 成功: MAA 自动走 开始保全作战→选导能元件→装备确认→阵容确认→开打, taskid=14 运行(已过第1关、进行到第3关起点)。**20:37 用户叫停、改为手打**;已用 Depot+stop_on_timeout 触发 AsstStop 停掉(running=false)。",
+      "observations": {
+        "入口/按钮": "全记入 ops_manual『保全派驻(SSS)』条目(常态事务1120,1005 → 进入1542,868 → 副本详情页 → 开始保全作战1663,987 → 导能元件/装备确认1721,989/阵容确认1721,988)。",
+        "教训": "① 点『阵容确认』会直接开打,让 MAA 接管就必须让 MAA 自己点(别手动点);② MAA 的 SSSCopilot 必须从『开始保全作战』起步,中途无法接管;③ 委派前要先认清是哪个副本(荒废灯塔 vs 日达诺夫园区)。",
+        "MAA编队": "SSS 编队源码 set_enable(false) 关掉 → 20 人必须手动选; 但是 MAA 会自动选 buff/点装备确认/阵容确认。"
+      }
+    },
+    {
+      "ts": "2026-10-10 20:45",
+      "action": "会话收尾（存档）",
+      "result": "本轮完成：①验 YW 资源✓ ②刷 YW-6 27 场（代币 206→773）③活动商店手动换齐 6 件家具 310（代币→39）+MAA 误买 模组数据块/异铁块 ④Award✓ ⑤SSS 探索并跑通（日达诺夫园区；用户改为手打）⑥全局规则/子agent续接规则落盘。",
+      "observations": {
+        "待办(交后续)": "基建换班 2026-10-11 01:15（队列2→队列1，用户方法，禁用 MAA 排班）；活动商店继续攒代币换 龙门币/寻访凭证（EX 10-16 开）；澄闪精二（可解锁更多 SSS 作业）。",
+        "收益账本/周报": "已派 paseo 独立 agent（ffa24775-2cca-4846-85cf-090527924238, mode=build）继续完善 scheduling/tools/revenue_*.py + docs/收益账本与周报.md。",
+        "状态": "代币 39；理智约 2/205（SSS 不耗理智）；MAA 空闲。"
+      }
+    },
+    {
+      "ts": "2026-10-11 02:40",
+      "action": "基建队列轮换 队列2→队列1（游戏行标签 队列1→队列2；B班→A班，13 房间）——首次由 agent 执行",
+      "result": "全流程跑通：①收菜（进驻总览右上蓝角标→左下『收取』）②菲亚梅塔置换但书心情（宿舍1→清空选择→左滑选但书→左滑选菲亚梅塔→确认→二次确认；但书 15/24→满，菲亚梅塔转休息）③13 房间逐个切到游戏『队列2』（控制中枢/会客室/制造站1-4/贸易站1-2/发电站1-3/办公室/回收站）④换班后再收菜+干员休整（19 名低心情干员入宿舍，宿舍 1/5,0/5,0/5,0/5→全 5/5）。游戏内确证已=A班；森空岛快照滞后待刷新。",
+      "observations": {
+        "按钮坐标1920x1080": "⇄=每行最右竖条，中心 x≈1564（目标队列行 y≈848 / 生效队列行 y≈623）；⟫ 下一房间≈(1716,500)；入口 进驻总览(160,145)→『编辑队列』(740,320)。单击即生效，无二次确认。",
+        "滑动": "干员列表翻找必须用基建专用 MAA 任务 InfrastOperListSlowlySwipeToTheRight / InfrastOperListSwipeToTheLeft（通用 SlowlySwipeToThe* 无效）；点按用 ark_tap。",
+        "命名口径": "log 的『队列1/2』与游戏行标签相反（log 更像按 A/B 班顺序）；本轮已在 infrast_rotation_log.jsonl 加 direction_game_labels/roster 字段消除歧义。",
+        "副作用": "菲亚梅塔置换当时贸易站1 暂降 2/3（但书被撤下），切队列后已自然恢复；宿舍1 原 4 人被移出后进入休整池。",
+        "状态": "A班在岗（工作区 31/34）；无人机 250/250 满（有溢出）；龙门币 213787（未变）；下次换班 ≥2026-10-11 14:33。"
       }
     }
   ]
