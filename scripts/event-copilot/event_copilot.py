@@ -365,7 +365,8 @@ def _screencap_png(path: str):
 def _ocr_local(png: str) -> str:
     """调用本地 OCR 工具取字（仅文本，省 token）。可用 ARK_OCR_TOOL 覆盖路径。"""
     import subprocess
-    tool = os.environ.get("ARK_OCR_TOOL", r"C:\Users\<user>\.config\opencode\tools\ocr\ocr.py")
+    default_tool = os.path.join(os.path.expanduser("~"), ".config", "opencode", "tools", "ocr", "ocr.py")
+    tool = os.environ.get("ARK_OCR_TOOL", default_tool)
     try:
         r = subprocess.run([sys.executable, tool, png], capture_output=True, timeout=120)
         return r.stdout.decode("utf-8", "replace")

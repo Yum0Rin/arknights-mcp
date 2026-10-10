@@ -24,7 +24,7 @@
 ### 图形界面（推荐）
 
 ```powershell
-& C:\Python314\pythonw.exe "C:\Users\<user>\Desktop\arknights-mcp\scripts\skland\skland_gui.py"
+& C:\Python314\pythonw.exe "%USERPROFILE%\Desktop\arknights-mcp\scripts\skland\skland_gui.py"
 ```
 
 - 填手机号 → 选「验证码 / 密码」→（验证码的话点「发送验证码」）→ 登录；

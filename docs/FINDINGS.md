@@ -14,7 +14,7 @@
 ## 2. 设备信息
 
 - 雷电 LDPlayer9；实例 0 = `emulator-5554`；adb：`C:\leidian\LDPlayer9\adb.exe`。
-- MAA 连接地址 `127.0.0.1:5555`；游戏 `com.hypergryph.arknights`（官服）；账号「博士」Lv99。
+- MAA 连接地址 `127.0.0.1:5555`；游戏 `com.hypergryph.arknights`（官服）。
 - ⚠️ **雷电不要常开**（用户电脑会发烫）：识别产物已落盘，日常无需游戏常驻；
   用完即关 `ldconsole quit --index 0`（`C:\leidian\LDPlayer9\ldconsole.exe`）；只在需要重新识别时才开。
 - ⚠️ **基建实际是 243**（贸易站 2 / 制造站 4 / 发电站 3）：MAA `gui.log` 三次独立运行
@@ -199,7 +199,7 @@
      `header = {platform,timestamp,dId,vName}`。
   2. **`dId` 用随机值就能过**（服务端不校验真伪）→ 不必引数美 / `cryptography`；本地生成一次持久化即可。
   3. POST 漏 `Content-Type: application/json` → `400 参数错误`（`generate_cred_by_code`、签到都中招）。
-- 数据与 MAA 同源：对拷账号「博士」337 干员，elite/level/rarity **全一致**；potential 5/337 不一致
+- 数据与 MAA 同源：对拷本人账号 337 干员，elite/level/rarity **全一致**；potential 5/337 不一致
   （MAA 识别误差，**以在线为准**）。Skland 还会多出"本地资源未收录的新干员"。
 - **接口没有**：抽卡记录、仓库 Depot（Depot 仍只能靠 MAA）。
 - GUI `scripts/skland/skland_gui.py`（照 cx-downloader：配色/线程/主题/标题栏）。**干员列表别用 CTk 控件逐行渲染**

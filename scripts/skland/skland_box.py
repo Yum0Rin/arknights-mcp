@@ -17,7 +17,7 @@
     own = True               （`chars` 数组本身即"已拥有"）
     超集（MAA 给不了）：skill_lvl=mainSkillLvl、spec=skills[].specializeLevel、favor、profession
 
-实测对拷（账号「博士」）：MAA 337 个 owned ↔ Skland 339 个 chars，**同名 337、精英/等级/星级逐个一致**；
+实测对拷（本人账号）：MAA 337 个 owned ↔ Skland 339 个 chars，**同名 337、精英/等级/星级逐个一致**；
 差的是 rarity/potential 各 +1 的固定偏移（见上）。Skland 多出的是 MAA 本地资源尚未收录的新干员。
 
 ⚠️ 依赖：先 `python scripts/skland/skland_cli.py login` 存好凭证（`~/.arknights_skland.json`）。

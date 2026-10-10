@@ -18,7 +18,7 @@
 | MAA | `C:\MAA`（MaaCore v6.18.0，绑定 `C:\MAA\Python`） |
 | 模拟器 | 雷电 `C:\leidian\LDPlayer9`（adb 同目录） |
 | 设备 | `127.0.0.1:5555`（=`emulator-5554`，同一台） |
-| 游戏 | `com.hypergryph.arknights`（官服）；账号「博士」 |
+| 游戏 | `com.hypergryph.arknights`（官服） |
 
 ## 铁律（违反就出问题，务必遵守）
 

@@ -11,7 +11,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.normpath(os.path.join(HERE, "..", "一图流产物"))
 REP = os.path.normpath(os.path.join(HERE, "..", "报告"))
 DATA = os.path.join(HERE, "report_data.json")
-PICO = r"C:\Users\<user>\AppData\Local\Temp\opencode\pico.min.css"
+PICO = os.path.join(os.environ.get("TEMP", os.path.expanduser("~")), "opencode", "pico.min.css")
 PREVIEW = os.path.join(SRC, "243-搓玉-预览图.png")
 PREVIEW_LMD = os.path.join(SRC, "243-钱书均衡-预览图.png")
 

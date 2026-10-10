@@ -4,7 +4,7 @@ import json, io, collections, copy, os
 BOX   = r'C:\MAA\data\OperBoxData.json'
 INFRA = r'C:\MAA\resource\infrast.json'
 TPL   = r'C:\MAA\resource\custom_infrast\333_layout_for_Orundum_3_times_a_day.json'
-OUTDIR= r'C:\Users\<user>\Desktop\MAA基建排班'
+OUTDIR= os.path.join(os.path.expanduser('~'), 'Desktop', 'MAA基建排班')
 
 box = json.load(io.open(BOX, encoding='utf-8'))
 opers = [o for o in box['own_opers'] if o.get('own')]

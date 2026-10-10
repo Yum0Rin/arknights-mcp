@@ -83,7 +83,7 @@ python -m pip install -r requirements.txt
   "type": "local",
   "command": [
     "C:\\Python314\\python.exe",
-    "C:\\Users\\user\\Desktop\\arknights-mcp\\arknights_mcp.py"
+    "C:\\path\\to\\arknights-mcp\\arknights_mcp.py"
   ],
   "enabled": true,
   "environment": { "PYTHONIOENCODING": "utf-8" }
@@ -129,7 +129,7 @@ ark_tap(cx, cy)
 3. 拿干员箱 / 仓库：
 
 ```
-ark_operbox(save_to="C:\\Users\\user\\Desktop\\box.json")
+ark_operbox(save_to="box.json")
 ark_depot()
 ```
 

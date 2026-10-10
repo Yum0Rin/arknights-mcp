@@ -131,7 +131,7 @@
   `id=charId`、`name=charInfoMap[charId].name`、`elite=evolvePhase`、`level=level`、
   `rarity=charInfoMap.rarity **+1**`、`potential=potentialRank **+1**`、`own=True`；
   超集（MAA 无）：`skill_lvl=mainSkillLvl`、`spec=skills[].specializeLevel`、`favor`。
-- **与 MAA 对拷**（账号「博士」337 干员）：elite/level/rarity **全一致**；potential 332/337 一致，
+- **与 MAA 对拷**（本人账号 337 干员）：elite/level/rarity **全一致**；potential 332/337 一致，
   不一致的是 MAA 识别误差（**以在线为准**）。Skland 还会比 MAA 多出"本地资源未收录的新干员"。
 - **拿不到**：抽卡记录（接口无此项）、仓库 Depot（只有 MAA 有）。
 - CLI：`python scripts/skland/skland_cli.py {login,status,dump,checkin}`；GUI：`scripts/skland/skland_gui.py`。
