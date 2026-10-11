@@ -580,18 +580,18 @@ def update_state(entry):
 # main
 # ---------------------------------------------------------------------------
 def run_all(steps, dry=False, update=False):
-    if "collect" in steps:
-        collect(dry=dry)
+    # 顺序（用户 2026-10-11 定）：菲亚梅塔置换 → 13房切队列 → 收菜
+    # （不再在开头先收一次）
     if "fia" in steps:
         fiammetta(dry=dry)
     if "swap" in steps:
         done, skipped = switch_queues(dry=dry)
-        if "collect" in steps:
-            collect(dry=dry)
         if not dry:
             entry = write_log(done, skipped)
             if update:
                 update_state(entry)
+    if "collect" in steps:
+        collect(dry=dry)
 
 
 def main():
