@@ -1,0 +1,1556 @@
+{
+  "source": "skland",
+  "owned_count": 339,
+  "max_tags": 3,
+  "total_combos": 618,
+  "combos": [
+    {
+      "tags": [
+        "控场",
+        "狙击干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "早露"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "狙击干员",
+        "输出"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "早露"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "狙击干员",
+        "远程位"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "早露"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "狙击干员",
+        "高级资深干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "早露"
+      ]
+    },
+    {
+      "tags": [
+        "术师干员",
+        "防护",
+        "高级资深干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "卡涅利安"
+      ]
+    },
+    {
+      "tags": [
+        "群攻",
+        "防护",
+        "高级资深干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "卡涅利安"
+      ]
+    },
+    {
+      "tags": [
+        "远程位",
+        "防护",
+        "高级资深干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "卡涅利安"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "重装干员",
+        "高级资深干员"
+      ],
+      "size": 2,
+      "unowned": 2,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "森蚺",
+        "泥岩"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "防护",
+        "高级资深干员"
+      ],
+      "size": 2,
+      "unowned": 2,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "森蚺",
+        "泥岩"
+      ]
+    },
+    {
+      "tags": [
+        "减速",
+        "控场"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "格劳克斯"
+      ]
+    },
+    {
+      "tags": [
+        "爆发",
+        "狙击干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "守林人"
+      ]
+    },
+    {
+      "tags": [
+        "减速",
+        "控场",
+        "资深干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "格劳克斯"
+      ]
+    },
+    {
+      "tags": [
+        "减速",
+        "控场",
+        "辅助干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "格劳克斯"
+      ]
+    },
+    {
+      "tags": [
+        "减速",
+        "控场",
+        "远程位"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "格劳克斯"
+      ]
+    },
+    {
+      "tags": [
+        "支援",
+        "资深干员",
+        "输出"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "诗怀雅"
+      ]
+    },
+    {
+      "tags": [
+        "支援",
+        "资深干员",
+        "近卫干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "诗怀雅"
+      ]
+    },
+    {
+      "tags": [
+        "爆发",
+        "狙击干员",
+        "资深干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "守林人"
+      ]
+    },
+    {
+      "tags": [
+        "爆发",
+        "狙击干员",
+        "输出"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "守林人"
+      ]
+    },
+    {
+      "tags": [
+        "爆发",
+        "狙击干员",
+        "远程位"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "守林人"
+      ]
+    },
+    {
+      "tags": [
+        "爆发",
+        "资深干员",
+        "输出"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "守林人"
+      ]
+    },
+    {
+      "tags": [
+        "爆发",
+        "输出",
+        "远程位"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "守林人"
+      ]
+    },
+    {
+      "tags": [
+        "削弱",
+        "辅助干员"
+      ],
+      "size": 2,
+      "unowned": 2,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "初雪",
+        "巫恋"
+      ]
+    },
+    {
+      "tags": [
+        "削弱",
+        "资深干员",
+        "辅助干员"
+      ],
+      "size": 2,
+      "unowned": 2,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "初雪",
+        "巫恋"
+      ]
+    },
+    {
+      "tags": [
+        "削弱",
+        "辅助干员",
+        "远程位"
+      ],
+      "size": 2,
+      "unowned": 2,
+      "p_new": 1.0,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "初雪",
+        "巫恋"
+      ]
+    },
+    {
+      "tags": [
+        "支援机械",
+        "近卫干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 1,
+      "rare_max": 1,
+      "unowned_names": [
+        "Castle-3"
+      ]
+    },
+    {
+      "tags": [
+        "支援",
+        "支援机械",
+        "近卫干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 1,
+      "rare_max": 1,
+      "unowned_names": [
+        "Castle-3"
+      ]
+    },
+    {
+      "tags": [
+        "支援",
+        "支援机械",
+        "近战位"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 1,
+      "rare_max": 1,
+      "unowned_names": [
+        "Castle-3"
+      ]
+    },
+    {
+      "tags": [
+        "支援机械",
+        "近卫干员",
+        "近战位"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 1,
+      "rare_max": 1,
+      "unowned_names": [
+        "Castle-3"
+      ]
+    },
+    {
+      "tags": [
+        "削弱",
+        "资深干员",
+        "远程位"
+      ],
+      "size": 4,
+      "unowned": 3,
+      "p_new": 0.75,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "初雪",
+        "巫恋",
+        "陨星"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "重装干员"
+      ],
+      "size": 3,
+      "unowned": 2,
+      "p_new": 0.6667,
+      "rare_min": 5,
+      "rare_max": 6,
+      "unowned_names": [
+        "森蚺",
+        "泥岩"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "防护"
+      ],
+      "size": 3,
+      "unowned": 2,
+      "p_new": 0.6667,
+      "rare_min": 5,
+      "rare_max": 6,
+      "unowned_names": [
+        "森蚺",
+        "泥岩"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "远程位",
+        "高级资深干员"
+      ],
+      "size": 3,
+      "unowned": 2,
+      "p_new": 0.6667,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "刻俄柏",
+        "早露"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "输出",
+        "重装干员"
+      ],
+      "size": 3,
+      "unowned": 2,
+      "p_new": 0.6667,
+      "rare_min": 5,
+      "rare_max": 6,
+      "unowned_names": [
+        "森蚺",
+        "泥岩"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "输出",
+        "防护"
+      ],
+      "size": 3,
+      "unowned": 2,
+      "p_new": 0.6667,
+      "rare_min": 5,
+      "rare_max": 6,
+      "unowned_names": [
+        "森蚺",
+        "泥岩"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "近战位",
+        "重装干员"
+      ],
+      "size": 3,
+      "unowned": 2,
+      "p_new": 0.6667,
+      "rare_min": 5,
+      "rare_max": 6,
+      "unowned_names": [
+        "森蚺",
+        "泥岩"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "近战位",
+        "防护"
+      ],
+      "size": 3,
+      "unowned": 2,
+      "p_new": 0.6667,
+      "rare_min": 5,
+      "rare_max": 6,
+      "unowned_names": [
+        "森蚺",
+        "泥岩"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "重装干员",
+        "防护"
+      ],
+      "size": 3,
+      "unowned": 2,
+      "p_new": 0.6667,
+      "rare_min": 5,
+      "rare_max": 6,
+      "unowned_names": [
+        "森蚺",
+        "泥岩"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "高级资深干员"
+      ],
+      "size": 6,
+      "unowned": 4,
+      "p_new": 0.6667,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "斯卡蒂",
+        "森蚺",
+        "泥岩",
+        "煌"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "输出",
+        "高级资深干员"
+      ],
+      "size": 6,
+      "unowned": 4,
+      "p_new": 0.6667,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "斯卡蒂",
+        "森蚺",
+        "泥岩",
+        "煌"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "近战位",
+        "高级资深干员"
+      ],
+      "size": 6,
+      "unowned": 4,
+      "p_new": 0.6667,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "斯卡蒂",
+        "森蚺",
+        "泥岩",
+        "煌"
+      ]
+    },
+    {
+      "tags": [
+        "支援",
+        "资深干员",
+        "近战位"
+      ],
+      "size": 3,
+      "unowned": 2,
+      "p_new": 0.6667,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "凛冬",
+        "诗怀雅"
+      ]
+    },
+    {
+      "tags": [
+        "狙击干员",
+        "资深干员",
+        "输出"
+      ],
+      "size": 8,
+      "unowned": 5,
+      "p_new": 0.625,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "四月",
+        "守林人",
+        "普罗旺斯",
+        "灰喉",
+        "熔泉"
+      ]
+    },
+    {
+      "tags": [
+        "支援",
+        "近卫干员"
+      ],
+      "size": 5,
+      "unowned": 3,
+      "p_new": 0.6,
+      "rare_min": 1,
+      "rare_max": 6,
+      "unowned_names": [
+        "Castle-3",
+        "帕拉斯",
+        "诗怀雅"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "输出",
+        "高级资深干员"
+      ],
+      "size": 5,
+      "unowned": 3,
+      "p_new": 0.6,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "刻俄柏",
+        "早露",
+        "水月"
+      ]
+    },
+    {
+      "tags": [
+        "支援",
+        "近卫干员",
+        "近战位"
+      ],
+      "size": 5,
+      "unowned": 3,
+      "p_new": 0.6,
+      "rare_min": 1,
+      "rare_max": 6,
+      "unowned_names": [
+        "Castle-3",
+        "帕拉斯",
+        "诗怀雅"
+      ]
+    },
+    {
+      "tags": [
+        "削弱",
+        "资深干员"
+      ],
+      "size": 5,
+      "unowned": 3,
+      "p_new": 0.6,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "初雪",
+        "巫恋",
+        "陨星"
+      ]
+    },
+    {
+      "tags": [
+        "术师干员",
+        "防护"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 6,
+      "unowned_names": [
+        "卡涅利安"
+      ]
+    },
+    {
+      "tags": [
+        "群攻",
+        "防护"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 6,
+      "unowned_names": [
+        "卡涅利安"
+      ]
+    },
+    {
+      "tags": [
+        "远程位",
+        "防护"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 6,
+      "unowned_names": [
+        "卡涅利安"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "术师干员",
+        "高级资深干员"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "刻俄柏"
+      ]
+    },
+    {
+      "tags": [
+        "支援",
+        "近卫干员",
+        "高级资深干员"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "帕拉斯"
+      ]
+    },
+    {
+      "tags": [
+        "术师干员",
+        "群攻",
+        "防护"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 6,
+      "unowned_names": [
+        "卡涅利安"
+      ]
+    },
+    {
+      "tags": [
+        "术师干员",
+        "输出",
+        "高级资深干员"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "刻俄柏"
+      ]
+    },
+    {
+      "tags": [
+        "术师干员",
+        "远程位",
+        "防护"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 6,
+      "unowned_names": [
+        "卡涅利安"
+      ]
+    },
+    {
+      "tags": [
+        "群攻",
+        "远程位",
+        "防护"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 6,
+      "unowned_names": [
+        "卡涅利安"
+      ]
+    },
+    {
+      "tags": [
+        "狙击干员",
+        "高级资深干员"
+      ],
+      "size": 4,
+      "unowned": 2,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "早露",
+        "空弦"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "输出",
+        "远程位"
+      ],
+      "size": 4,
+      "unowned": 2,
+      "p_new": 0.5,
+      "rare_min": 4,
+      "rare_max": 6,
+      "unowned_names": [
+        "刻俄柏",
+        "早露"
+      ]
+    },
+    {
+      "tags": [
+        "支援",
+        "输出",
+        "近卫干员"
+      ],
+      "size": 4,
+      "unowned": 2,
+      "p_new": 0.5,
+      "rare_min": 4,
+      "rare_max": 6,
+      "unowned_names": [
+        "帕拉斯",
+        "诗怀雅"
+      ]
+    },
+    {
+      "tags": [
+        "支援",
+        "输出",
+        "近战位"
+      ],
+      "size": 4,
+      "unowned": 2,
+      "p_new": 0.5,
+      "rare_min": 4,
+      "rare_max": 6,
+      "unowned_names": [
+        "帕拉斯",
+        "诗怀雅"
+      ]
+    },
+    {
+      "tags": [
+        "狙击干员",
+        "输出",
+        "高级资深干员"
+      ],
+      "size": 4,
+      "unowned": 2,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "早露",
+        "空弦"
+      ]
+    },
+    {
+      "tags": [
+        "狙击干员",
+        "远程位",
+        "高级资深干员"
+      ],
+      "size": 4,
+      "unowned": 2,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "早露",
+        "空弦"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "近卫干员",
+        "高级资深干员"
+      ],
+      "size": 4,
+      "unowned": 2,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "斯卡蒂",
+        "煌"
+      ]
+    },
+    {
+      "tags": [
+        "输出",
+        "重装干员",
+        "高级资深干员"
+      ],
+      "size": 4,
+      "unowned": 2,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "森蚺",
+        "泥岩"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "高级资深干员"
+      ],
+      "size": 6,
+      "unowned": 3,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "刻俄柏",
+        "早露",
+        "水月"
+      ]
+    },
+    {
+      "tags": [
+        "支援",
+        "近战位"
+      ],
+      "size": 8,
+      "unowned": 4,
+      "p_new": 0.5,
+      "rare_min": 1,
+      "rare_max": 6,
+      "unowned_names": [
+        "Castle-3",
+        "凛冬",
+        "帕拉斯",
+        "诗怀雅"
+      ]
+    },
+    {
+      "tags": [
+        "先锋干员",
+        "支援"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "凛冬"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "辅助干员"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "格劳克斯"
+      ]
+    },
+    {
+      "tags": [
+        "支援",
+        "费用回复"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "凛冬"
+      ]
+    },
+    {
+      "tags": [
+        "爆发",
+        "资深干员"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "守林人"
+      ]
+    },
+    {
+      "tags": [
+        "爆发",
+        "远程位"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "守林人"
+      ]
+    },
+    {
+      "tags": [
+        "特种干员",
+        "生存"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "狮蝎"
+      ]
+    },
+    {
+      "tags": [
+        "先锋干员",
+        "支援",
+        "费用回复"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "凛冬"
+      ]
+    },
+    {
+      "tags": [
+        "先锋干员",
+        "支援",
+        "资深干员"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "凛冬"
+      ]
+    },
+    {
+      "tags": [
+        "先锋干员",
+        "支援",
+        "近战位"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "凛冬"
+      ]
+    },
+    {
+      "tags": [
+        "先锋干员",
+        "资深干员",
+        "输出"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "贾维"
+      ]
+    },
+    {
+      "tags": [
+        "减速",
+        "资深干员",
+        "辅助干员"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "格劳克斯"
+      ]
+    },
+    {
+      "tags": [
+        "削弱",
+        "狙击干员",
+        "群攻"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "陨星"
+      ]
+    },
+    {
+      "tags": [
+        "削弱",
+        "狙击干员",
+        "资深干员"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "陨星"
+      ]
+    },
+    {
+      "tags": [
+        "削弱",
+        "群攻",
+        "资深干员"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "陨星"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "资深干员",
+        "辅助干员"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 5,
+      "rare_max": 5,
+      "unowned_names": [
+        "格劳克斯"
+      ]
+    }
+  ],
+  "specials": [
+    {
+      "tags": [
+        "控场",
+        "狙击干员",
+        "高级资深干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "早露"
+      ]
+    },
+    {
+      "tags": [
+        "术师干员",
+        "防护",
+        "高级资深干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "卡涅利安"
+      ]
+    },
+    {
+      "tags": [
+        "群攻",
+        "防护",
+        "高级资深干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "卡涅利安"
+      ]
+    },
+    {
+      "tags": [
+        "远程位",
+        "防护",
+        "高级资深干员"
+      ],
+      "size": 1,
+      "unowned": 1,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "卡涅利安"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "重装干员",
+        "高级资深干员"
+      ],
+      "size": 2,
+      "unowned": 2,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "森蚺",
+        "泥岩"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "防护",
+        "高级资深干员"
+      ],
+      "size": 2,
+      "unowned": 2,
+      "p_new": 1.0,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "森蚺",
+        "泥岩"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "远程位",
+        "高级资深干员"
+      ],
+      "size": 3,
+      "unowned": 2,
+      "p_new": 0.6667,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "刻俄柏",
+        "早露"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "高级资深干员"
+      ],
+      "size": 6,
+      "unowned": 4,
+      "p_new": 0.6667,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "斯卡蒂",
+        "森蚺",
+        "泥岩",
+        "煌"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "输出",
+        "高级资深干员"
+      ],
+      "size": 6,
+      "unowned": 4,
+      "p_new": 0.6667,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "斯卡蒂",
+        "森蚺",
+        "泥岩",
+        "煌"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "近战位",
+        "高级资深干员"
+      ],
+      "size": 6,
+      "unowned": 4,
+      "p_new": 0.6667,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "斯卡蒂",
+        "森蚺",
+        "泥岩",
+        "煌"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "输出",
+        "高级资深干员"
+      ],
+      "size": 5,
+      "unowned": 3,
+      "p_new": 0.6,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "刻俄柏",
+        "早露",
+        "水月"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "术师干员",
+        "高级资深干员"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "刻俄柏"
+      ]
+    },
+    {
+      "tags": [
+        "支援",
+        "近卫干员",
+        "高级资深干员"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "帕拉斯"
+      ]
+    },
+    {
+      "tags": [
+        "术师干员",
+        "输出",
+        "高级资深干员"
+      ],
+      "size": 2,
+      "unowned": 1,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "刻俄柏"
+      ]
+    },
+    {
+      "tags": [
+        "狙击干员",
+        "高级资深干员"
+      ],
+      "size": 4,
+      "unowned": 2,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "早露",
+        "空弦"
+      ]
+    },
+    {
+      "tags": [
+        "狙击干员",
+        "输出",
+        "高级资深干员"
+      ],
+      "size": 4,
+      "unowned": 2,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "早露",
+        "空弦"
+      ]
+    },
+    {
+      "tags": [
+        "狙击干员",
+        "远程位",
+        "高级资深干员"
+      ],
+      "size": 4,
+      "unowned": 2,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "早露",
+        "空弦"
+      ]
+    },
+    {
+      "tags": [
+        "生存",
+        "近卫干员",
+        "高级资深干员"
+      ],
+      "size": 4,
+      "unowned": 2,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "斯卡蒂",
+        "煌"
+      ]
+    },
+    {
+      "tags": [
+        "输出",
+        "重装干员",
+        "高级资深干员"
+      ],
+      "size": 4,
+      "unowned": 2,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "森蚺",
+        "泥岩"
+      ]
+    },
+    {
+      "tags": [
+        "控场",
+        "高级资深干员"
+      ],
+      "size": 6,
+      "unowned": 3,
+      "p_new": 0.5,
+      "rare_min": 6,
+      "rare_max": 6,
+      "unowned_names": [
+        "刻俄柏",
+        "早露",
+        "水月"
+      ]
+    }
+  ]
+}

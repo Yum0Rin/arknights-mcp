@@ -26,11 +26,13 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import io
 import json
 import os
 import pathlib
 import re
+import struct
 import subprocess
 import sys
 import time
@@ -115,12 +117,50 @@ def key(code: int):
     _adb("shell", "input", "keyevent", int(code))
 
 
+def _raw_to_bgr(raw: bytes):
+    """把 Android `screencap`（无 -p）的 raw 字节解成 BGR 图。
+
+    raw 布局：头部若干字节（宽/高/格式，本机实测 16B，新 Android 多带字段）
+    + 末尾 w*h*4 的 RGBA_8888 像素。用「像素=末尾 w*h*4」定位，对头长不敏感。
+    """
+    w, h, fmt = struct.unpack_from("<III", raw, 0)
+    n4 = w * h * 4
+    off = len(raw) - n4
+    if off < 0:  # 回退 3 字节/像素（RGB_888）
+        n3 = w * h * 3
+        off3 = len(raw) - n3
+        if off3 < 0:
+            raise ValueError("raw 尺寸不符: %dx%d, %d bytes" % (w, h, len(raw)))
+        pix = np.frombuffer(raw[off3:off3 + n3], np.uint8).reshape(h, w, 3)
+        return cv2.cvtColor(pix, cv2.COLOR_RGB2BGR)
+    pix = np.frombuffer(raw[off:off + n4], np.uint8).reshape(h, w, 4)
+    if fmt == 2:  # RGBX_8888：第 4 通道是填充
+        return cv2.cvtColor(pix[:, :, :3], cv2.COLOR_RGB2BGR)
+    return cv2.cvtColor(pix, cv2.COLOR_RGBA2BGR)
+
+
 def cap(name: str):
+    """截图。走 MAA 同款 `screencap | gzip -1` 通道（本机实测比 `screencap -p` 快约 2.5 倍：
+    666ms -> 261ms），解码失败自动回退 PNG。默认仍把 PNG 存到 TMP 供排障，
+    设 ARK_CAP_SAVE=0 可跳过存盘。"""
     TMP.mkdir(parents=True, exist_ok=True)
-    p = TMP / name
-    with open(p, "wb") as f:
-        subprocess.run([ADB, "-s", ADDR, "exec-out", "screencap", "-p"], stdout=f, timeout=40)
-    return cv2.imread(str(p), cv2.IMREAD_COLOR)
+    r = subprocess.run([ADB, "-s", ADDR, "exec-out", "screencap | gzip -1"],
+                       capture_output=True, timeout=40)
+    img = None
+    if r.returncode == 0 and r.stdout:
+        try:
+            img = _raw_to_bgr(gzip.decompress(r.stdout))
+        except Exception as e:
+            log("raw+gzip 解码失败，回退 PNG: %s" % e)
+    if img is None:
+        p = TMP / name
+        with open(p, "wb") as f:
+            subprocess.run([ADB, "-s", ADDR, "exec-out", "screencap", "-p"],
+                           stdout=f, timeout=40)
+        img = cv2.imread(str(p), cv2.IMREAD_COLOR)
+    elif os.environ.get("ARK_CAP_SAVE", "1") != "0":
+        cv2.imwrite(str(TMP / name), img)
+    return img
 
 
 # ---------------------------------------------------------------------------

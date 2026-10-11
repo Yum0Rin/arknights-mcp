@@ -42,7 +42,16 @@
   },
   "progress": {
     "event_act52side": {
-      "first_clear_done": ["YW-1", "YW-2", "YW-3", "YW-4", "YW-5(2星)", "YW-6(3星)", "YW-7(3星)", "YW-8(3星)"],
+      "first_clear_done": [
+        "YW-1",
+        "YW-2",
+        "YW-3",
+        "YW-4",
+        "YW-5(2星)",
+        "YW-6(3星)",
+        "YW-7(3星)",
+        "YW-8(3星)"
+      ],
       "first_clear_pending": [],
       "first_clear_note": "普通 8 关全部首通（用户 2026-10-10 告知 + 我记账）。此后首通/刷关进度由 agent 自行记录在 state.json。",
       "ex_pending": 8,
@@ -59,8 +68,13 @@
     },
     "oper_train": {
       "candidates_by_rate": [
-        "德克萨斯 27%", "乌尔比安 23%", "伊芙利特 14%", "山 12%",
-        "夜莺 12%", "拉普兰德 8.6%", "澄闪 7.4%"
+        "德克萨斯 27%",
+        "乌尔比安 23%",
+        "伊芙利特 14%",
+        "山 12%",
+        "夜莺 12%",
+        "拉普兰德 8.6%",
+        "澄闪 7.4%"
       ],
       "targets_topN": [
         "德克萨斯 E1L30 →E2（森空岛实测）",
@@ -72,10 +86,11 @@
       "N_by": "用户 2026-10-10 拍板 N=4（按 required_rate 降序取前 4）"
     },
     "annihilation": {
-      "week_earned": 1800,
-      "week_cap": 1800,
-      "week_done": true,
-      "checked_at": "2026-10-10 森空岛 campaign.reward=1800/1800（本周已满，周一 04:00 重置）"
+      "week": "2026-W41",
+      "jade": 1800,
+      "cap": 1800,
+      "done": true,
+      "note": "2026-10-10 实测已满，周一04:00重置"
     }
   },
   "inventory": {
@@ -106,8 +121,16 @@
         "event": "EX 未开放；作战截止 10-23 03:59",
         "operbox": "341 条；4 名目标干员均 owned、未 E2"
       },
-      "triggers_hit": ["周期兜底（每日决策）"],
-      "triggers_not_hit": ["基建换班到期（未到点）", "剿灭周重置（本周已满）", "活动数据变动（EX 未开）", "凭证 401（正常）", "干员箱变化（341 未变）"]
+      "triggers_hit": [
+        "周期兜底（每日决策）"
+      ],
+      "triggers_not_hit": [
+        "基建换班到期（未到点）",
+        "剿灭周重置（本周已满）",
+        "活动数据变动（EX 未开）",
+        "凭证 401（正常）",
+        "干员箱变化（341 未变）"
+      ]
     },
     {
       "ts": "2026-10-10 16:44",
@@ -116,7 +139,12 @@
       "observations": {
         "资源": "YW.json 已从主仓库复制到 C:\\MAA\\resource\\tasks\\Stages\\YW.json（YW-4/6/7/8 导航任务，之前缺失致 Fight(stage=YW-6) 报 Cannot set stage）。但 kill MCP 后 opencode 未自动重连 → 需重启 opencode 恢复 arknights 工具，新 MCP 进程才会 Asst.load 加载 YW 资源",
         "活动商店": "代币 206，家具 310 待刷 YW-6 攒够再换；导航路径已记 ops_manual(终端→昨日海→劳工配给所)",
-        "待办": ["刷 YW-6 代币(重启后，Fight stage=YW-6 series=0)", "活动商店兑换(家具310必守)", "Award(最后)", "保全派驻SSS"]
+        "待办": [
+          "刷 YW-6 代币(重启后，Fight stage=YW-6 series=0)",
+          "活动商店兑换(家具310必守)",
+          "Award(最后)",
+          "保全派驻SSS"
+        ]
       }
     },
     {

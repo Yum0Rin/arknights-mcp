@@ -1,0 +1,179 @@
+{
+  "week": "2026-W41",
+  "range": "2026-10-05..2026-10-11",
+  "generated_at": "2026-10-11T23:25",
+  "by": "plan_week.py",
+  "budget": {
+    "sanity_natural": 1680,
+    "weekly_potion": 0,
+    "meds_available": 920,
+    "meds_week": "2026-W41",
+    "daily_natural": 240
+  },
+  "inventory": {
+    "固源岩": 1282
+  },
+  "shards": {
+    "stock": 1282,
+    "target": 500,
+    "per_run": 1.245,
+    "daily_use": 92.4,
+    "stage": "1-7"
+  },
+  "windows": {
+    "Annihilation": {},
+    "YW-6": {
+      "open": "2026-10-09",
+      "close": "2026-10-23"
+    }
+  },
+  "tasks": [
+    {
+      "type": "StartUp",
+      "params": {
+        "client_type": "Official",
+        "start_game_enabled": true
+      }
+    },
+    {
+      "type": "Fight",
+      "params": {
+        "stage": "Annihilation",
+        "times": 0
+      },
+      "name": "剿灭"
+    },
+    {
+      "type": "Fight",
+      "params": {
+        "stage": "YW-6",
+        "times": 123,
+        "series": 10
+      },
+      "name": "活动刷代币"
+    },
+    {
+      "type": "Fight",
+      "params": {
+        "stage": "3-7",
+        "times": 1
+      },
+      "name": "培养刷材料"
+    },
+    {
+      "type": "Recruit",
+      "params": {
+        "select": [
+          3,
+          4,
+          5
+        ],
+        "confirm": [
+          3,
+          4,
+          5
+        ],
+        "times": 4
+      }
+    },
+    {
+      "type": "Mall",
+      "params": {
+        "enable": true
+      }
+    },
+    {
+      "type": "Award",
+      "params": {
+        "enable": true
+      }
+    }
+  ],
+  "side": [
+    {
+      "script": "scripts/infrast-rotation/infrast_rotation.py",
+      "when": "after Infrast"
+    }
+  ],
+  "rationale": {
+    "notes": [
+      "理智药读数(2026-10-11)就在计划周内 → 周常 240 已含在存量，不重复计",
+      "本周剿灭已打满（2026-W41 1800/1800）→ 本周不再排剿灭",
+      "固源岩 1282 → 期末需 ≥500：1-7 至少 0 次（周耗 647）",
+      "EX 关 2026-10-16 开放（不在本周），届时首通（往期口径 8 个 ≈ 162 理智）",
+      "S 关 2026-10-23 开放（不在本周），届时首通（往期口径 1 个 ≈ 30 理智）",
+      "活动 YW-6：开放 2026-10-09~2026-10-23，每局 21 理智；商店要买 7450 代币 → 需 355 次，本周排 123 次（预算够 123 次）",
+      "活动商店可白拿 6 种材料（已从培养需求里抵扣）",
+      "培养：总缺口 1184 理智（材料 428 + 龙门币 755）；本周投 15 理智刷 3-7×1",
+      "预算 2600；剿灭 0 + 1-7 0 + 活动 2583 + 培养 15 = 2598；补 1-7 0 次花光",
+      "EX 关 2026-10-16 开放（不在本周），届时首通（往期口径 8 个 ≈ 162 理智）",
+      "S 关 2026-10-23 开放（不在本周），届时首通（往期口径 1 个 ≈ 30 理智）"
+    ],
+    "sanity_alloc": {
+      "annihilation": 0,
+      "1-7": 0,
+      "活动": 2583,
+      "培养": 15.006301407349492
+    }
+  },
+  "training": {
+    "targets": [
+      "乌尔比安"
+    ],
+    "total_sanity": 1183.6,
+    "material_sanity": 428.3,
+    "lmd_sanity": 755.4,
+    "week_sanity": 15.006301407349492,
+    "week_tasks": {
+      "3-7": 1
+    },
+    "credited_count": 6,
+    "credited": {
+      "30115": 5,
+      "3303": 25,
+      "31053": 3,
+      "3302": 24,
+      "30022": 10,
+      "30032": 3
+    },
+    "need_weeks": 78.9,
+    "top_gaps": [
+      {
+        "name": "近卫芯片",
+        "qty": 5,
+        "sanity": 180.1,
+        "stock": 0
+      },
+      {
+        "name": "聚合剂",
+        "qty": 1,
+        "sanity": 138.1,
+        "stock": 5
+      },
+      {
+        "name": "酮凝集",
+        "qty": 4,
+        "sanity": 51.3,
+        "stock": 0
+      },
+      {
+        "name": "异铁碎片",
+        "qty": 5,
+        "sanity": 31.8,
+        "stock": 0
+      },
+      {
+        "name": "代糖",
+        "qty": 4,
+        "sanity": 20.4,
+        "stock": 0
+      },
+      {
+        "name": "三水锰矿",
+        "qty": 8,
+        "sanity": 6.5,
+        "stock": 26
+      }
+    ]
+  }
+}

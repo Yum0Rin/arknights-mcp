@@ -1,0 +1,16 @@
+{
+  "ts": "2026-10-11 21:16:02",
+  "current_sanity": 205,
+  "theoretical_total": 1125,
+  "potion_sanity": 920,
+  "cards": [
+    {
+      "x": 1147,
+      "y": 591
+    },
+    {
+      "x": 1346,
+      "y": 606
+    }
+  ]
+}

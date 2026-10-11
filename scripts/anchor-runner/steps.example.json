@@ -1,0 +1,29 @@
+{
+  "name": "示例流程：进基建 → 进驻总览 → 点编辑队列",
+  "steps": [
+    {
+      "name": "主界面点「基建」",
+      "anchor": "page_main",
+      "anchor_thr": 0.8,
+      "click_xy": [1455, 845],
+      "wait": 5.0,
+      "on_fail": "abort"
+    },
+    {
+      "name": "基建页点「进驻总览」",
+      "anchor": "page_base",
+      "anchor_thr": 0.8,
+      "click_xy": [175, 156],
+      "wait": 3.5,
+      "on_fail": "back"
+    },
+    {
+      "name": "用目标锚点找按钮并点中心（推荐写法）",
+      "anchor": "page_overview",
+      "anchor_thr": 0.8,
+      "click_anchor": "btn_edit_queue",
+      "click_thr": 0.8,
+      "wait": 2.5
+    }
+  ]
+}

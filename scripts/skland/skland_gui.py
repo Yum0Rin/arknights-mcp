@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""明日方舟 · 森空岛看板 —— CustomTkinter 图形界面版。
+"""明日方舟 · 助手（总控台）—— CustomTkinter 图形界面版。
 
 流程：**登录 → 拉数据 → 看板**
 
@@ -20,11 +20,15 @@ from __future__ import annotations
 import ctypes
 import json
 import os
+import pathlib
 import queue
+import socket
+import subprocess
 import sys
 import threading
 import time
 import tkinter as tk
+import webbrowser
 from tkinter import messagebox, ttk
 
 import customtkinter as ctk
@@ -33,6 +37,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import skland_client as core  # noqa: E402
 
+ROOT = pathlib.Path(__file__).resolve().parents[2]  # 仓库根（本文件在 scripts/skland/ 下）
 SETTINGS = os.path.join(os.path.expanduser("~"), ".arknights_skland_gui.json")
 _SAMPLE_REPO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample_player_info.json")
 FIXTURE = (_SAMPLE_REPO if os.path.exists(_SAMPLE_REPO)
@@ -74,7 +79,7 @@ PROFESSIONS = {"PIONEER": "先锋", "WARRIOR": "近卫", "SNIPER": "狙击", "CA
                "TOKEN": "召唤物", "TRAP": "装置"}
 ELITE = {0: "精0", 1: "精1", 2: "精2", 3: "精3"}
 
-TABS = ["概览", "干员", "基建", "公招", "战绩", "签到", "原始 JSON"]
+TABS = ["概览", "干员", "基建", "公招", "长草", "战绩", "签到", "原始 JSON"]
 
 LOGIN_HINT = (
     "森空岛用「鹰角通行证」登录，和游戏是同一套账号。\n\n"
@@ -344,7 +349,7 @@ class App(ctk.CTk):
         FONT = pick_font(FONT_CANDIDATES, FONT)
         MONO = pick_font(MONO_CANDIDATES, MONO)
 
-        self.title("明日方舟 · 森空岛看板")
+        self.title("明日方舟 · 助手")
         self.configure(fg_color=pair("page"))
         self._fit_geometry(1140, 840)
         self.minsize(940, 620)
@@ -444,6 +449,7 @@ class App(ctk.CTk):
         self._build_login(left)
         self._build_role(left)
         self._build_options(left)
+        self._build_tools(left)
         self._build_board(right)
         self._build_log(right)
         self._build_actions(self)
@@ -453,9 +459,9 @@ class App(ctk.CTk):
         head.pack(fill="x", padx=16, pady=(12, 4))
         left = ctk.CTkFrame(head, fg_color="transparent")
         left.pack(side="left", fill="x", expand=True)
-        ctk.CTkLabel(left, text="明日方舟 · 森空岛看板", font=ctk.CTkFont(FONT, 21, "bold"),
+        ctk.CTkLabel(left, text="明日方舟 · 助手", font=ctk.CTkFont(FONT, 21, "bold"),
                      text_color=pair("text"), anchor="w", height=28).pack(anchor="w")
-        ctk.CTkLabel(left, text="登录森空岛账号，把 养成 / 基建 / 公招 / 剿灭 / 肉鸽 / 签到 拉到本地看 —— 只读自己账号",
+        ctk.CTkLabel(left, text="用鹰角通行证登录，拉取 养成 / 基建 / 公招 / 剿灭 / 肉鸽 / 签到 —— 只读自己账号",
                      font=ctk.CTkFont(FONT, 12), text_color=pair("muted"), anchor="w",
                      height=18).pack(anchor="w")
         self.tg_appearance = ToggleGroup(
@@ -550,24 +556,51 @@ class App(ctk.CTk):
         ctk.CTkLabel(row2, text="（无需账号，仅预览界面）", font=ctk.CTkFont(FONT, 11),
                      text_color=pair("muted")).pack(side="left", padx=8)
 
+    def _build_tools(self, parent):
+        card = Card(parent, "④ 快捷工具")
+        card.pack(fill="x", pady=8)
+        row = ctk.CTkFrame(card, fg_color="transparent")
+        row.pack(fill="x", padx=14, pady=(8, 4))
+        self._btn(row, "启动游戏", self._lc_start_game, width=112).pack(side="left", padx=(0, 6))
+        self._btn(row, "打开 MAA", self._lc_open_maa, width=112).pack(side="left", padx=6)
+        row2 = ctk.CTkFrame(card, fg_color="transparent")
+        row2.pack(fill="x", padx=14, pady=(0, 12))
+        self._btn(row2, "生成汇总网页", self._lc_build_site, width=118).pack(side="left", padx=(0, 6))
+        self._btn(row2, "打开汇总网页", self._lc_open_site, width=118).pack(side="left", padx=6)
+        ctk.CTkLabel(card, text="生成汇总网页 = 把本周计划/每日安排/上线建议/培养进度/周报\n"
+                                "渲染成一个单页站点（scheduling/报告/汇总.html）；\n"
+                                "打开汇总网页 = 起本地后端并浏览器打开它。",
+                     font=ctk.CTkFont(FONT, 11), text_color=pair("muted"),
+                     justify="left", anchor="w").pack(fill="x", padx=14, pady=(0, 10))
+
     def _build_board(self, parent):
-        card = Card(parent, "④ 看板")
+        card = Card(parent, "⑤ 看板")
         card.pack(fill="both", expand=True, pady=8)
-        self.board = ctk.CTkTabview(card, fg_color="transparent")
+        self.board = ctk.CTkTabview(
+            card, fg_color=pair("card"), border_width=0,
+            segmented_button_fg_color=pair("secondary"),
+            segmented_button_selected_color=pair("primary"),
+            segmented_button_selected_hover_color=pair("primary_hover"),
+            segmented_button_unselected_color=pair("secondary"),
+            segmented_button_unselected_hover_color=pair("secondary_hover"),
+            text_color=pair("text"), command=self._on_tab_change)
         self.board.pack(fill="both", expand=True, padx=10, pady=(6, 12))
         self.tabs_frame: dict[str, ctk.CTkFrame] = {}
         for name in TABS:
             self.board.add(name)
             if name == "干员":
-                f = ctk.CTkFrame(self.board.tab(name), fg_color="transparent")
+                f = ctk.CTkFrame(self.board.tab(name), fg_color=pair("card"))
             else:
-                f = ctk.CTkScrollableFrame(self.board.tab(name), fg_color="transparent")
+                f = ctk.CTkScrollableFrame(self.board.tab(name), fg_color=pair("card"),
+                                           label_fg_color=pair("card"))
             f.pack(fill="both", expand=True)
             self.tabs_frame[name] = f
         self._placeholder("未登录 —— 填手机号登录（或点「载入样例数据」预览）。")
+        self._build_recruit_tool(self.tabs_frame["公招"])
+        self._build_longcao(self.tabs_frame["长草"])
 
     def _build_log(self, parent):
-        card = Card(parent, "⑤ 日志")
+        card = Card(parent, "⑥ 日志")
         card.pack(fill="x", pady=(8, 0))
         self.txt_log = ctk.CTkTextbox(card, height=118, corner_radius=9, border_width=1,
                                       border_color=pair("border"), fg_color=pair("card"),
@@ -585,7 +618,7 @@ class App(ctk.CTk):
             font=ctk.CTkFont(FONT, 14, "bold"), fg_color=pair("primary"),
             hover_color=pair("primary_hover"), text_color="#FFFFFF", command=self.refresh)
         self.btn_refresh.pack(side="left")
-        self.btn_checkin = self._btn(row, "森空岛签到", self.checkin, width=110, height=40)
+        self.btn_checkin = self._btn(row, "每日签到", self.checkin, width=110, height=40)
         self.btn_checkin.pack(side="left", padx=10)
         self.pb = ctk.CTkProgressBar(row, height=8, corner_radius=4, fg_color=pair("track"),
                                      progress_color=pair("track"))
@@ -734,7 +767,13 @@ class App(ctk.CTk):
         self.log("\n拉取账号数据…", "head")
 
         def work():
-            self._fetch_into_queue(cfg["cred"], cfg.get("token"), uid)
+            cred, token = cfg["cred"], cfg.get("token")
+            try:                     # sign_token 会话级、易过期 → 每次拉取前先续期
+                token = core.refresh_token(cred)
+                core.save_config(cred, token=token)
+            except Exception as e:   # noqa: BLE001
+                self.q.put(("log", ("续期失败（退回旧 token 试）：%r" % e, "err")))
+            self._fetch_into_queue(cred, token, uid)
 
         self._run_worker(work)
 
@@ -754,7 +793,13 @@ class App(ctk.CTk):
             return
 
         def work():
-            awards = core.do_checkin(cfg["cred"], cfg["uid"], cfg.get("token"))
+            cred, token = cfg["cred"], cfg.get("token")
+            try:                     # 签到同样先续期
+                token = core.refresh_token(cred)
+                core.save_config(cred, token=token)
+            except Exception:        # noqa: BLE001
+                pass
+            awards = core.do_checkin(cred, cfg["uid"], token)
             if awards:
                 txt = "；".join(f"{a.get('resource', {}).get('name')} x{a.get('count')}"
                                 for a in awards)
@@ -836,6 +881,8 @@ class App(ctk.CTk):
     # ---------------- 渲染 ----------------
     def _placeholder(self, text):
         for name in TABS:
+            if name in ("公招", "长草"):
+                continue  # 这两块有独立入口/工具，别被占位清掉
             f = self.tabs_frame[name]
             self._clear(f)
             ctk.CTkLabel(f, text=text, text_color=pair("muted")).pack(padx=12, pady=20)
@@ -1111,6 +1158,7 @@ class App(ctk.CTk):
             self._head(f, "办公室")
             self._kv(f, "刷新次数", hire.get("refreshCount", "—"))
             self._kv(f, "下次刷新", fmt_ts(hire.get("completeWorkTime")))
+        self._build_recruit_tool(f)
 
     def _render_records(self, data):
         f = self.tabs_frame["战绩"]
@@ -1143,7 +1191,7 @@ class App(ctk.CTk):
     def _render_checkin(self, attendance):
         f = self.tabs_frame["签到"]
         self._clear(f)
-        self._head(f, "森空岛每日签到")
+        self._head(f, "每日签到")
         ctk.CTkButton(f, text="执行今日签到", fg_color=pair("primary"),
                       hover_color=pair("primary_hover"), text_color="#FFFFFF",
                       font=ctk.CTkFont(FONT, 13, "bold"), command=self.checkin).pack(
@@ -1170,6 +1218,282 @@ class App(ctk.CTk):
         box.pack(fill="both", expand=True, padx=6, pady=6)
         box.insert("1.0", json.dumps(data, ensure_ascii=False, indent=2))
         box.configure(state="disabled")
+
+    # ---------------- 公招 · 贴词条推荐 ----------------
+    def _build_recruit_tool(self, frame):
+        self._head(frame, "贴词条 → 推荐")
+        self._recruit_tags = ctk.CTkEntry(
+            frame, height=32, corner_radius=9, border_width=1,
+            border_color=pair("input_border"), fg_color=pair("input"),
+            text_color=pair("text"), font=ctk.CTkFont(FONT, 12),
+            placeholder_text="高级资深干员 输出 近战位 新手 生存")
+        self._recruit_tags.pack(fill="x", padx=14, pady=(2, 4))
+        self._recruit_tags.bind("<Return>", lambda e: self._recruit_recommend())
+        row = ctk.CTkFrame(frame, fg_color="transparent")
+        row.pack(fill="x", padx=14, pady=(0, 4))
+        self._btn(row, "推荐", self._recruit_recommend, width=84).pack(side="left")
+        ctk.CTkLabel(row, text="（取前 10 个词条组合，优先补图鉴）", font=ctk.CTkFont(FONT, 11),
+                     text_color=pair("muted")).pack(side="left", padx=8)
+        self._recruit_out = ctk.CTkTextbox(
+            frame, height=240, corner_radius=9, border_width=1,
+            border_color=pair("border"), fg_color=pair("card"),
+            text_color=pair("text"), font=ctk.CTkFont(MONO, 11), wrap="none")
+        self._recruit_out.pack(fill="both", expand=True, padx=14, pady=(0, 10))
+        self._recruit_out.configure(state="disabled")
+
+    def _set_recruit_out(self, text):
+        out = getattr(self, "_recruit_out", None)
+        if out is None:
+            return
+        out.configure(state="normal")
+        out.delete("1.0", "end")
+        out.insert("1.0", text)
+        out.configure(state="disabled")
+
+    def _recruit_recommend(self):
+        entry = getattr(self, "_recruit_tags", None)
+        if entry is None:
+            return
+        text = entry.get().strip()
+        if not text:
+            self.log("先在「公招」里贴上词条。", "dim")
+            return
+        self._set_recruit_out("计算中…（首次会拉取干员箱，稍等）")
+        self.log("公招推荐：计算中…", "head")
+        tools_dir = str(ROOT / "scheduling" / "tools")
+
+        def work():
+            try:
+                if tools_dir not in sys.path:
+                    sys.path.insert(0, tools_dir)
+                from recruit_combo import load_pool, load_owned, recommend, parse_tags_arg
+                pool, _all_tags = load_pool()
+                owned, src = load_owned()
+                tags = parse_tags_arg(text)
+                rows = recommend(tags, pool, owned, topn=10)
+                lines = [f"owned 来源={src}（{len(owned)} 人）　词条：{'、'.join(tags)}", ""]
+                lines.append(f"{'词条组合':<24}{'池':>4}{'未拥有':>6}{'P(新)':>8}{'星级':>8}  未拥有干员")
+                lines.append("-" * 82)
+                for r in rows:
+                    star = f"{r['rare_min']}~{r['rare_max']}"
+                    lines.append(
+                        f"{'+'.join(r['tags']):<24}{r['size']:>4}{r['unowned']:>6}"
+                        f"{r['p_new']:>8.2f}{star:>8}  {'、'.join(r['unowned_names'])}")
+                out = "\n".join(lines)
+            except Exception as e:  # noqa: BLE001
+                import traceback
+                out = "推荐失败：" + repr(e) + "\n" + traceback.format_exc()
+            self.after(0, lambda: self._set_recruit_out(out))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    # ---------------- 长草 · 一键长草 ----------------
+    def _build_longcao(self, frame):
+        self._clear(frame)
+        self._head(frame, "本周计划（一键长草）")
+        bar = ctk.CTkFrame(frame, fg_color="transparent")
+        bar.pack(fill="x", padx=8, pady=(2, 8))
+        self._btn(bar, "基建换班", self._lc_swap, width=100).pack(side="left", padx=4)
+        self._btn(bar, "写 MAA 配置", self._lc_write_maa, width=112).pack(side="left", padx=4)
+        self._btn(bar, "直驱跑一键长草", self._lc_run, width=132).pack(side="left", padx=4)
+        ctk.CTkLabel(bar, text="（会操作 MAA 与游戏，均需二次确认）",
+                     font=ctk.CTkFont(FONT, 11), text_color=pair("muted")).pack(
+            side="left", padx=8)
+        self.longcao_plan = ctk.CTkFrame(frame, fg_color="transparent")
+        self.longcao_plan.pack(fill="both", expand=True, padx=6, pady=(2, 8))
+        self._render_longcao()
+
+    def _on_tab_change(self, name=None):
+        if name is None:
+            try:
+                name = self.board.get()
+            except Exception:  # noqa: BLE001
+                return
+        if name == "长草":
+            self._render_longcao()
+
+    def _render_longcao(self):
+        f = getattr(self, "longcao_plan", None)
+        if f is None:
+            return
+        self._clear(f)
+        path = ROOT / "scheduling" / "data" / "weekly_plan.json"
+        if not path.exists():
+            self._kv(f, "状态", "未生成（找不到 scheduling/data/weekly_plan.json）")
+            return
+        try:
+            plan = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as e:  # noqa: BLE001
+            self._kv(f, "状态", f"读取失败：{e!r}")
+            return
+        self._kv(f, "周号", plan.get("week", "—"))
+        self._kv(f, "日期范围", plan.get("range", "—"))
+        budget = plan.get("budget") or {}
+        self._kv(f, "预算", f"自然理智 {budget.get('sanity_natural', '—')} · "
+                            f"周药 {budget.get('weekly_potion', '—')} · "
+                            f"理智药 {budget.get('meds_available', '—')}")
+        self._head(f, "任务")
+        for i, t in enumerate(plan.get("tasks") or [], 1):
+            p = t.get("params") or {}
+            stage = p.get("stage") or p.get("mode") or ""
+            mode = p.get("facility") or ""
+            if isinstance(mode, list):
+                mode = "/".join(str(x) for x in mode)
+            parts = [str(t.get("type", ""))]
+            if stage:
+                parts.append(str(stage))
+            if mode:
+                parts.append(str(mode))
+            if p.get("times") is not None:
+                parts.append(f"×{p.get('times')}")
+            desc = " · ".join(parts)
+            extra = t.get("name") or t.get("note") or ""
+            self._kv(f, str(i), desc + (f"　{extra}" if extra else ""), keyw=30)
+        try:
+            sys.path.insert(0, str(ROOT / "scheduling" / "tools"))
+            from plan_util import distribute_daily, weekly_summary, session_advice
+            daily = distribute_daily(plan)
+            summary = weekly_summary(plan, daily) if daily else None
+            advice = session_advice(plan, daily) if daily else []
+        except Exception:  # noqa: BLE001
+            daily, summary, advice = [], None, []
+        if daily:
+            self._head(f, "每日安排")
+            for d in daily:
+                runs = d.get("runs") or {}
+                txt = "、".join(f"{k}×{v}" for k, v in runs.items()) or "—"
+                if d.get("opens"):
+                    txt += "　★新开：" + "、".join(d["opens"])
+                txt += f"　（理智 {d.get('sanity', 0)}"
+                txt += f"，超上限{d.get('cap')}！" if d.get("over") else ""
+                txt += "）"
+                self._kv(f, f"{d.get('date', '')} {d.get('dow', '')}", txt, keyw=150)
+            if summary:
+                s = (f"合计 {summary['total']} / 预算 {summary['avail']}"
+                     f"（自然{summary['natural']}+周药{summary['weekly_potion']}）")
+                s += f"　缺口 {summary['gap']}（需理智药）" if summary["gap"] else "　够"
+                self._kv(f, "周合计", s, keyw=60)
+        tr = plan.get("training")
+        if tr:
+            self._head(f, "培养进度")
+            self._kv(f, "目标", "、".join(tr.get("targets", [])), keyw=60)
+            self._kv(f, "总缺口", "%s 理智（材料 %s + 龙门币 %s）"
+                     % (tr.get("total_sanity"), tr.get("material_sanity"),
+                        tr.get("lmd_sanity")), keyw=60)
+            weeks = ("（还需约 %s 周）" % tr["need_weeks"]) if tr.get("need_weeks") else ""
+            self._kv(f, "本周投", "%s 理智%s" % (tr.get("week_sanity"), weeks), keyw=60)
+            for g in (tr.get("top_gaps") or [])[:8]:
+                self._kv(f, "  " + str(g.get("name")),
+                         "需 %s（库存抵 %s）→ %s 理智"
+                         % (g.get("qty"), g.get("stock", 0), g.get("sanity")), keyw=90)
+        notes = (plan.get("rationale") or {}).get("notes") or []
+        if notes:
+            self._head(f, "说明")
+            for n in notes:
+                self._kv(f, "·", str(n), keyw=20)
+        side = plan.get("side") or []
+        if side:
+            self._head(f, "附脚本")
+            for s in side:
+                self._kv(f, str(s.get("when", "—")), str(s.get("script", "")), keyw=110)
+
+    def _popen_log(self, args, title, done_msg=None):
+        self.log(f"{title}：启动 {' '.join(str(a) for a in args)}", "head")
+        try:
+            proc = subprocess.Popen(
+                args, cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, encoding="utf-8", errors="replace")
+        except Exception as e:  # noqa: BLE001
+            self.log(f"{title} 启动失败：{e!r}", "err")
+            return None
+
+        def reader():
+            try:
+                assert proc.stdout is not None
+                for line in proc.stdout:
+                    line = line.rstrip()
+                    if line:
+                        self.after(0, self.log, line, "dim")
+            except Exception:  # noqa: BLE001
+                pass
+            rc = proc.wait()
+            tag = "ok" if rc == 0 else "err"
+            if rc == 0 and done_msg:
+                self.after(0, self.log, done_msg, "ok")
+            else:
+                self.after(0, self.log, f"{title} 结束（退出码 {rc}）", tag)
+
+        threading.Thread(target=reader, daemon=True).start()
+        return proc
+
+    @staticmethod
+    def _port_open(host, port):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(0.3)
+                return s.connect_ex((host, port)) == 0
+        except Exception:  # noqa: BLE001
+            return False
+
+    def _lc_build_site(self):
+        self._popen_log([sys.executable, str(ROOT / "scheduling" / "tools" / "build_site.py")],
+                        "生成汇总网页", done_msg="网页已生成")
+
+    def _lc_open_maa(self):
+        exe = pathlib.Path(r"C:\MAA\MAA.exe")
+        if not exe.exists():
+            self.log(f"找不到 MAA：{exe}", "err")
+            return
+        try:
+            subprocess.Popen([str(exe)], cwd=str(exe.parent))
+            self.log("已启动 MAA（需要 MAA 干活时用）", "ok")
+        except Exception as e:  # noqa: BLE001
+            self.log(f"启动 MAA 失败：{e!r}", "err")
+
+    def _lc_start_game(self):
+        self._popen_log(
+            [sys.executable, str(ROOT / "scripts" / "maa-week" / "maa_week.py"), "startup"],
+            "启动游戏")
+
+    def _lc_open_site(self):
+        url = "http://127.0.0.1:8787/"
+        if not self._port_open("127.0.0.1", 8787):
+            self._popen_log(
+                [sys.executable, str(ROOT / "scheduling" / "tools" / "site_server.py")],
+                "汇总网页服务")
+            time.sleep(0.8)
+        webbrowser.open(url)
+        self.log(f"已打开汇总网页 {url}", "ok")
+
+    def _lc_swap(self):
+        """基建换班（收菜+菲亚梅塔+13房切队列）。会操作游戏，需模拟器 + 单客户端。"""
+        self._popen_log(
+            [sys.executable, str(ROOT / "scripts" / "infrast-rotation" / "infrast_rotation.py"), "all"],
+            "基建换班")
+
+    def _lc_read_potion(self):
+        self._popen_log(
+            [sys.executable, str(ROOT / "scripts" / "sanity-potion" / "sanity_potion.py")],
+            "读理智药")
+
+    def _lc_write_maa(self):
+        if not messagebox.askyesno(
+                "确认写 MAA 配置",
+                "这会把 weekly_plan 写进 MAA 的 gui.new.json。\n"
+                "请先关闭 MAA，否则改动会被覆盖。\n\n继续？"):
+            return
+        self._popen_log(
+            [sys.executable, str(ROOT / "scripts" / "maa-week" / "maa_week.py"), "write"],
+            "写 MAA 配置")
+
+    def _lc_run(self):
+        if not messagebox.askyesno(
+                "确认直驱跑一键长草",
+                "这会真的操作 MAA / 游戏，按本周计划自动执行。\n\n继续？"):
+            return
+        self._popen_log(
+            [sys.executable, str(ROOT / "scripts" / "maa-week" / "maa_week.py"), "run"],
+            "直驱跑一键长草")
 
     # ---------------- 日志 / 设置 ----------------
     def log(self, msg, tag=""):

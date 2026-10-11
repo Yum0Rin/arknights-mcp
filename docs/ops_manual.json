@@ -91,9 +91,9 @@
       ]
     },
     "公招(Recruit)": {
-      "status": "待修/待建",
+      "status": "MAA内置可用（选 tag 规则待建）",
       "class": "A+B",
-      "note": "MAA Recruit 当前 append_task 失败（2026-10-10 实测：Award/Mall/Depot 正常，唯 Recruit 返回 id=0，空参/全参均失败）→ 待查 MaaCore v6.18.0 该任务；MAA 也做不了'补图鉴'。",
+      "note": "【已修复·2026-10-11 复核】MAA Recruit append_task **正常**：ark_run_task('Recruit') 走 TASK_DEFAULTS {select:[3,4,5,6],confirm:[3,4,5,6],times:4}，独立探针实测 append 返回 tid=1（非 0）。先前'返回 id=0'是 dfcee94（10-10）时的现象，已由 7380133（10-10 15:30「按源码修正 TASK_DEFAULTS 必填参数」）修复；本记录未同步，属**过期**。真正返回 0 的情形只有：缺 select/confirm、或星级写成字符串（如 '3'）。待调两项：① times 默认 4 偏小（GUI 用 50）；② confirm=[3,4,5,6] 会**真实自动确认高星**并消耗招募许可，若要'只算不点'应设 confirm=[]。MAA 仍做不了'补图鉴'（选 tag 策略需自建，见 impl_idea）。",
       "select_rule": "用户 2026-10-10 定：**① 优先补图鉴**——在公招 tag 组合里选'出未拥有干员概率最大'的；**② 其次星最多**——同等情况选可产出星级最高（换黄票）；**③ 高级资深干员/资深干员 tag 必选**。",
       "impl_idea": "用 gamedata gacha_table.json 的公招 tag→干员映射 + 森空岛 owned 差集，对每个 tag 组合算 P(new) 与期望星级，选最优组合，再驱动 UI/MAA。",
       "steps": []
