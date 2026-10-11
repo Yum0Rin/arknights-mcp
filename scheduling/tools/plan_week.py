@@ -281,7 +281,9 @@ def plan(date: dt.date) -> dict:
                       "name": "培养刷材料"})
     tasks += [
         {"type": "Recruit", "params": {"select": [3, 4, 5], "confirm": [3, 4, 5], "times": 4}},
-        # 收菜交给 infrast_rotation.py（见 side 的 collect），别再用 MAA Infrast 重复收
+        # MAA 只管「会客室/线索搜集」；其余收菜与换班交给 infrast_rotation.py（见 side）
+        {"type": "Infrast", "params": {"mode": 20000, "facility": ["Reception"]},
+         "name": "会客室/线索"},
         {"type": "Mall", "params": {"enable": True}},
         {"type": "Award", "params": {"enable": True}},
     ]

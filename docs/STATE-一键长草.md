@@ -30,8 +30,8 @@ R5 每日分配：活动只在窗口内；每天 ≤ day_cap = 240 + 药/天；*
 | 连战 series | **活动关 10 / 普通关 6**（`MAA-INTERNALS.md:78`；不退化成单次） |
 | 当前活动 | act52side（昨日海）：YW-6 开放 2026-10-09~10-23，EX 2026-10-16，S 2026-10-23 |
 | EX/S 理智 | **往期 sidestory 口径估**（EX-1~8 = 15/15/18/18/21/21/24/30；S-1 = 30）**待实机核** |
-| 基建 | **收菜 + 换班都在 `infrast_rotation.py`**（收菜→菲亚梅塔→13房切队列→换班后再收菜）。`run` 时**到期才跑**（`side.if_due=infra_next_swap_at` 查 `state.json.triggers`）；**MAA 不排 Infrast**（避免重复收菜）。 |
-| ⚠️ 收菜时点 | 收菜**跟着换班走**（换班约 12h 一次）。若换班没到期就不收菜。 |
+| 基建分工 | **换班脚本**（`infrast_rotation.py all`）：收菜→菲亚梅塔→切队列→再收菜，`run` 时**到期才跑**（`side.if_due=infra_next_swap_at`）；**MAA `Infrast`（mode=20000, `facility=["Reception"]`）只管会客室/线索搜集**（换班脚本不含这个）。 |
+| ⚠️ 收菜时点 | 收菜**跟着换班走**（约 12h 一次）；线索由 MAA 每次 run 都做。 |
 
 ## 命令
 
