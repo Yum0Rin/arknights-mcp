@@ -4,7 +4,43 @@
 版本号遵循 [语义化版本 SemVer](https://semver.org/lang/zh-CN/)。
 
 ## [Unreleased]
+### Changed
+- **GUI 整体重做：CustomTkinter → PySide6 + PySide6-Fluent-Widgets**（2026-10-12）：
+  Win11 Fluent Design（左 NavigationInterface 图标+文字导航 / CardWidget / TableWidget /
+  InfoBar 吐司 / 明暗跟随系统）。`scripts/skland/skland_gui.py` 整份重写（约 1500 行）；
+  `skland_client.py` / `gacha_client.py` / `ff_session.py` **一行没动**，只是换壳。
+  - **配色改成「方舟风：深海蓝 + 金」**：底 `#0A121D` / 卡片 `#121E2E`（描边 `#27405F`）/
+    标题与强调 `#E3BE63` / 主色 `#C9973B`；浅色主题另有一套（米白 + 暗金）。
+    卡片是 `CardWidget` 自绘的，所以走 `GameCard.paintEvent` 覆盖 + 调色板 `GAME[]`，
+    而不是框架主题；切主题时由 `_restyle_game()` 重新铺（含表格 QSS 与已注册的文字颜色）。
+  - 关掉 Mica（改用纯色深海蓝，云母会把底色冲淡）：`setMicaEffectEnabled(False)` +
+    `setCustomBackgroundColor(light, dark)`。
+  - 新依赖：`PySide6-Essentials` + `PySide6-Fluent-Widgets`（+ `PySideSix-Frameless-Window`）。
+  旧版快照见 `历史版本/Fluent界面重做-2026-10-12/`。
+
 ### Added
+- **抽卡凭据免密码 + 打开即自动登录**（2026-10-12）：
+  - `scripts/skland/ff_session.py`（新增，**仅标准库**）：直接从本机 Firefox 读登录态 ——
+    `ak-user-center` 是**会话 cookie**（不在 `cookies.sqlite`，只在 `sessionstore*.jsonlz4`，
+    自带纯 Python mozLz4 解码）、`x-role-token` 与角色 uid 在 `ak.hypergryph.com` 的 localStorage。
+    实测两者**必须配对**：缺 token → `DETECTED_ROLE_CHANGED`；缺 cookie → `UN_LOGIN`。
+  - `skland_cli.py gacha --from-firefox`；GUI「抽卡」页新增「从火狐导入」。
+  - GUI 新增「**打开时自动登录**」开关（默认开）：有本机凭证就开界面即拉数据，
+    抽卡顺带从火狐更新（留档超 6 小时才更新）。设置存 `~/.arknights_skland_gui.json`。
+  - 实测：开界面后自动拉到本人数据（Lv99 / 341 干员 / 理智 133/205），并渲染 218 条抽卡留档。
+- **抽卡记录（官方寻访记录）**（2026-10-12）：
+  - 澄清口径：**森空岛没有抽卡记录**（原结论正确），但**鹰角官网「用户中心」有** ——
+    `ak.hypergryph.com/user/api/inquiry/gacha/{cate,history}`，走 `x-role-token` + `ak-user-center` cookie，
+    **不需要**森空岛的 `cred`/`sign`。两套共用 `as.hypergryph.com` 登录，分叉在 OAuth `grant` 的
+    `appCode`（用户中心 `be36d44aa36bfb5b`+`type=1` vs 森空岛 `4ca99fa6b56cc2ba`+`type=0`）。
+  - `scripts/skland/gacha_client.py`（新增，**仅标准库**）：6 步登录链、`cate`/`history` 分页
+    （游标 `pos`+`gachaTs`）、本地留档（`~/.arknights_gacha_records.json`，只增不删）、
+    统计（星级分布 / 出金水位按 限定·标准·中坚 三条结转链）、离线 `self_test()`。
+  - GUI `skland_gui.py` 新增「**抽卡**」页签（拉取 / 只读留档 / 打开官网页 / 6★·全部两视图）；
+    登录时顺带派生抽卡凭证。CLI `skland_cli.py` 新增 `gacha` 子命令。
+  - 文档：`docs/DATA-SOURCES.md` 新增 **§8**；`FEATURES.md`/`FINDINGS.md`/`MASTER-PLAN.md`/`README.md`
+    同步改正"官方无抽卡接口"的旧口径。
+
 - **一键长草全链路**（2026-10-11）：
   - `scheduling/tools/plan_week.py` **周规划器**（规则写死 `RULE`）：预算(自然+周药+理智药) → 剿灭 → 固源岩下限
     → EX/S 首通 → 活动(按商店封顶) → 培养 → 1-7 填充 → 每日分配；产出 `weekly_plan.json`（单一事实源）。

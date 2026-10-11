@@ -133,6 +133,86 @@
   超集（MAA 无）：`skill_lvl=mainSkillLvl`、`spec=skills[].specializeLevel`、`favor`。
 - **与 MAA 对拷**（本人账号 337 干员）：elite/level/rarity **全一致**；potential 332/337 一致，
   不一致的是 MAA 识别误差（**以在线为准**）。Skland 还会比 MAA 多出"本地资源未收录的新干员"。
-- **拿不到**：抽卡记录（接口无此项）、仓库 Depot（只有 MAA 有）。
-- CLI：`python scripts/skland/skland_cli.py {login,status,dump,checkin}`；GUI：`scripts/skland/skland_gui.py`。
+- **拿不到**：抽卡记录（森空岛接口无此项 → 见 §8）、仓库 Depot（只有 MAA 有）。
+- CLI：`python scripts/skland/skland_cli.py {login,status,dump,checkin,gacha}`；GUI：`scripts/skland/skland_gui.py`。
 - 踩坑详见 `docs/FINDINGS.md` §17。
+
+---
+
+## 8. 抽卡记录（鹰角官网「用户中心」寻访记录 · **不是森空岛**）
+
+> 2026-10-12 建立。**§7 说的"森空岛拿不到抽卡记录"仍然对**，但官方其实另有一套接口。
+> 实现：`scripts/skland/gacha_client.py`（标准库）；GUI 页签「抽卡」；CLI `skland_cli.py gacha`。
+
+- **官方入口**：官网 → 登录 → 个人中心 → **自助查询 → 寻访记录**（页面 `ak.hypergryph.com/user/headhunting`）。
+- **两套接口共用 `as.hypergryph.com` 登录，分叉在 OAuth `grant`**（这是最关键的一处）：
+
+  | 用途 | appCode | type | 结果 |
+  |---|---|---|---|
+  | 森空岛（§7） | `4ca99fa6b56cc2ba` | `0` | 一次性 `code` → 换 `cred` |
+  | **用户中心（本节）** | `be36d44aa36bfb5b` | `1` | 直接返回 `token` |
+
+  **用错就只能拿到一次性 code，拿不到抽卡记录**，且报错很隐晦。
+
+- **6 步登录链**（前 3 步与森空岛同源，后 3 步是本节特有的）：
+
+  | # | 端点 | 得到 |
+  |---|---|---|
+  | 1 | `POST as.hypergryph.com/user/auth/v2/token_by_phone_code`（或 `.../v1/token_by_phone_password`） | 账号 token |
+  | 2 | `POST as.hypergryph.com/user/oauth2/v2/grant` `{token, appCode, type:1}` | OAuth token |
+  | 3 | `GET binding-api-account-prod.hypergryph.com/account/binding/v1/binding_list?token=&appCode=arknights` | 角色 `uid`（含官服/B服渠道） |
+  | 4 | `POST .../binding/v1/u8_token_by_uid` `{uid, token}` | `u8_token` |
+  | 5 | `POST ak.hypergryph.com/user/api/role/login` `{token:u8_token, source_from:"", share_type:"", share_by:""}` | **`ak-user-center` cookie** |
+
+- **取数据**（鉴权走**请求头 + cookie**，**不需要** §7 那套 `cred`/`sign` 签名）：
+
+  | 用途 | 端点 |
+  |---|---|
+  | 卡池分类 | `GET ak.hypergryph.com/user/api/inquiry/gacha/cate?uid=` → `data` 直接是数组 |
+  | 抽卡记录 | `GET ak.hypergryph.com/user/api/inquiry/gacha/history?uid=&category=&size=[&pos=&gachaTs=]` → `data.list` + `data.hasMore` |
+
+  请求头：`x-role-token: <u8_token>`、`x-account-token: <账号token>`（可选）；
+  Cookie：`ak-user-center=<值>`；`Referer: https://ak.hypergryph.com/user/headhunting`。
+
+- **返回与分页（易错点）**：
+  - 一条 = **一抽**；一次十连 = 10 条 `gachaTs` **完全相同**、`pos` 为 `0..9` 的记录。
+  - `rarity` 是 **0 基**：`5` = 6★、`2` = 3★。
+  - `gachaTs` 是**毫秒**，且常为**字符串**（`"1770697079082"`）。
+  - 翻页游标 = 上一页最后一条的 **`pos` + `gachaTs`**（不是页码）。
+  - 接口不提供唯一 ID → 去重键必须自己合成，**`pos` 不能省**（十连里同名同星只差 `pos`）。
+  - 旧端点 `/user/api/inquiry/gacha?page=&token=` **已废弃**：现在落到前端 SPA，返回 HTML 不是 JSON。
+  - 鉴权失败的是 `{"reason":"UN_LOGIN"}` / `{"reason":"MissingCookie"}` /
+    `{"reason":"DETECTED_ROLE_CHANGED"}`，**没有 `code` 字段** ——
+    不单独判会静默当成 `code=0`「成功」。
+  - **实测（2026-10-12，不带任何凭证）**：`cate` / `history` 都返回
+    `HTTP 401 {"message":"未登录","reason":"UN_LOGIN"}`（证明端点存活、需要登录）；
+    旧端点返回 `HTTP 200 text/html`（证明已废弃）。
+  - **cookie 与 `x-role-token` 必须配对**（2026-10-12 实测三组）：
+    cookie+真 token → ✅；cookie+假/空 token → `DETECTED_ROLE_CHANGED`（服务端交叉校验）；
+    无 cookie → `UN_LOGIN`。
+
+- **能回溯多久？官方口径：90 日。**
+  官网寻访记录页原话：「**可查询 90 日内寻访记录，查询结果可能存在 30 分钟延迟**」
+  （2026-10-12 从页面正文抄录）。实测本人账号最早一条 2026-08-01、最新 2026-10-09，
+  与 90 日窗口一致。因此：**拉到就本地留档**（`~/.arknights_gacha_records.json`，只增不删），
+  这样超出 90 天的旧记录也不会丢；GUI 顶部会显示"记录区间"。
+  （各开源实现都只靠 `hasMore` 收敛，没找到明确页数上限 —— 这就是原因：窗口是时间，不是页数。）
+
+- **免密码取凭据（读本机浏览器）**：`scripts/skland/ff_session.py`。
+  这两个凭据**都不在 `cookies.sqlite` 里**：
+  | 凭据 | 在哪 |
+  |---|---|
+  | `ak-user-center`（cookie） | **会话 cookie** → 只在 `sessionstore*.jsonlz4`（自带纯 Python mozLz4 解码） |
+  | `x-role-token` | `ak.hypergryph.com` 的 localStorage `ONE_ACCOUNT_ROLE_META.token` |
+  | 角色 `uid` | 同 localStorage 的 `APP_CURRENT_ROLE:arknights` → `"218193258::"` |
+  用法：`python scripts/skland/skland_cli.py gacha --from-firefox`，或 GUI「抽卡」页「从火狐导入」。
+  局限：cookie 是会话级的，Firefox 关掉且未恢复会话就失效。
+
+- **限制**：**仅官服**。B 服走 B 站账号、国际服（Yostar）没有这套接口。
+
+- **旁证**：`inquiry/diamond` 是源石/合成玉消耗记录；`as.hypergryph.com/u8/pay/v1/recent` 是充值记录。
+  终末地有更规范的官方记录接口 `ef-webview.hypergryph.com/api/record/char?pool_type=&token=<u8_token>&server_id=1`。
+
+- **参考实现**（本节的端点/坑来自它们的源码与文档）：`Gordenghost/arklog`（Go，注释最全）、
+  `AceDroidX/arknights-gacha-export`（`API.md` 最规整）、`RoLingG/Arknights_Gacha`、
+  `DuskXi/ArkRecord`（浏览器插件，借已登录会话直接抓老接口）。

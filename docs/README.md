@@ -77,4 +77,4 @@
 - **[`DAILY-CHECKLIST-act52side.md`](DAILY-CHECKLIST-act52side.md)** + **`WORKFLOW-*.md`**：把上面的判据/协议落成"当天照做"的清单与流程。
 - **[`DATA-SOURCES.md`](DATA-SOURCES.md)**、**[`FINDINGS.md`](FINDINGS.md)**：上游数据出处与踩过的坑，供上面各文档引用。
 
-> 关键数据坑速记：森空岛 `status.ap`（理智）是**旧快照**，别信，**理智以实机为准**；仓库只有 MAA 有（森空岛接口无仓库、无抽卡记录）。详见 [`FINDINGS.md`](FINDINGS.md) §17 与 [`MASTER-PLAN.md`](MASTER-PLAN.md) §8。
+> 关键数据坑速记：森空岛 `status.ap`（理智）是**旧快照**，别信，**理智以实机为准**；仓库只有 MAA 有（森空岛接口无仓库）。抽卡记录**森空岛没有**，但在**鹰角官网用户中心**（`ak.hypergryph.com`），见 [`DATA-SOURCES.md`](DATA-SOURCES.md) §8。详见 [`FINDINGS.md`](FINDINGS.md) §17 与 [`MASTER-PLAN.md`](MASTER-PLAN.md) §8。

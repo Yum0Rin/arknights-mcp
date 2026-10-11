@@ -202,6 +202,10 @@
 - 数据与 MAA 同源：对拷本人账号 337 干员，elite/level/rarity **全一致**；potential 5/337 不一致
   （MAA 识别误差，**以在线为准**）。Skland 还会多出"本地资源未收录的新干员"。
 - **接口没有**：抽卡记录、仓库 Depot（Depot 仍只能靠 MAA）。
+  → 但抽卡记录**不是没有官方接口**，而是**不在森空岛**：在鹰角官网用户中心
+  `ak.hypergryph.com/user/api/inquiry/gacha/*`（走 `x-role-token`+`ak-user-center` cookie，
+  无需 cred/sign）。两套共用 `as.hypergryph.com` 登录，分叉在 OAuth `grant` 的 `appCode`。
+  详见 [`DATA-SOURCES.md`](DATA-SOURCES.md) §8 与 `scripts/skland/gacha_client.py`。
 - GUI `scripts/skland/skland_gui.py`（照 cx-downloader：配色/线程/主题/标题栏）。**干员列表别用 CTk 控件逐行渲染**
   （341 行 × 每行 6 控件 ≈ 2000 控件，明显卡顿）；改用原生 `ttk.Treeview`（一行一 item）→ 筛选/排序 <10ms。
 
@@ -235,4 +239,19 @@
 - **对策/教训**：
   1. 选择性买活动商店**不要**用 `SS@Store@Begin`(+blacklist)——v6.18.0 会**按 ROI 无脑买**。
   2. 想精确买：**手动点**（tap 商品卡→选数量→支付），或升级 MAA 到支持 blacklist 的版本再评估。
-  3. 用 `SS@Store` 前先看日志有没有 `Parsed and registered EventShop task`——没有就别放它自己跑。
+   3. 用 `SS@Store` 前先看日志有没有 `Parsed and registered EventShop task`——没有就别放它自己跑。
+
+## 20. 坑：`plan_util.load_costs()` 只含活动关 → 非活动关按 **0 理智**参与逐日分配（2026-10-12 修复）
+- **症状（复盘层发现）**：培养关 `MN-4`（12 理智）在 `plan_util.distribute_daily` 里 `cost.get('MN-4', 0) = 0`，
+  于是这天真实负载 406+12=**418 > day_cap 406** 却被当成 406 → `over` 判 false、自检探针漏判。
+- **根因**：`load_costs()` 只合并 `BUILTIN_COST`（Annihilation/1-7）+ `event_*.json` 的 `stages[].sanity`，
+  **主线/材料/资源关**（MN-4 等培养关、CE-6 等）根本没有价目，一律按 0。
+- **修复**：新增 `_load_stage_apcost()`，读本机关卡表 **`C:\MAA\resource\stages.json`** 的 `apCost`
+  （结构：`[{code, apCost, ...}]`；兼容 ArknightsGameData 的 `{stages:{id:{code,apCost}}}`），
+  `load_costs()` 优先级：关卡表 → 内置已知 → 活动价目表（活动关权威）；再对 `EXPLICIT_COST={"MN-4":12}` 兜底。
+  结果 `lru_cache(maxsize=1)` 缓存（`distribute_daily` 在自检循环里反复调用，别每次重解析 807KB）。
+- **探针核对**：`plan_week._fit_to_schedule` 读的是 `daily[0].get("unplaced")`（**正确**，`distribute_daily` 返回 **list**）；
+  全仓无 `getattr(x,'unplaced')` 写法 → **未踩**，未改。（`getattr(list,'unplaced')` 会恒返回默认值，是无效探针。）
+- **修复后 W42**：day_cap=406，逐日 406/406/406/406/406/402/405，**全部 ≤ cap**，`unplaced` 空；
+  代价：自检触发 5 次（YW-6 39→34 次，释放的理智回流 1-7 填充），total 2837 ≤ 预算 2840。
+  ⚠️ 待观察：容量卡满（预算 2840 ≈ 7×406=2842）时自检**优先砍活动**换 1-7 填充，是否该反着来（保活动）需运筹层定。

@@ -125,6 +125,8 @@ python -m pip install -r requirements.txt
 
 - `OperBox` / `Depot` 等识别依赖 MAA 与游戏 UI 版本匹配；识别不全时先排查起始页面与游戏 UI 主题（见 [`FINDINGS.md`](FINDINGS.md)）。
 - 同一时刻**只应有一个客户端**（本 MCP 或 MAA GUI）驱动同一台设备，否则会争抢 adb / 触控。
-- 在线取数**拿不到抽卡记录**（接口无此项），也**拿不到仓库**（只有 MAA 有）；凭证会过期，需重新登录。
+- 在线取数**拿不到仓库**（只有 MAA 有）；**森空岛拿不到抽卡记录**——但抽卡记录另有官方来源：
+  鹰角官网用户中心（`ak.hypergryph.com`），见 [`DATA-SOURCES.md`](DATA-SOURCES.md) §8 与 `scripts/skland/gacha_client.py`。
+  凭证会过期，需重新登录。
 - 森空岛 `status.ap`（理智）是**旧快照**，会明显偏低（实测实机 171 而接口 15）——**理智一律以实机为准**；干员箱 / 基建状态可信度高。
 - MCP 服务器为长驻进程，MaaCore 只加载一次。

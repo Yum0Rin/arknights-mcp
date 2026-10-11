@@ -230,7 +230,8 @@ python scheduling/tools/oper_appearance.py --pages 15 --top 25
 ## 8. 数据口径与坑（速查）
 
 1. 在线 vs MAA：elite/level/rarity 实测一致；potential 以在线为准；Skland 多出新干员。
-2. 仓库只有 MAA 有（`DepotData.json`）；森空岛无仓库、无抽卡记录。
+2. 仓库只有 MAA 有（`DepotData.json`）；**森空岛无仓库、无抽卡记录**——抽卡记录在**鹰角官网用户中心**
+   （`ak.hypergryph.com/user/api/inquiry/gacha/*`，与森空岛不是一套），见 `docs/DATA-SOURCES.md` §8。
 3. 森空岛 `sign` 不带 → `401 code=10000`（非"未登录"，别误判）；POST 漏 Content-Type → 400。
 4. 单客户端；adb 滑动本机失效 → 用 MAA(MaaTouch) 滑动（`Custom`+`SlowlySwipeToThe*`）；tap 可用。
 5. MAA 资源不认新活动 → `Not support stage` → `sync` 补，改完重启 MCP/MAA 实例。
