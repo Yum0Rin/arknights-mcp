@@ -63,6 +63,25 @@ def _now():
     return dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
+def _due(trigger_key: str) -> bool:
+    """查 docs/state.json.triggers[key]（形如 '2026-10-11 14:33'）是否已到期。
+    读不到/格式怪 → 当作到期（宁可跑，别漏）。"""
+    try:
+        d = json.loads((REPO / "docs" / "state.json").read_text(encoding="utf-8"))
+        v = (d.get("triggers") or {}).get(trigger_key)
+        if not v:
+            return True
+        s = str(v).replace(">= ", "").strip()
+        for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+            try:
+                return dt.datetime.now() >= dt.datetime.strptime(s, fmt)
+            except ValueError:
+                continue
+        return True
+    except Exception:  # noqa: BLE001
+        return True
+
+
 # ---------------------------------------------------------------------------
 # 计划读写
 # ---------------------------------------------------------------------------
@@ -333,15 +352,20 @@ def cmd_run(args):
         _report({**entry, "ok": False, "stage": "precheck", "error": "MAA GUI 正在运行"})
         raise SystemExit(2)
 
-    # 附带脚本（基建换班，含收菜）—— 先跑，收菜在刷关之前
+    # 附带脚本（基建换班，含收菜）—— 先跑；带 if_due 的只在到期时跑
     if not getattr(args, "no_side", False):
         for s in plan.get("side", []) or []:
             sp = REPO / str(s.get("script") or "")
             if not sp.exists():
                 log("附带脚本不存在，跳过：%s" % sp)
                 continue
-            log("先跑附带脚本（%s）：%s" % (s.get("when", ""), sp.name))
-            r = subprocess.run([sys.executable, str(sp)], cwd=str(REPO))
+            key = s.get("if_due")
+            if key and not _due(key):
+                log("附带脚本（%s）未到期，跳过" % s.get("when", ""))
+                continue
+            cmd = [sys.executable, str(sp)] + [str(a) for a in (s.get("args") or [])]
+            log("跑附带脚本（%s）：%s %s" % (s.get("when", ""), sp.name, " ".join(s.get("args") or [])))
+            r = subprocess.run(cmd, cwd=str(REPO))
             log("附带脚本 %s 退出码 %s" % (sp.name, r.returncode))
             _report({**entry, "ok": r.returncode == 0, "stage": "side",
                      "script": str(sp), "rc": r.returncode})

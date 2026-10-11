@@ -36,6 +36,18 @@
 |---|---|
 | [`收益账本与周报.md`](收益账本与周报.md) | 每日收益/消耗/练度变化的账本 schema（`scheduling/data/revenue_ledger.jsonl`）+ 周报三块模板（练度提升/踩坑/下周优化）+ 设备采集 bundle 接口 |
 
+## 二·七、一键长草（2026-10-11 新增）
+
+| 文件 | 定位 |
+|---|---|
+| [`STATE-一键长草.md`](STATE-一键长草.md) | **现状速查（on-call 先读）**：入口 / 规则 / 参数 / 命令 / 已修的坑 / 待办 |
+| [`PLAN-一键长草.md`](PLAN-一键长草.md) | 方案：执行层任务顺序 + 双落地方案 + 意图层运筹 + 本地汇总网站 + 定时 |
+| [`PLAN-培养与规划逻辑.md`](PLAN-培养与规划逻辑.md) | 培养 × 规划：数据源总表 / 训练标准 / 计算链（D−S=G）/ 优先级 / 待补 |
+
+> 代码：`scheduling/tools/plan_week.py`（规划器）、`plan_util.py`（每日分配）、`oper_cost.py` + `material_cost.py`（培养成本）、
+> `build_site.py` + `site_server.py`（汇总网页 + 公招推荐）、`scripts/maa-week/maa_week.py`（执行器）、
+> `scripts/skland/skland_gui.py`（一体化 GUI「明日方舟·助手」）。
+
 ## 三、参考手册（查）
 
 | 文件 | 定位 |

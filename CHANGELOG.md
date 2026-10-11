@@ -5,6 +5,23 @@
 
 ## [Unreleased]
 ### Added
+- **一键长草全链路**（2026-10-11）：
+  - `scheduling/tools/plan_week.py` **周规划器**（规则写死 `RULE`）：预算(自然+周药+理智药) → 剿灭 → 固源岩下限
+    → EX/S 首通 → 活动(按商店封顶) → 培养 → 1-7 填充 → 每日分配；产出 `weekly_plan.json`（单一事实源）。
+  - `plan_util.py` **每日分配**：开放窗口、**连战 series**、`day_cap`(自然+均摊药) 封顶、上线建议（不浪费自动回复）。
+  - `oper_cost.py` + `material_cost.py` **培养成本**：官方 `character_table` 材料清单 + 企鹅物流掉落率
+    + 加工站 `workshopFormulas` **合成**（先用库存、能合就合）+ 精英化龙门币 → 折算理智。
+  - `fetch_gamedata.py`：**可续传**下载官方 gamedata（绕开 raw.githubusercontent 超时截断）。
+  - `build_site.py` **单页汇总站** + `site_server.py`（公招「贴词条 → 推荐」，含 CORS 与 `/api/reload`）。
+  - `scripts/maa-week/maa_week.py`：`show/write/run/startup`；`run` **默认只跑当天那一份**、自动带连战、
+    队列前跑附带脚本（基建换班）；`startup` **含拉起雷电模拟器**。
+  - `scripts/sanity-potion/sanity_potion.py`：读主界面理智药（只读，自动 ✕）。
+  - `scripts/anchor-runner/`、`scripts/depot-items/`：锚点录制/回放、仓库逐项读数。
+- **一体化 GUI**：`skland_gui.py` 更名「**明日方舟·助手**」，新增「长草」tab、「快捷工具」卡（启动游戏/打开 MAA），
+  「刷新数据 / 签到」**自动续期**森空岛 token（修 401）。
+- **基建**：MAA `Infrast` 收菜任务取消 —— 收菜并入 `infrast_rotation.py`（在刷关前跑），避免重复收菜。
+- **文档**：`docs/STATE-一键长草.md`（现状速查）、`docs/PLAN-一键长草.md`、`docs/PLAN-培养与规划逻辑.md`。
+
 - **森空岛在线取数接入 MCP（免模拟器）**：新增 MCP 工具 `ark_operbox_online`（干员箱，**多带技能等级/专精**）
   与 `ark_infrast_status`（基建状态，原先没有此查询）。适配器 `scripts/skland/skland_box.py` 把森空岛数据转成
   MAA `OperBoxData.json` **同构**，`event-copilot` / `oper_appearance` / `base_gap` / 一图流导入 **零改动换源**。

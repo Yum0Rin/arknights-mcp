@@ -281,7 +281,7 @@ def plan(date: dt.date) -> dict:
                       "name": "培养刷材料"})
     tasks += [
         {"type": "Recruit", "params": {"select": [3, 4, 5], "confirm": [3, 4, 5], "times": 4}},
-        # 基建收菜交给换班脚本（见 side），这里不再排 Infrast，避免重复收菜
+        # 收菜交给 infrast_rotation.py（见 side 的 collect），别再用 MAA Infrast 重复收
         {"type": "Mall", "params": {"enable": True}},
         {"type": "Award", "params": {"enable": True}},
     ]
@@ -301,7 +301,12 @@ def plan(date: dt.date) -> dict:
         "windows": {**({"Annihilation": {}}),
                     **({ev_stage: ev_win} if ev_stage else {})},
         "tasks": tasks,
-        "side": [{"script": "scripts/infrast-rotation/infrast_rotation.py", "when": "after Infrast"}],
+        "side": [
+            # 换班（收菜 → 菲亚梅塔置换 → 13房切队列 → 换班后再收菜）
+            # 收菜跟着换班走；只在到期时跑（if_due 查 state.json.triggers），别每趟跑
+            {"script": "scripts/infrast-rotation/infrast_rotation.py", "args": ["all"],
+             "when": "换班到期时", "if_due": "infra_next_swap_at"},
+        ],
         "rationale": {"notes": notes,
                       "sanity_alloc": {"annihilation": ann_san, "1-7": r17_total * 6,
                                        "活动": ev_runs * ev_san, "培养": train_spent}},

@@ -46,6 +46,26 @@ python scripts/skland/skland_cli.py login
 
 > 详细安装 / 环境变量 / 注册片段 / 全部 `ark_*` 工具与用法 → **[`docs/FEATURES.md`](docs/FEATURES.md)**。
 
+## 🌿 一键长草（2026-10-11 新增）
+
+把"今天 / 这周该打什么"变成**规则写死的确定性计划**，一键直驱 MaaCore 跑完。
+
+- **入口**：桌面快捷方式「**明日方舟·助手**」→ `pythonw scripts/skland/skland_gui.py`
+  - 「长草」tab：`直驱跑一键长草`（跑**当天那一份**，自动带**连战**）/ `基建换班` / `写 MAA 配置`
+  - 「快捷工具」卡：`启动游戏`（含拉起雷电）/ `打开 MAA`
+- **规划器**：`scheduling/tools/plan_week.py`（规则写死在文件顶部 `RULE`）
+  ```
+  预算(自然+周药+理智药) → R1 剿灭 → R2 固源岩下限 → R2.5 EX/S 首通
+                        → R3 活动(按商店封顶) → R3.5 培养 → R4 1-7 填充 → R5 每日分配
+  ```
+  产出 **`scheduling/data/weekly_plan.json`**（单一事实源）。
+- **培养成本**：`oper_cost.py` + `material_cost.py` —— 官方 `character_table` 给材料清单，
+  企鹅物流给掉落率，加工站配方给**合成**（**先用库存、能合就合**），再折算理智 + 精英化龙门币。
+- **汇总网页**：`build_site.py` → `scheduling/报告/汇总.html`（本周/每日/上线建议/培养进度/一键长草思路/周报/排班）；
+  「公招贴词条 → 推荐」由 `site_server.py` 提供后端。
+- 现状·坑·命令速查 → **[`docs/STATE-一键长草.md`](docs/STATE-一键长草.md)**（on-call 先读）；
+  设计见 `docs/PLAN-一键长草.md`、`docs/PLAN-培养与规划逻辑.md`。
+
 ## 🧭 账号数据两条路（重要）
 
 拿"本人账号数据"有两种来源，**只读查询优先走在线**：
