@@ -1,7 +1,7 @@
 {
   "week": "2026-W42",
   "range": "2026-10-12..2026-10-18",
-  "generated_at": "2026-10-12T00:35",
+  "generated_at": "2026-10-12T19:15",
   "by": "plan_week.py",
   "budget": {
     "sanity_natural": 1680,
@@ -11,10 +11,10 @@
     "daily_natural": 240
   },
   "inventory": {
-    "固源岩": 1282
+    "固源岩": 1128
   },
   "shards": {
-    "stock": 1282,
+    "stock": 1128,
     "target": 1000,
     "per_run": 1.245,
     "daily_use": 92.4,
@@ -83,7 +83,7 @@
       "type": "Fight",
       "params": {
         "stage": "YW-6",
-        "times": 34,
+        "times": 4,
         "series": 10
       },
       "name": "活动刷代币"
@@ -156,18 +156,10 @@
       "type": "Fight",
       "params": {
         "stage": "1-7",
-        "times": 311,
+        "times": 418,
         "series": 6
       },
       "name": "搓玉/填充"
-    },
-    {
-      "type": "Fight",
-      "params": {
-        "stage": "MN-4",
-        "times": 1
-      },
-      "name": "培养刷材料"
     },
     {
       "type": "Recruit",
@@ -190,10 +182,18 @@
       "params": {
         "mode": 20000,
         "facility": [
-          "Reception"
+          "Mfg",
+          "Trade",
+          "Power",
+          "Control",
+          "Reception",
+          "Office",
+          "Dorm",
+          "Processing",
+          "Training"
         ]
       },
-      "name": "会客室/线索"
+      "name": "基建·队列轮换"
     },
     {
       "type": "Mall",
@@ -208,52 +208,36 @@
       }
     }
   ],
-  "side": [
-    {
-      "script": "scripts/infrast-rotation/infrast_rotation.py",
-      "args": [
-        "all"
-      ],
-      "when": "换班到期时",
-      "if_due": "infra_next_swap_at"
-    }
-  ],
+  "side": [],
   "rationale": {
     "notes": [
-      "固源岩 1282 → 期末需 ≥1000：1-7 下限 294 次（周耗 647，单次产 1.245）",
+      "固源岩 1128 → 期末需 ≥1000：1-7 下限 417 次（周耗 647，单次产 1.245）",
       "★ 本周 2026-10-16 开放 EX 关 8 个 → 首通共 120 理智（必做）",
       "S 关 2026-10-23 开放（不在本周），届时首通（往期口径 1 个 ≈ 15 理智）",
-      "活动 YW-6：开放 2026-10-09~2026-10-23，每局 21 理智；商店要买 5110 代币 → 需 244 次（预算够 39 次）",
+      "活动 YW-6：开放 2026-10-09~2026-10-23，每局 21 理智；商店要买 5110 代币 → 需 244 次（预算够 4 次）",
       "活动商店可白拿 5 种材料（已从培养需求里抵扣）",
-      "培养：总缺口 2783 理智（材料 248 + 龙门币 2535）；本周投 11 理智刷 MN-4×1",
-      "预算 2840；剿灭 125 + EX首通 120 + 1-7 1764 + 活动 714 + 培养 12 = 2735；补 1-7 17 次花光",
-      "★ 排期自检：活动 YW-6 次数 39→38（逐日装不下 {'1-7': 2}，释放理智回流 filler）",
-      "★ 排期自检：活动 YW-6 次数 38→37（逐日装不下 {'1-7': 1}，释放理智回流 filler）",
-      "★ 排期自检：活动 YW-6 次数 37→36（逐日装不下 {'1-7': 2}，释放理智回流 filler）",
-      "★ 排期自检：活动 YW-6 次数 36→35（逐日装不下 {'1-7': 1}，释放理智回流 filler）",
-      "★ 排期自检：活动 YW-6 次数 35→34（逐日装不下 {'1-7': 1}，释放理智回流 filler）",
-      "活动 YW-6：本周实排 34 次（每局 21 理智，共 714 理智）",
-      "1-7：本周实排 311 次（下限 294 + 填充 17），共 1866 理智"
+      "培养：总缺口 2541 理智（材料 6 + 龙门币 2535）；本周投 0 理智刷 无",
+      "预算 2840；剿灭 125 + EX首通 120 + 1-7 2502 + 活动 84 + 培养 0 = 2831；补 1-7 1 次花光",
+      "活动 YW-6：本周实排 4 次（每局 21 理智，共 84 理智）",
+      "1-7：本周实排 418 次（下限 417 + 填充 1），共 2508 理智"
     ],
     "sanity_alloc": {
       "annihilation": 125,
       "EX首通": 120,
-      "1-7": 1866,
-      "活动": 714,
-      "培养": 11.999526881720428
+      "1-7": 2508,
+      "活动": 84,
+      "培养": 0
     }
   },
   "training": {
     "targets": [
       "乌尔比安"
     ],
-    "total_sanity": 2783.0,
-    "material_sanity": 248.2,
+    "total_sanity": 2541.3,
+    "material_sanity": 6.5,
     "lmd_sanity": 2534.9,
-    "week_sanity": 11.999526881720428,
-    "week_tasks": {
-      "MN-4": 1
-    },
+    "week_sanity": 0,
+    "week_tasks": {},
     "credited_count": 5,
     "credited": {
       "30115": 5,
@@ -262,32 +246,8 @@
       "3302": 24,
       "30032": 3
     },
-    "need_weeks": 231.9,
+    "need_weeks": null,
     "top_gaps": [
-      {
-        "name": "聚合剂",
-        "qty": 1,
-        "sanity": 138.1,
-        "stock": 5
-      },
-      {
-        "name": "酮凝集",
-        "qty": 4,
-        "sanity": 51.3,
-        "stock": 0
-      },
-      {
-        "name": "异铁碎片",
-        "qty": 5,
-        "sanity": 31.8,
-        "stock": 0
-      },
-      {
-        "name": "代糖",
-        "qty": 4,
-        "sanity": 20.4,
-        "stock": 0
-      },
       {
         "name": "三水锰矿",
         "qty": 8,
@@ -295,5 +255,124 @@
         "stock": 26
       }
     ]
-  }
+  },
+  "daily": [
+    {
+      "date": "2026-10-12",
+      "dow": "周一",
+      "runs": {
+        "Annihilation": 1,
+        "YW-6": 1,
+        "1-7": 60
+      },
+      "sanity": 406,
+      "cap": 240,
+      "day_cap": 406,
+      "over": false,
+      "opens": [],
+      "unplaced": {}
+    },
+    {
+      "date": "2026-10-13",
+      "dow": "周二",
+      "runs": {
+        "Annihilation": 1,
+        "YW-6": 1,
+        "1-7": 60
+      },
+      "sanity": 406,
+      "cap": 240,
+      "day_cap": 406,
+      "over": false,
+      "opens": [],
+      "unplaced": {}
+    },
+    {
+      "date": "2026-10-14",
+      "dow": "周三",
+      "runs": {
+        "Annihilation": 1,
+        "YW-6": 1,
+        "1-7": 60
+      },
+      "sanity": 406,
+      "cap": 240,
+      "day_cap": 406,
+      "over": false,
+      "opens": [],
+      "unplaced": {}
+    },
+    {
+      "date": "2026-10-15",
+      "dow": "周四",
+      "runs": {
+        "Annihilation": 1,
+        "YW-6": 1,
+        "1-7": 60
+      },
+      "sanity": 406,
+      "cap": 240,
+      "day_cap": 406,
+      "over": false,
+      "opens": [],
+      "unplaced": {}
+    },
+    {
+      "date": "2026-10-16",
+      "dow": "周五",
+      "runs": {
+        "Annihilation": 1,
+        "YW-EX-7": 1,
+        "YW-EX-8": 1,
+        "YW-EX-3": 1,
+        "1-7": 54
+      },
+      "sanity": 404,
+      "cap": 240,
+      "day_cap": 406,
+      "over": false,
+      "opens": [
+        "YW-EX-1",
+        "YW-EX-2",
+        "YW-EX-3",
+        "YW-EX-4",
+        "YW-EX-5",
+        "YW-EX-6",
+        "YW-EX-7",
+        "YW-EX-8"
+      ],
+      "unplaced": {}
+    },
+    {
+      "date": "2026-10-17",
+      "dow": "周六",
+      "runs": {
+        "YW-EX-4": 1,
+        "YW-EX-5": 1,
+        "YW-EX-1": 1,
+        "1-7": 61
+      },
+      "sanity": 406,
+      "cap": 240,
+      "day_cap": 406,
+      "over": false,
+      "opens": [],
+      "unplaced": {}
+    },
+    {
+      "date": "2026-10-18",
+      "dow": "周日",
+      "runs": {
+        "YW-EX-6": 1,
+        "YW-EX-2": 1,
+        "1-7": 63
+      },
+      "sanity": 403,
+      "cap": 240,
+      "day_cap": 406,
+      "over": false,
+      "opens": [],
+      "unplaced": {}
+    }
+  ]
 }

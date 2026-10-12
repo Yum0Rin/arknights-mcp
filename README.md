@@ -51,7 +51,7 @@ python scripts/skland/skland_cli.py login
 把"今天 / 这周该打什么"变成**规则写死的确定性计划**，一键直驱 MaaCore 跑完。
 
 - **入口**：桌面快捷方式「**明日方舟·助手**」→ `pythonw scripts/skland/skland_gui.py`
-  - 「长草」tab：`直驱跑一键长草`（跑**当天那一份**，自动带**连战**）/ `基建换班` / `写 MAA 配置`
+   - 「长草」tab：`直驱跑一键长草`（跑**当天那一份**，自动带**连战**）/ `写 MAA 配置`（也只写当天）
   - 「快捷工具」卡：`启动游戏`（含拉起雷电）/ `打开 MAA`
 - **规划器**：`scheduling/tools/plan_week.py`（规则写死在文件顶部 `RULE`）
   ```

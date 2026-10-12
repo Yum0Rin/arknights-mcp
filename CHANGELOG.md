@@ -5,6 +5,11 @@
 
 ## [Unreleased]
 ### Fixed
+- **`weekly_plan.json` 长期 stale**（2026-10-12）：它还是旧口径（固源岩 1282/目标 500、剿灭 0、YW-6 123 次），
+  而 `weekly_plan.W42.json` 已是新口径，且 `maa_week` 读的是前者 ⇒ 每天跑的都是旧账。现已重新生成并把 W42 对齐为镜像；
+  追加留痕到 `weekly_plan_log.jsonl`。
+- **关卡通不了航会打死整天队列**（2026-10-12）：`maa_week.run` 增 **预检**，`Fight` 关卡若 MAA resource 无定义
+  （如 `YW-EX-1`）则**跳过并留证**（`--strict` 才失败），不再因一条 `append=0` 让整天跑不动。
 - **培养成本：接入官方升级经验/龙门币，并支持按「当前练度」只算剩余段**（2026-10-12）：
   `fetch_gamedata.py` 增拉官方 `gamedata_const.json`；`oper_cost.py` 用其
   `characterExpMap` / `characterUpgradeCostMap` / `evolveGoldCost` / `maxLevel`
@@ -25,8 +30,38 @@
   `plan_week.py` 的 `RULE.shards.target` 改为 1000，与 `MASTER-PLAN` / `state.json` / 每日清单一致。
 - **剿灭改「每天 1 次」**（2026-10-12）：周一~周五各 1 次打满 1800 玉上限（旧版 `5 次/周` 分摊语义不清）；
   `plan_week.py` 组装任务时**显式排出剿灭**（`StartUp → 剿灭 → 活动 → EX/S → 1-7 → 培养 → 日常`）。
-
+- **活动商店选择性兑换**：记录 MaaCore **v6.18.0 不支持** `params.event_shop.blacklist`（勿拿 dev-v2 源码当运行版接口依据），
+  `SS@Store@Begin` 会按其固定 ROI 无脑买 → 选择性兑换改**手动 tap**（见 `FINDINGS.md §19`；本次 6 件家具 310 已手动买齐）。
+  > **2026-10-12 更新**：6.19.0 的 `MaaCore.dll` 已含 `event_shop` 解析 ⇒ 该限制**已解除**（`FINDINGS.md §21`），待实跑确认日志有 `registered EventShop task` 后改回自动。
+- **`ark_run_task` 跑任务前自动 `connect`**：此前未 `ark_connect` 就 `ark_run_task` 时，MaaCore `Controller::swipe`
+  报 `m_controller is not inited`，滑动/Copilot 等**静默失效**（`ark_screenshot` 走 adb 仍正常，极易误判）。
+  `ark_status.connected` 也改为反映真实连接态。
+### Changed
+- **基建改交 MAA 自带的「队列轮换」**（2026-10-12，用户裁定）：`plan_week.RULE.infra_facilities` 新增
+  （Mfg/Trade/Power/Control/Reception/Office/Dorm/Processing/Training），`Infrast` 任务参数改为 `mode=20000` + 全设施；
+  `plan["side"]` 清空。自研 `scripts/infrast-rotation/infrast_rotation.py` 与 skill `arknights-infrast-rotation`
+  归档到 `历史版本/基建改MAA轮换+队列按天-2026-10-12/`（含回退说明）并从工作区删除；GUI「基建换班」按钮移除；
+  `AGENTS.md` 铁律 2、`MASTER-PLAN` §5.6、`STATE.md`/`PLAN-一键长草`/`DAILY-CHECKLIST`/`ops_manual.json` 口径同步。
+- **MAA 队列改「一天一天编辑」**（2026-10-12，用户裁定）：`maa_week.write` 从「把整周刷关量刷进 GUI」改为
+  **只写当天**（`--date`，默认今天）：Fight 槽位**按关卡匹配**、当天的新关克隆槽位插入、**不在当天计划里的槽位 `IsEnable=false`**；
+  固定任务（StartUp/Recruit/Infrast/Mall/Award）确保启用并同步次数，`Infrast.Mode` 强制 `Rotation`；
+  空 `Plans` 的 `OperProgress` 自动停用（否则 `set_params` 失败会拖垮整条队列）。
+  `plan_week` 产出新增 **`daily` 逐日视图**，`_today_tasks` 改为优先读它（口径唯一）；`show` 打印逐日表。
+- **GUI 整体重做：CustomTkinter → PySide6 + PySide6-Fluent-Widgets**（2026-10-12）：
+  Win11 Fluent Design（左 NavigationInterface 图标+文字导航 / CardWidget / TableWidget /
+  InfoBar 吐司 / 明暗跟随系统）。`scripts/skland/skland_gui.py` 整份重写（约 1500 行）；
+  `skland_client.py` / `gacha_client.py` / `ff_session.py` **一行没动**，只是换壳。
+  - **配色改成「方舟风：深海蓝 + 金」**：底 `#0A121D` / 卡片 `#121E2E`（描边 `#27405F`）/
+    标题与强调 `#E3BE63` / 主色 `#C9973B`；浅色主题另有一套（米白 + 暗金）。
+    卡片是 `CardWidget` 自绘的，所以走 `GameCard.paintEvent` 覆盖 + 调色板 `GAME[]`，
+    而不是框架主题；切主题时由 `_restyle_game()` 重新铺（含表格 QSS 与已注册的文字颜色）。
+  - 关掉 Mica（改用纯色深海蓝，云母会把底色冲淡）：`setMicaEffectEnabled(False)` +
+    `setCustomBackgroundColor(light, dark)`。
+  - 新依赖：`PySide6-Essentials` + `PySide6-Fluent-Widgets`（+ `PySideSix-Frameless-Window`）。
+  旧版快照见 `历史版本/Fluent界面重做-2026-10-12/`。
 ### Added
+- **监工对账**（2026-10-12）：`docs/STATE-一键长草.md` 文末新增「监工对账」节 —— 逐日↔计划次数、逐日理智 ≤ day_cap、
+  全周 ≤ 预算、开放窗口、剿灭周上限、固源岩期末目标、商店代币全部脚本核算；3 个真问题记入 `state.json.plan.audit_findings_2026-10-12`。
 - **MaaCore 6.18.0 → 6.19.0 更新扒取与融合评估**（2026-10-12）：新增
   `docs/MAA-6.19-融合评估.md`；核对方式 = Release 正文 + **本机 DLL 字符串实测**
   + dev-v2 源码。要点：
@@ -40,22 +75,6 @@
   - 文档同步：`MAA-INTERNALS.md`（版本 6.19.0 + §2.20 库存保持 + §2.21）、`FINDINGS.md` §21、`docs/README.md` 索引、`AGENTS.md` 版本。
 - **`.opencode/agent/` 子 agent 定义**（2026-10-12）：`ark-data`（取数）/ `ark-exec`（执行）/
   `ark-verify`（复盘对账）/ `ark-orchestrator`（总指挥），配合既有 `arknights-*` skills 分权。
-
-### Changed
-- **GUI 整体重做：CustomTkinter → PySide6 + PySide6-Fluent-Widgets**（2026-10-12）：
-  Win11 Fluent Design（左 NavigationInterface 图标+文字导航 / CardWidget / TableWidget /
-  InfoBar 吐司 / 明暗跟随系统）。`scripts/skland/skland_gui.py` 整份重写（约 1500 行）；
-  `skland_client.py` / `gacha_client.py` / `ff_session.py` **一行没动**，只是换壳。
-  - **配色改成「方舟风：深海蓝 + 金」**：底 `#0A121D` / 卡片 `#121E2E`（描边 `#27405F`）/
-    标题与强调 `#E3BE63` / 主色 `#C9973B`；浅色主题另有一套（米白 + 暗金）。
-    卡片是 `CardWidget` 自绘的，所以走 `GameCard.paintEvent` 覆盖 + 调色板 `GAME[]`，
-    而不是框架主题；切主题时由 `_restyle_game()` 重新铺（含表格 QSS 与已注册的文字颜色）。
-  - 关掉 Mica（改用纯色深海蓝，云母会把底色冲淡）：`setMicaEffectEnabled(False)` +
-    `setCustomBackgroundColor(light, dark)`。
-  - 新依赖：`PySide6-Essentials` + `PySide6-Fluent-Widgets`（+ `PySideSix-Frameless-Window`）。
-  旧版快照见 `历史版本/Fluent界面重做-2026-10-12/`。
-
-### Added
 - **抽卡凭据免密码 + 打开即自动登录**（2026-10-12）：
   - `scripts/skland/ff_session.py`（新增，**仅标准库**）：直接从本机 Firefox 读登录态 ——
     `ak-user-center` 是**会话 cookie**（不在 `cookies.sqlite`，只在 `sessionstore*.jsonlz4`，
@@ -126,20 +145,11 @@
   作业在 `C:\MAA\resource\copilot\`（含 `old/`，共 75 个）；#12 废都安保派驻 内为「日达诺夫园区」。
 - **收益账本 + 周报**（`scheduling/tools/revenue_ledger.py`、`revenue_weekly.py`、`docs/收益账本与周报.md`）：
   按结算段(04:00~次日03:59)记「基建收益/刷关所得/资源消耗/练度变化」的**物品差额**（省 token，不存全量快照），
-  周报三块：本周练度提升 / 本周踩坑 / 下周优化。
-### Fixed
-- **活动商店选择性兑换**：记录 MaaCore **v6.18.0 不支持** `params.event_shop.blacklist`（勿拿 dev-v2 源码当运行版接口依据），
-  `SS@Store@Begin` 会按其固定 ROI 无脑买 → 选择性兑换改**手动 tap**（见 `FINDINGS.md §19`；本次 6 件家具 310 已手动买齐）。
-- **`ark_run_task` 跑任务前自动 `connect`**：此前未 `ark_connect` 就 `ark_run_task` 时，MaaCore `Controller::swipe`
-  报 `m_controller is not inited`，滑动/Copilot 等**静默失效**（`ark_screenshot` 走 adb 仍正常，极易误判）。
-  `ark_status.connected` 也改为反映真实连接态。
-- 活动商店数据全量录入 + 规划器支持"无限库存"道具（按需买，不计入"买满"）。
 ### 计划
 - `ark_ocr`：接入 MAA 的 OCR，读取任意 ROI 文本。
 - 任务序列编排（一次调用跑多个任务并返回分步结果）。
 - `ark_find` 支持模板批量匹配与去重阈值。
 
-## [0.3.0] - 2026-10-10
 ### Added
 - **`ark_task_result`**：长任务轮询工具。返回 `running` / `done` / `elapsed` 与 TaskChain
   完成（`chains`）/ 出错（`errors`）列表，供自动战斗等长任务用。

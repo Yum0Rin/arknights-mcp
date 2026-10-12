@@ -51,6 +51,10 @@ RULE = {
                "per_run": 1.245, "daily_use": 92.4},
     "filler": "1-7",
     "train_targets": ["乌尔比安"],   # 本期只养乌尔比安（用户 2026-10-11 定）
+    # 基建：交给 MAA 自带的「队列轮换」(Infrast mode=20000)，这里只决定**收哪些设施**
+    # （= MAA GUI RoomList 里启用的那批；顺序无所谓）。AssistantChange 不启用。
+    "infra_facilities": ["Mfg", "Trade", "Power", "Control", "Reception",
+                         "Office", "Dorm", "Processing", "Training"],
 }
 DEPOT = pathlib.Path(r"C:\MAA\data\DepotData.json")
 OUT = DATA / "weekly_plan.json"
@@ -135,9 +139,11 @@ def _assemble_tasks(ann_runs, ev_stage, ev_runs, extra_tasks, r17_total, train_t
                       "name": "培养刷材料"})
     tasks += [
         {"type": "Recruit", "params": {"select": [3, 4, 5], "confirm": [3, 4, 5], "times": 4}},
-        # MAA 只管「会客室/线索搜集」；其余收菜与换班交给 infrast_rotation.py（见 side）
-        {"type": "Infrast", "params": {"mode": 20000, "facility": ["Reception"]},
-         "name": "会客室/线索"},
+        # 基建：**交给 MAA 自带的「队列轮换」**（mode=20000 → 进基建 → 当前班有人心情为 0 就点游戏内
+        # 「一键轮换」，再各设施收菜；Rotation 下 MAA 不换干员＝skip_shift）。见 docs/STATE-一键长草.md。
+        # 自研换班脚本已归档：历史版本/基建改MAA轮换+队列按天-2026-10-12/
+        {"type": "Infrast", "params": {"mode": 20000, "facility": RULE["infra_facilities"]},
+         "name": "基建·队列轮换"},
         {"type": "Mall", "params": {"enable": True}},
         {"type": "Award", "params": {"enable": True}},
     ]
@@ -364,12 +370,9 @@ def plan(date: dt.date) -> dict:
                    "daily_use": sh["daily_use"], "stage": sh["stage"]},
         "windows": _build_windows(ev_stage, ev_win, ev),
         "tasks": [],
-        "side": [
-            # 换班（收菜 → 菲亚梅塔置换 → 13房切队列 → 换班后再收菜）
-            # 收菜跟着换班走；只在到期时跑（if_due 查 state.json.triggers），别每趟跑
-            {"script": "scripts/infrast-rotation/infrast_rotation.py", "args": ["all"],
-             "when": "换班到期时", "if_due": "infra_next_swap_at"},
-        ],
+        # side = 「run 时要额外交给本机脚本的活」。**基建已交还 MAA 自带的队列轮换**（见 tasks 里的 Infrast），
+        # 所以这里为空；保留该字段是为了以后还有别的附带脚本时不用改 schema。
+        "side": [],
     }
 
     # --- R4 填充 + 排期自检 —— 保证逐日排得下（无 unplaced）---
@@ -411,6 +414,14 @@ def plan(date: dt.date) -> dict:
                          for r in sorted((x for x in train_info["rows"] if x.get("sanity")),
                                          key=lambda x: -(x["sanity"] or 0))[:12]],
         }
+    # --- 逐日视图：队列**按天编辑**用（maa_week write/run 都读这里，别再各自重算）---
+    # 结构：[{date, dow, runs:{stage:次数}, sanity, cap, day_cap, opens, over, unplaced}, ...]
+    try:
+        import plan_util
+        plan["daily"] = plan_util.distribute_daily(plan)
+    except Exception as e:  # noqa: BLE001
+        plan["daily"] = []
+        notes.append("逐日分配失败：%r" % e)
     return plan
 
 

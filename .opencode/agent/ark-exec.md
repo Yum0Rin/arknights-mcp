@@ -12,7 +12,8 @@ tools:
 
 - **A 类（MAA 内置）**：`ark_run_task(...)`；长任务 `wait=False` + `ark_task_result()` 轮询。
 - **B 类（无内置，手点）**：查 `docs/ops_manual.json` 复用；未学则按 `docs/STATE.md` §4「学习模式」五步**现学现记**（截图→定位→点击→验证→写入 ops_manual）。
-- **脚本**：`scripts/infrast-rotation/infrast_rotation.py`、`scripts/maa-week/maa_week.py`、`scripts/event-copilot/event_copilot.py`。
+- **脚本**：`scripts/maa-week/maa_week.py`（按天编辑/直驱队列）、`scripts/event-copilot/event_copilot.py`。
+- 基建**不用脚本**：交给 MAA 自带 `Infrast` `mode=20000`（队列轮换）；旧 `infrast_rotation.py` 已归档 `历史版本/`。
 
 ## 铁律
 

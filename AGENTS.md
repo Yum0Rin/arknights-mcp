@@ -47,9 +47,15 @@
    取数**一律用森空岛**（`ark_operbox_online`，含技能/专精）；**仅当森空岛不可用**才退回 MAA 干员箱。
    森空岛 401 = 凭证过期 → `python scripts/skland/skland_cli.py status` 续期。
    **不许用 `ignore_requirements` 硬凑练度不齐的作业。**
-2. **基建一律用《搓玉 · 合成玉》方案**（`C:\Users\39007\Desktop\明日方舟排班报告.html`，A/B 班各 720min）。
+2. **基建交给 MAA 自带的「队列轮换」**（`Infrast` `mode=20000` / GUI `Mode=Rotation`，A/B 班各 720min 由**游戏内队列 1/2** 承载）。
+   MAA 进基建 → 当前班有人心情 0 → 点游戏内「一键轮换」→ 各设施收菜（Rotation 下 MAA 不换干员）。
+   `facility` = Mfg/Trade/Power/Control/Reception/Office/Dorm/Processing/Training（见 `plan_week.RULE.infra_facilities`）。
+   **自研换班脚本已于 2026-10-12 归档**（`历史版本/基建改MAA轮换+队列按天-2026-10-12/`），不再使用。
    核对：森空岛 `ark_infrast_status` 拉当前进驻 → 与方案逐设施比对（宿舍「自动填充」不校验）。
    > 详见 skill `arknights-event-copilot` 与 `docs/WORKFLOW-活动关作业.md`。
+3. **MAA 队列「一天一天编辑」，不写整周**：`maa_week.py write`（默认今天，`--date` 可指定）只把**当天那一份**
+   刷进 `gui.new.json`（Fight 槽位按关卡匹配、非当天的槽位停用），`run` 也只跑当天（`--whole-week` 才跑整周）。
+   > 判据：当天该刷多少由 `weekly_plan.json.daily`（`plan_util.distribute_daily` 产出）决定。
 
 ## 账号数据两条路：MAA 识别 vs 森空岛在线（**选之前先读这条**）
 

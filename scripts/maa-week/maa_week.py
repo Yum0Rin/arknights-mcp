@@ -45,7 +45,9 @@ TMP = pathlib.Path(os.environ.get("TEMP", ".")) / "maa-week"
 TASK_DEFAULTS = {
     "Recruit": {"select": [3, 4, 5], "confirm": [3, 4, 5], "times": 50},
     "StartUp": {"client_type": "Official"},
-    "Infrast": {"mode": 20000, "facility": ["Mfg", "Trade", "Reception"]},
+    # 基建：MAA 自带的「队列轮换」（mode=20000）。facility = 收哪些设施（顺序无所谓）。
+    "Infrast": {"mode": 20000, "facility": ["Mfg", "Trade", "Power", "Control", "Reception",
+                                            "Office", "Dorm", "Processing", "Training"]},
 }
 
 # weekly_plan.tasks[].type  →  gui.new.json 里的 $type / TaskType
@@ -115,7 +117,19 @@ def cmd_show(args):
         times = ("×%s" % pr["times"]) if "times" in pr else ""
         print("  %2d. %-9s %s %s" % (i, t["type"], desc, times))
     for s in plan.get("side", []):
-        print("  +  换班(另跑) %s  [%s]" % (s.get("script"), s.get("when")))
+        print("  +  附带脚本 %s  [%s]" % (s.get("script"), s.get("when")))
+    # 逐日表：队列「按天编辑」就看这一张
+    daily = plan.get("daily") or []
+    if daily:
+        today = getattr(args, "date", "") or dt.date.today().isoformat()
+        print("\n逐日分配（%s ← 今天；write/run 默认只下这一天）：" % today)
+        for d in daily:
+            runs = "、".join("%s×%d" % kv for kv in (d.get("runs") or {}).items()) or "无"
+            mark = ">>" if d.get("date") == today else "  "
+            print("  %s %s(%s)  理智 %-5s / 上限 %-5s %s%s"
+                  % (mark, d.get("date"), d.get("dow", ""), d.get("sanity", 0),
+                     d.get("day_cap", d.get("cap", "")), runs,
+                     "  ⚠未排下:%s" % d["unplaced"] if d.get("unplaced") else ""))
     r = plan.get("rationale", {})
     if r.get("sanity_alloc"):
         print("\n理智分配：%s" % r["sanity_alloc"])
@@ -124,12 +138,24 @@ def cmd_show(args):
 
 
 # ---------------------------------------------------------------------------
-# write：只动 Fight(stage/times) + Infrast(filename)，其余保持原配置
+# write：把**当天那一份**刷进 MAA GUI 配置（一天一天编辑，不写整周）
+#   - Fight 槽位按「关卡」匹配：今天的关写次数，**不在今天计划里的槽位一律停用**（跑完即停）
+#   - 固定任务（StartUp/Recruit/Infrast/Mall/Award）确保启用；Infrast 强制 Mode=Rotation
+#   - 其余任务（Roguelike / OperProgress 等）**不动**，只有「空 Plans 的 OperProgress」会被停用
+#     （它 set_params 会失败 → 会拖垮整条队列）
 # ---------------------------------------------------------------------------
 def _maa_running() -> bool:
     r = subprocess.run(["tasklist", "/FI", "IMAGENAME eq MAA.exe"],
                        capture_output=True, text=True)
     return "MAA.exe" in (r.stdout or "")
+
+
+def _clone_fight_slot(queue, slots, insert_at):
+    """克隆一个现有 Fight 槽位（今天有新的关、原配置没这个槽位时用）。"""
+    if slots:
+        return json.loads(json.dumps(slots[0]))
+    return {"$type": "FightTask", "Name": "刷理智", "IsEnable": True, "TaskType": "Fight",
+            "StagePlan": [], "EnableTimesLimit": True, "TimesLimit": 1}
 
 
 def cmd_write(args):
@@ -142,51 +168,87 @@ def cmd_write(args):
     cur = cfg.get("Current", "Default")
     queue = cfg["Configurations"][cur]["TaskQueue"]
 
-    fights = [t for t in plan.get("tasks", []) if t["type"] == "Fight"]
-    fight_slots = [q for q in queue if q.get("TaskType") == "Fight"]
-    # 新增 Fight 必须插在「最后一个 Fight 之后」，否则会落到 Roguelike 后面 → 顺序错
-    insert_at = (max(i for i, q in enumerate(queue) if q.get("TaskType") == "Fight") + 1
-                 if fight_slots else len(queue))
-
+    tasks, today, day = _today_tasks(plan, getattr(args, "date", "") or "")
+    fights = [p for (t, p) in tasks if t == "Fight"]
     changed = []
-    for i, t in enumerate(fights):
-        pr = merged_params(t)
-        stage, times = pr.get("stage"), pr.get("times", 1)
-        if i < len(fight_slots):
-            slot = fight_slots[i]
-        else:  # 计划里的 Fight 比原配置多 → 克隆第一个 Fight，插在最后一个 Fight 后
-            slot = json.loads(json.dumps(fight_slots[0])) if fight_slots else \
-                {"$type": "FightTask", "Name": "刷理智", "IsEnable": True, "TaskType": "Fight"}
+
+    # --- Fight：按关卡匹配槽位（一天一天编辑的核心）---
+    slots = [q for q in queue if q.get("TaskType") == "Fight"]
+    by_stage = {}
+    for q in slots:
+        by_stage.setdefault(((q.get("StagePlan") or [""])[0]), q)
+    insert_at = (max(i for i, q in enumerate(queue) if q.get("TaskType") == "Fight") + 1
+                 if slots else len(queue))
+
+    today_stages = set()
+    for p in fights:
+        stage, times = p.get("stage"), int(p.get("times") or 0)
+        if not stage or times <= 0:
+            continue
+        today_stages.add(stage)
+        slot = by_stage.get(stage)
+        if slot is None:
+            slot = _clone_fight_slot(queue, slots, insert_at)
+            slot["StagePlan"] = [stage]
             queue.insert(insert_at, slot)
             insert_at += 1
-        slot["StagePlan"] = [stage] if stage else slot.get("StagePlan", [])
+            slots.append(slot)
+            by_stage[stage] = slot
+            changed.append("+ Fight 新槽位：%s（克隆现有槽位）" % stage)
+        slot["StagePlan"] = [stage]
         slot["EnableTimesLimit"] = True
-        slot["TimesLimit"] = int(times)
+        slot["TimesLimit"] = times
         slot["IsEnable"] = True
-        slot["Name"] = t.get("name") or ("刷理智·%s" % stage)
-        changed.append("Fight#%d -> %s ×%s" % (i + 1, stage, times))
+        slot["Name"] = p.get("_name") or stage
+        if "series" in p:
+            slot["Series"] = int(p["series"])
+        changed.append("Fight %-12s ×%-4d series=%s" % (stage, times, p.get("series", "不变")))
+    for st, q in by_stage.items():
+        if st and st not in today_stages and q.get("IsEnable"):
+            q["IsEnable"] = False
+            changed.append("Fight %-12s → 停用（不在 %s 计划内）" % (st, today))
 
-    # 公招次数同步到 GUI 的 MaxTimes（6 星不自动由 GUI 的 Level6Choose 控制，此处不碰）
-    rec_slots = [q for q in queue if q.get("TaskType") == "Recruit"]
-    for i, t in enumerate([x for x in plan.get("tasks", []) if x["type"] == "Recruit"]):
-        if i >= len(rec_slots):
-            break
-        pr = merged_params(t)
-        if "times" in pr:
-            rec_slots[i]["MaxTimes"] = int(pr["times"])
-            rec_slots[i]["IsEnable"] = True
-            changed.append("Recruit#%d MaxTimes -> %s" % (i + 1, pr["times"]))
+    # --- 固定任务：确保启用 + 同步可变量 ---
+    want = {}
+    for t, p in tasks:
+        if t in ("StartUp", "Recruit", "Infrast", "Mall", "Award"):
+            want[t] = p
+    infra_fac = (want.get("Infrast") or {}).get("facility") or []
+    for q in queue:
+        tt = q.get("TaskType")
+        if tt not in want:
+            continue
+        if not q.get("IsEnable", True):
+            q["IsEnable"] = True
+            changed.append("%s → 启用" % tt)
+        if tt == "Recruit":
+            mt = int((want["Recruit"] or {}).get("times") or 0)
+            if mt and int(q.get("MaxTimes") or 0) != mt:
+                q["MaxTimes"] = mt
+                changed.append("Recruit MaxTimes → %d" % mt)
+        elif tt == "Infrast":
+            if q.get("Mode") != "Rotation":
+                changed.append("Infrast.Mode %s → Rotation（改用 MAA 自带的队列轮换）" % q.get("Mode"))
+                q["Mode"] = "Rotation"
+            for r in (q.get("RoomList") or []):
+                if r.get("Room") == "AssistantChange":
+                    continue
+                on = r.get("Room") in infra_fac
+                if bool(r.get("IsEnabled", True)) != on:
+                    r["IsEnabled"] = on
+                    changed.append("Infrast.RoomList.%s → %s" % (r.get("Room"), on))
 
-    # 基建 filename（可选）：计划里若带 filename 就同步
-    for t in plan.get("tasks", []):
-        if t["type"] == "Infrast" and (t.get("params") or {}).get("filename"):
-            for q in queue:
-                if q.get("TaskType") == "Infrast":
-                    q["Filename"] = t["params"]["filename"]
-                    changed.append("Infrast.Filename -> %s" % q["Filename"])
+    for q in queue:
+        if q.get("TaskType") == "OperProgress" and not (q.get("Plans") or []) and q.get("IsEnable", True):
+            q["IsEnable"] = False
+            changed.append("OperProgress → 停用（Plans 为空，跑起来 set_params 会失败拖垮队列）")
+
+    log("写入口径：%s（当天）   分配=%s   理智=%s"
+        % (today, "、".join("%s×%d" % kv for kv in (day.get("runs") or {}).items()) or "无",
+           day.get("sanity")))
 
     if args.dry:
-        log("[dry] 不写盘。将改动：")
+        log("[dry] 不写盘。将改动 %d 条：" % len(changed))
         for c in changed:
             log("  " + c)
         return
@@ -280,6 +342,65 @@ def _shot(tag: str) -> str:
     return str(p)
 
 
+_STAGE_KEYS: set | None = None
+
+
+def _stage_keys() -> set:
+    """MAA 认得的关卡名集合 = resource/tasks/tasks.json + resource/tasks/Stages/*.json 的键。"""
+    global _STAGE_KEYS
+    if _STAGE_KEYS is None:
+        keys: set = set()
+        paths = [MAA / "resource" / "tasks" / "tasks.json"]
+        paths += sorted((MAA / "resource" / "tasks" / "Stages").glob("*.json"))
+        for p in paths:
+            try:
+                keys |= set(json.loads(p.read_text(encoding="utf-8")).keys())
+            except Exception:  # noqa: BLE001
+                continue
+        _STAGE_KEYS = keys
+    return _STAGE_KEYS
+
+
+def stage_navigable(stage: str) -> bool:
+    """该关 MAA 能不能导航到（≈ MaaCore `StageNavigationTask::set_stage_name` 的接受条件）。
+
+    能导航 = ① resource 里有同名任务（含 Stages/*.json，如 1-7 / Annihilation / YW-6 / CE-6）；
+            ② 别传重开 `SSReopen-XX`（总长 11）；
+            ③ 主线关正则 `^[A-Za-z]{0,3}\\d{1,2}-\\d{1,2}(-\\w+)*$`（MaaCore 原正则，来源 docs/MAA-INTERNALS.md §3.2）。
+    **注意**：像 `YW-EX-1` 这种「字母-字母-数字」的活动 EX 关**不匹配任何一条** → 现在导航必然失败
+    （本机 resource 2026-10-09 里 Stages/YW.json 只有 YW-4/6/7/8，全库无 EX 关定义）。
+    """
+    if not stage:
+        return True
+    if stage in _stage_keys():
+        return True
+    if stage.startswith("SSReopen-") and len(stage) == 11:
+        return True
+    import re
+    return bool(re.match(r"^([A-Za-z]{0,3})(\d{1,2})-(\d{1,2})(?:-?(\w+))*$", stage))
+
+
+def _preflight(tasks: list, strict: bool, dry: bool = False) -> list:
+    """剔除 MAA 导航不了的 Fight 关（**别让一条 append=0 把整天的队列打死**）。"""
+    out = []
+    for name, params in tasks:
+        stage = (params or {}).get("stage")
+        if name == "Fight" and stage and not stage_navigable(stage):
+            shot = "" if dry else _shot("unsupported_" + str(stage).replace("/", "_"))
+            log("!! 跳过 %s：MAA resource 里没有该关卡任务（导航会失败）%s"
+                % (stage, ("→ 截图 %s" % shot) if shot else ""))
+            log("   处理：先 python scripts/maa-update/maa_update.py check 看远端资源是否已收录；"
+                "仍未收录就走 scripts/event-copilot（Copilot 用作业导航）或手点")
+            if not dry:
+                _report({"ts": _now(), "stage": "preflight", "skipped_stage": stage,
+                         "reason": "MAA resource 无此关卡任务", "screenshot": shot})
+            if strict:
+                raise SystemExit(4)
+            continue
+        out.append((name, params))
+    return out
+
+
 def _report(entry: dict):
     RUN_REPORT.parent.mkdir(parents=True, exist_ok=True)
     with open(RUN_REPORT, "a", encoding="utf-8") as f:
@@ -287,12 +408,18 @@ def _report(entry: dict):
 
 
 def _today_tasks(plan: dict, date: str = ""):
-    """把「周计划」切成「今天那一份」：StartUp → 当天各关 → Recruit/Infrast/Mall/Award。"""
+    """把「周计划」切成「今天那一份」：StartUp → 当天各关 → Recruit/Infrast/Mall/Award。
+
+    逐日分配优先读 `plan["daily"]`（plan_week 已算好，别再重算 → 口径唯一）；
+    老计划没有该字段时才现算（兼容旧 weekly_plan.json）。
+    """
     sys.path.insert(0, str(REPO / "scheduling" / "tools"))
     import datetime as dt
-    from plan_util import distribute_daily
     today = date or dt.date.today().isoformat()
-    daily = distribute_daily(plan)
+    daily = plan.get("daily") or []
+    if not daily:
+        from plan_util import distribute_daily
+        daily = distribute_daily(plan)
     day = next((d for d in daily if d.get("date") == today), None)
     out = []
     for t in plan.get("tasks", []):
@@ -300,16 +427,18 @@ def _today_tasks(plan: dict, date: str = ""):
             out.append(("StartUp", merged_params(t)))
             break
     if day:
-        # 从 plan.tasks 取每关的 series（连战）；没配的普通关用默认 6，别退化成单次刷
-        series_map = {}
+        # 从 plan.tasks 取每关的 series（连战）：**计划里没写 = 单次**（剿灭/EX 首通别乱套连战）；
+        # 计划里没有的关（极少）才回落到 ARK_SERIES（默认 1）。
+        series_map, name_map = {}, {}
         for t in plan.get("tasks", []):
             p = t.get("params") or {}
             if t.get("type") == "Fight" and p.get("stage"):
-                series_map[p["stage"]] = int(p.get("series") or 0)
+                series_map[p["stage"]] = int(p.get("series") or 1)
+                name_map[p["stage"]] = t.get("name") or p["stage"]
         for stage, runs in (day.get("runs") or {}).items():
             if runs > 0:
-                prms = {"stage": stage, "times": int(runs)}
-                s = series_map.get(stage) or int(os.environ.get("ARK_SERIES", "6"))
+                prms = {"stage": stage, "times": int(runs), "_name": name_map.get(stage, stage)}
+                s = series_map.get(stage, int(os.environ.get("ARK_SERIES", "1")))
                 if s > 1:
                     prms["series"] = s
                 out.append(("Fight", prms))
@@ -331,19 +460,17 @@ def cmd_run(args):
                                       or "无", day.get("sanity")))
     entry = {"ts": _now(), "week": plan.get("week"), "scope": scope, "tasks": [t for t, _ in tasks]}
 
+    # 预检：MAA 导航不了的关**跳过**而非打死整条队列（默认；--strict 则直接失败）
+    if not getattr(args, "whole_week", False):
+        tasks = _preflight(tasks, strict=getattr(args, "strict", False),
+                           dry=bool(args.dry))
+
     if args.dry:
         log("[dry] 将按顺序跑 %d 个任务：%s" % (len(tasks), scope))
         for t, p in tasks:
             log("  %-9s %s" % (t, {k: p[k] for k in ("stage", "times", "mode") if k in p}))
         for s in plan.get("side", []) or []:
             log("  + 附带脚本 %s（%s）" % (s.get("script"), s.get("when")))
-        log("[dry] 未执行（也不跑换班）")
-        return
-
-    if args.dry:
-        log("[dry] 将按顺序跑 %d 个任务：" % len(tasks))
-        for t, p in tasks:
-            log("  %-9s %s" % (t, {k: p[k] for k in ("stage", "times", "mode") if k in p}))
         log("[dry] 未执行")
         return
 
@@ -352,7 +479,7 @@ def cmd_run(args):
         _report({**entry, "ok": False, "stage": "precheck", "error": "MAA GUI 正在运行"})
         raise SystemExit(2)
 
-    # 附带脚本（基建换班，含收菜）—— 先跑；带 if_due 的只在到期时跑
+    # 附带脚本（plan.side；基建已改 MAA 自带队列轮换 → 正常为空）—— 先跑；带 if_due 的只在到期时跑
     if not getattr(args, "no_side", False):
         for s in plan.get("side", []) or []:
             sp = REPO / str(s.get("script") or "")
@@ -447,14 +574,19 @@ def main():
         p.add_argument("--plan", default=None, help="weekly_plan.json 路径")
         if name == "write":
             p.add_argument("--maa-config", default=None)
+            p.add_argument("--date", default="", help="写哪一天（默认今天）——队列按天编辑")
             p.add_argument("--dry", action="store_true")
             p.add_argument("--force", action="store_true", help="MAA 在跑也写（危险）")
+        if name == "show":
+            p.add_argument("--date", default="", help="另标出哪一天（默认今天）")
         if name == "run":
             p.add_argument("--timeout", type=int, default=7200)
             p.add_argument("--dry", action="store_true")
             p.add_argument("--date", default="", help="跑哪一天（默认今天）")
             p.add_argument("--whole-week", action="store_true", help="跑整周总量（默认只跑当天）")
-            p.add_argument("--no-side", action="store_true", help="不跑附带脚本（基建换班）")
+            p.add_argument("--no-side", action="store_true", help="不跑 plan.side 里的附带脚本")
+            p.add_argument("--strict", action="store_true",
+                           help="预检发现 MAA 导航不了的关时直接失败（默认是跳过并继续）")
         p.set_defaults(func=fn)
     sp = sub.add_parser("startup", help="启动/唤醒游戏（含拉起雷电模拟器）")
     sp.add_argument("--client", default="Official", help="Official / Bilibili / txwy / YoStarEN…")

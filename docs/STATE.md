@@ -13,7 +13,7 @@
 决策 = 重新计算"接下来做什么"，产出/更新 `state.json.plan`。任一触发即决策：
 
 1. **周期兜底**：每天醒来第一次（每天至少决策一次）。
-2. **基建换班到期**：`state.json.triggers.infra_next_swap_at` 已过且未执行。
+2. **基建**：交给 MAA `Infrast` `mode=20000`（队列轮换）自己按「当前班心情 0」触发；`triggers.infra_next_swap_at` 仅作参考/核对用，不再是我们的动作触发点。
 3. **剿灭周重置**：每周一（周上限 1800 玉）。
 4. **活动数据变动**：EX 开放 / 商店补货 / 代币变化 / 活动开始或结束。
 5. **森空岛凭证 401**：先 `skland_cli.py status` 续期，再决策。
@@ -78,14 +78,14 @@ B 类操作（培养干员：升级/精英化/技能/模组；进商店翻页；
 - `progress`（首通、代币、兑换、待养、剿灭）。
 - `inventory`（库存快照，能取到就填）。
 - `log` 追加一条 `{ts, action, result}`。
-- 基建换班另写 `scheduling/data/infrast_rotation_log.jsonl`（带时间戳）。
+- 基建改由 MAA `Infrast` `mode=20000` 承担后**不再单独写** `infrast_rotation_log.jsonl`（该文件仅存历史）。
 
 ---
 
 ## 6. 标准序列（每次醒来的动作）
 
 0. **MAA 更新检查**：`python scripts/maa-update/maa_update.py check`；有更新则 `apply`（资源更新后**需重启 MCP 生效**）。
-1. 读 `docs/state.json` + 本协议 + `infrast_rotation_log.jsonl`。
+1. 读 `docs/state.json` + 本协议 + `scheduling/data/weekly_plan.json`（含 `daily`）+ `run_report.jsonl`。
 2. 森空岛取数：`ark_infrast_status`（基建当前班）+ `ark_operbox_online`（干员箱）。
 3. 判 §1 触发 → 触发就跑 MASTER-PLAN 决策链，更新 plan。
 4. 按 plan 执行（§2）：A 类调任务；B 类查 `ops_manual.json`，未学则 §4 学习。

@@ -3,7 +3,7 @@
 > 版本：v1 草案 · 2026-10-11 · 状态：**待用户过要素**（§3.3 是重点）
 > 目标：把「每周玩方舟」变成 —— **运筹算出本周怎么打 → 写进 MAA 或直驱 MaaCore → 本地网站汇总留痕**。
 > 关联：`docs/MASTER-PLAN.md`（判据）、`docs/STATE.md`（循环）、`docs/收益账本与周报.md`（账本）、
-> `scheduling/tools/{event_economy,sanity_plan,revenue_weekly,render_report}.py`、`scripts/infrast-rotation/infrast_rotation.py`。
+> `scheduling/tools/{event_economy,sanity_plan,revenue_weekly,render_report}.py`、`scripts/maa-week/maa_week.py`。
 
 ## 0. 一句话
 
@@ -29,13 +29,12 @@ StartUp(唤醒/启动客户端)
   → Fight(活动关 ×N)                   # 再活动
   → Fight(1-7 ×M)                      # 搓玉固源岩
   → Recruit(公招)
-  → Infrast(mode=20000，只收菜)         # 换班不由 MAA 做
-  → [infrast_rotation.py 换班，脚本另跑]
+  → Infrast(mode=20000)                 # 基建全归 MAA：按需一键轮换 + 各设施收菜
   → Mall(信用商店)
   → Award(领取奖励)                     # 必须最后（先产出才有奖领）
 ```
 
-- **基建口径（已确认）**：MAA `Infrast` 只收菜（`mode=20000`，避免覆盖《搓玉》手排）；换班仍由 `infrast_rotation.py` 单独跑。
+- **基建口径（2026-10-12 改定）**：基建**全部**交给 MAA `Infrast` `mode=20000`（队列轮换 = 当前班心情 0 时点游戏内「一键轮换」+ 收菜）；自研换班脚本作历史版本。
 - **公招口径（已定）**：日常 `times=4`（攒许可）、`select/confirm=[3,4,5]`、**6 星不自动**。
   - **出 6★ 词条时给推荐**：网页「概览」有 **贴词条 → 推荐** 框，把公招刷出的词条粘进去即可。后端 `scheduling/tools/site_server.py` 按本人 owned（森空岛，取数前自动续期；失败回退 MAA）现算最优组合（含高级资深/资深优先 → P(新)）。
     启动：`python scheduling/tools/site_server.py` → 浏览器开 `http://127.0.0.1:8787/`。
@@ -141,7 +140,7 @@ StartUp(唤醒/启动客户端)
 5. 溢出检查：把总量摊到每天，保证不溢出。
 6. 产出 `weekly_plan.json` + 人类可读 `rationale`。
 
-## 4. 基建换班脚本优化（`infrast_rotation.py`）
+## 4. ~~基建换班脚本优化~~（已作废：脚本归档，基建交给 MAA `mode=20000`）
 
 现状：坐标硬编码、每步固定 `sleep`、逐卡裁剪 OCR 猜位置。
 优化（**增量、先备份**）：
@@ -209,7 +208,7 @@ scheduling/data/weekly_plan_log.jsonl # 每周归档（追加）
     {"type": "Mall", "params": {"enable": true}},
     {"type": "Award", "params": {"enable": true}}
   ],
-  "side": [{"script": "scripts/infrast-rotation/infrast_rotation.py", "when": "after Infrast"}],
+  "side": [],              // 基建交 MAA 自带队列轮换后不再有附带脚本
   "rationale": {
     "sanity_alloc": {"annihilation": 125, "event": 1260, "1-7": 535},
     "notes": ["活动作战截止 10-23 → 代币本周刷够", "1-7 补固源岩至保底 1000"]
@@ -224,7 +223,7 @@ scheduling/data/weekly_plan_log.jsonl # 每周归档（追加）
 | **P0** | `weekly_plan.json` schema + `maa_week.py show/write/run`（先用 §3 手算数字） | 无 |
 | **P1** | 意图层自动化：取数→判据链→写 plan（接 `event_economy`/`sanity_plan`） | P0 |
 | **P2** | 本地网站（首页 + 每周页 + 周报归档） | P0 |
-| **P3** | paseo 每周定时 + 换班脚本优化 | P1,P2 |
+| **P3** | paseo 每周定时（每天自动 `maa_week run`） | P1,P2 |
 
 ## 8bis. 一体化工具（森空岛 GUI 总控台）
 

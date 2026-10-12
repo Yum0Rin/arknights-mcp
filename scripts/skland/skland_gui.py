@@ -401,6 +401,7 @@ class App(FluentWindow):
         self._gacha_records: list[dict] = []
         self._gacha_all: list[dict] = []
         self._gacha_view = "6star"
+        self.attendance: dict | None = None
 
         self._init_window()
         self._build_pages()
@@ -481,6 +482,9 @@ class App(FluentWindow):
                              NavigationItemPosition.BOTTOM)
         self.addSubInterface(self.pg_log, FI.COMMAND_PROMPT, "日志",
                              NavigationItemPosition.BOTTOM)
+
+        # 切到「长草」页时重新读盘渲染（计划由外部脚本/定时任务更新）
+        self.stackedWidget.currentChanged.connect(self._on_page_changed)
 
         self.btn_theme = qfw.TransparentToolButton(FI.CONSTRACT, self)
         self.btn_theme.setToolTip("切换 浅色 / 深色 / 跟随系统")
@@ -576,7 +580,6 @@ class App(FluentWindow):
             ("打开 MAA", self._lc_open_maa, FI.ROBOT),
             ("生成汇总网页", self._lc_build_site, FI.DOCUMENT),
             ("打开汇总网页", self._lc_open_site, FI.GLOBE),
-            ("基建换班", self._lc_swap, FI.SYNC),
             ("写 MAA 配置", self._lc_write_maa, FI.SAVE),
         ]
         for i, (text, fn, icon) in enumerate(pairs):
@@ -891,17 +894,47 @@ class App(FluentWindow):
         pg.add(qfw.TitleLabel("一键长草 · 本周计划"))
         bar = Section()
         r = bar.row()
-        for text, fn, icon in (("基建换班", self._lc_swap, FI.SYNC),
+        for text, fn, icon in (("生成/刷新计划", self._lc_gen_plan, FI.SYNC),
                                ("写 MAA 配置", self._lc_write_maa, FI.SAVE),
                                ("直驱跑一键长草", self._lc_run, FI.PLAY)):
             b = btn(text, icon, primary=(icon == FI.PLAY))
-            b.clicked.connect(fn)
+            b.clicked.connect(lambda _=False, f=fn: f())
             r.addWidget(b)
         r.addStretch(1)
-        bar.add(note("会操作 MAA 与游戏，均需二次确认"))
+        bar.add(note("会操作 MAA 与游戏，均需二次确认。基建已交回 MAA 自带的「队列轮换」"
+                     "（队列里含 Infrast 任务，无需本机脚本）"))
         pg.add(bar)
+
         self.sec_longcao = Section("计划")
         pg.add(self.sec_longcao)
+
+        tools = Section("快捷工具")
+        g = QGridLayout()
+        g.setHorizontalSpacing(10)
+        g.setVerticalSpacing(10)
+        pairs = [
+            ("启动游戏", self._lc_start_game, FI.PLAY),
+            ("打开 MAA", self._lc_open_maa, FI.ROBOT),
+            ("生成汇总网页", self._lc_build_site, FI.DOCUMENT),
+            ("打开汇总网页", self._lc_open_site, FI.GLOBE),
+            ("刷新计划", self._render_longcao, FI.SYNC),
+        ]
+        for i, (text, fn, icon) in enumerate(pairs):
+            b = btn(text, icon)
+            b.setMinimumHeight(38)
+            b.clicked.connect(lambda _=False, f=fn: f())
+            g.addWidget(b, i // 3, i % 3)
+        holder = QWidget()
+        holder.setLayout(g)
+        tools.add(holder)
+        pg.add(tools)
+
+        self._render_longcao()      # 建页时先填一次，切过来即可看到
+
+    def _on_page_changed(self, index: int):
+        w = self.stackedWidget.currentWidget()
+        if w is self.pg_longcao:
+            self._render_longcao()
 
     def _render_longcao(self):
         sec = self.sec_longcao
@@ -922,6 +955,9 @@ class App(FluentWindow):
             return
         budget = plan.get("budget") or {}
         sec.add(self._kv("周号 / 区间", f"{plan.get('week', '—')}　{plan.get('range', '—')}"))
+        if plan.get("generated_at") or plan.get("by"):
+            sec.add(self._kv("生成时间", f"{plan.get('generated_at', '—')}　"
+                                         f"（{plan.get('by', '—')}）"))
         sec.add(self._kv("预算", f"自然理智 {budget.get('sanity_natural', '—')} · "
                                  f"周药 {budget.get('weekly_potion', '—')} · "
                                  f"理智药 {budget.get('meds_available', '—')}"))
@@ -1268,6 +1304,12 @@ class App(FluentWindow):
             else:
                 txt = "今日已签到或无奖励"
             self.q.put(("ok", f"签到：{txt}"))
+            # 签到后立即重拉签到状态，让「今日」状态即时更新（不等手动「刷新数据」）
+            try:
+                att = core.attendance_status(cred, cfg["uid"], token)
+                self.q.put(("attendance", att))
+            except core.SklandError as e:
+                self.q.put(("log", (f"签到后刷新状态失败（稍后可手动刷新）：{e}", "dim")))
 
         self._run_worker(work)
 
@@ -1296,6 +1338,11 @@ class App(FluentWindow):
                     self._on_binding(payload)
                 elif kind == "board":
                     self._on_board(payload)
+                elif kind == "attendance":
+                    self.attendance = payload
+                    self._render_checkin(payload)
+                elif kind == "reload_plan":
+                    self._render_longcao()
                 elif kind == "gacha":
                     self._render_gacha(payload)
                 elif kind == "recruit":
@@ -1587,6 +1634,7 @@ class App(FluentWindow):
             pg.add(sec)
 
     def _render_checkin(self, attendance):
+        self.attendance = attendance
         pg = self.pg_checkin
         pg.clear()
         pg.add(qfw.TitleLabel("每日签到"))
@@ -1625,7 +1673,7 @@ class App(FluentWindow):
         pg.add(box, stretch=1)
 
     # ---------------- 外部工具 ----------------
-    def _popen_log(self, args, title, done_msg=None):
+    def _popen_log(self, args, title, done_msg=None, reload_plan=False):
         self.log(f"{title}：启动 {' '.join(str(a) for a in args)}", "head")
         try:
             proc = subprocess.Popen(
@@ -1649,9 +1697,15 @@ class App(FluentWindow):
                 self.q.put(("log", (done_msg, "ok")))
             else:
                 self.q.put(("log", (f"{title} 结束（退出码 {rc}）", "ok" if rc == 0 else "err")))
+            if rc == 0 and reload_plan:
+                self.q.put(("reload_plan", None))   # 回主线程重读 weekly_plan 刷新长草页
 
         threading.Thread(target=reader, daemon=True).start()
         return proc
+
+    def _lc_gen_plan(self):
+        self._popen_log([sys.executable, str(ROOT / "scheduling" / "tools" / "plan_week.py")],
+                        "生成周计划", done_msg="周计划已生成", reload_plan=True)
 
     @staticmethod
     def _port_open(host, port) -> bool:
@@ -1689,11 +1743,6 @@ class App(FluentWindow):
             time.sleep(0.8)
         webbrowser.open(url)
         self.log(f"已打开汇总网页 {url}", "ok")
-
-    def _lc_swap(self):
-        self._popen_log([sys.executable,
-                         str(ROOT / "scripts" / "infrast-rotation" / "infrast_rotation.py"), "all"],
-                        "基建换班")
 
     def _lc_write_maa(self):
         if not qfw.MessageBox("确认写 MAA 配置",
