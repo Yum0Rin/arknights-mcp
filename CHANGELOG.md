@@ -5,6 +5,35 @@
 
 ## [Unreleased]
 ### Fixed
+- **预算口径修正：理智药存量已含周常药，不再另加 240**（2026-10-12，用户裁定）：`plan_week.RULE.weekly_potion`
+  整段删除（不是「条件加」而是**永不加**）。理由：药存量由**每周日手动跑** `scripts/sanity-potion/sanity_potion.py`
+  测出写进 `scheduling/data/sanity.json`，该读数**已包含周常药**，重复计入会把预算虚高。
+  W42 预算因此从 2840 修正为 **2600**（自然 1680 + 药 920），`day_cap` 406 → **372**。
+  ⚠ 暴露冲突：2600 装不下 `1-7 下限 2502 + 剿灭 125`（+EX/S 240）→ `unplaced={1-7:48}`，已升用户裁定。
+- **EX/S 首通与突袭改为「解锁依赖链」**（2026-10-12，用户裁定）：用户指出「EX 关必须按 EX-1→EX-8 顺序，
+  是因为**还没打过的关需要依次解锁**」。故不只是排序：
+  - `plan_week` R2.5 改为读 `docs/state.json.progress.event_act52side` 的 `ex_clear_done`/`raid_clear_done`，
+    **只排未通的关、取前缀链（从第一个未通开始）**，已通的关不再重复排首通；进度字段缺失时按「全未通」保守处理；
+  - 新增 **`Raid` 任务型**（每关普通首通后紧跟该关突袭）；规则 `raid.only=[EX,S]`、`after_normal=true`
+    ⇒ **普通关 YW-1..8 不产生任何突袭**；
+  - 突袭**不走** MAA `Fight`（已核实 `is_raid` 只存在于 Copilot 的 `copilot_list` 条目）→ `maa_week` 遇到
+    `Raid`/不可导航的 EX **不 append、只提示**，并直接打印可复制的交棒命令；
+  - `scripts/event-copilot/event_copilot.py` 新增 `run --raid` 与 `run --chain {ex,raid,s,sraid}`：
+    **依次解锁、遇挫即停（不跳关）、跑完回写进度**（新增 `ex_clear_done`/`s_clear_done`/`raid_clear_done`/`last_chain_note`）。
+- **GUI 配置写盘也过关卡预检**（2026-10-12，复盘层发现）：`maa_week.write` 若把 MAA 导航不了的关写进
+  `gui.new.json` 的 Fight 槽位，用户在 GUI 点「开始」就会 append=0 打死整队。现 `cmd_write` 同样过滤
+  并打印提示 + 交棒命令。
+- **`_shot` 留证截图 0 字节**（2026-10-12）：硬编码 `-s 127.0.0.1:5555`（未注册）→ 改用 `_devices()` 探测实际设备，
+  并校验返回码与文件大小。
+- **MCP `TASK_DEFAULTS["Infrast"]` 只收 3 个设施**（2026-10-12）：统一为 9 项，与新口径一致。
+- **GUI「签到」页今日状态不即时更新**（2026-10-12）：`checkin()` 签到成功后只弹吐司，**不重拉状态**，
+  「今日」一直显示签到前的旧值，须手动「刷新数据」才变。现签到后立即 `core.attendance_status()` 重拉，
+  经新增队列类型 `attendance` 回主线程重渲染「签到」页（`App.attendance` 缓存）。
+- **GUI「长草」页计划区永远空白（页面没做完）**（2026-10-12）：`_render_longcao()` 早已写好却**从未被调用**
+  （全文件无调用点，也无切页钩子），故该页只剩两个按钮、看不到周计划。现：①建页时先渲染一次；
+  ②挂 `stackedWidget.currentChanged`，切到「长草」页重读盘渲染；③补「生成/刷新计划」（跑 `plan_week.py`，
+  完成后 `reload_plan` 回主线程刷新）与「刷新计划」按钮 + 「快捷工具」卡（启动游戏/打开 MAA/生成·打开汇总网页）；
+  `_popen_log` 增 `reload_plan` 回调。
 - **`weekly_plan.json` 长期 stale**（2026-10-12）：它还是旧口径（固源岩 1282/目标 500、剿灭 0、YW-6 123 次），
   而 `weekly_plan.W42.json` 已是新口径，且 `maa_week` 读的是前者 ⇒ 每天跑的都是旧账。现已重新生成并把 W42 对齐为镜像；
   追加留痕到 `weekly_plan_log.jsonl`。

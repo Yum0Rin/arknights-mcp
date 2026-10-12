@@ -1,26 +1,33 @@
 # 一键长草 · 现状速查（on-call 先读这份）
 
-> 更新：2026-10-12 夜（基建改 MAA 自带队列轮换；队列改**按天编辑**；监工对账见文末）
+> 更新：2026-10-12 夜（基建改 MAA 自带队列轮换；队列改**按天编辑**；**预算口径修正（去周常240）**；EX 首通加 seq 顺序 + 突袭规则；监工对账见文末）
 > **单一事实源：`scheduling/data/weekly_plan.json`**（含 `daily` 逐日视图；`weekly_plan.W42.json` 只是镜像）
 
 ## 入口
 
 - 桌面快捷方式 **「明日方舟·助手」** → `pythonw scripts/skland/skland_gui.py`
-- GUI「**长草**」tab 按钮：`直驱跑一键长草`（跑**当天那一份**）/ `写 MAA 配置`（也**只写当天**）/ `生成汇总网页` / `打开汇总网页`
-- 「快捷工具」卡：`启动游戏`（含拉起雷电）/ `打开 MAA`
+- GUI「**长草**」tab 按钮：`生成/刷新计划`（跑 `plan_week.py` 后自动刷新本页）/ `写 MAA 配置`（也**只写当天**）/ `直驱跑一键长草`（跑**当天那一份**）
+- 「快捷工具」卡：`启动游戏`（含拉起雷电）/ `打开 MAA` / `生成汇总网页` / `打开汇总网页` / `刷新计划`
 - 命令行：`python scripts/maa-week/maa_week.py show|write|run [--date YYYY-MM-DD] [--whole-week] [--strict] [--dry]`
 
 ## 规则（写死在 `scheduling/tools/plan_week.py` 的 `RULE`）
 
 ```
-预算 = 自然(240×7) + 周常浓缩液(240，仅当"理智药读数不在本计划周"才加) + 理智药存量
+预算 = 自然(240×7=1680) + 理智药存量
+      ⚠ **不再另加周常浓缩液 240**：药存量由「每周日手动跑 scripts/sanity-potion/sanity_potion.py 测出」
+        写入 scheduling/data/sanity.json，**该读数已包含周常药**，重复计入会把预算虚高（2026-10-12 用户裁定）。
 R1 剿灭：5 次×25=125，每天 1 次；若 state.json.progress.annihilation.done(W=本周) → 跳过
 R2 固源岩：期末 ≥ RULE.shards.target(现 1000) → 1-7 次数
-R2.5 EX/S 首通：开放日落在本周 → 各关×1 必做，先占预算
+R2.5 EX/S 首通链：读 docs/state.json.progress.event_<活动> 的**已通进度** → 只排**未通**的关、
+      **从第一个未通起的前缀链**（EX-1→EX-8 依次解锁，前面未通则后面排不了；已通的不重复排）；
+      进度缺失 → 当全未通。seq 保证「按序、跨天单调不减」
+R2.6 突袭：**只有 EX 关和 S 关有突袭**（普通关 YW-1..8 没有）；突袭依赖「该关普通已通」，
+      排在对应普通之后，按关顺序（task 类型 `Raid`；MAA `Fight` 做不了活动突袭）
 R3 活动：按"商店要买总量"封顶，剩余预算反推次数
 R3.5 培养：目标 RULE.train_targets(现「乌尔比安」)；商店能换的材料先抵扣；再用剩余预算刷
 R4 1-7 填充：花光预算
-R5 每日分配：活动只在窗口内；每天 ≤ day_cap = 240 + 药/天；**排不下就不排**
+R5 每日分配：活动只在窗口内；带 seq 的首通**按序跨天单调不减**；每天 ≤ day_cap = ceil(周预算/7)
+           （W42 = ceil(2600/7) = **372**）；**排不下就不排**（→ `unplaced`，升给用户裁定）
 ```
 
 ## 关键参数
@@ -29,21 +36,30 @@ R5 每日分配：活动只在窗口内；每天 ≤ day_cap = 240 + 药/天；*
 |---|---|
 | 连战 series | **活动关 10 / 普通关 6**（`MAA-INTERNALS.md:78`；不退化成单次） |
 | 当前活动 | act52side（昨日海）：YW-6 开放 2026-10-09~10-23，EX 2026-10-16，S 2026-10-23 |
-| EX/S 理智 | **往期 sidestory 口径估**（EX-1~8 = 15/15/18/18/21/21/24/30；S-1 = 30）**待实机核** |
+| EX/S 理智 | `event_act52side.json`：EX-1~8 = 10/10/15/15/15/15/20/20、S-1 = 15（往期 sidestory 口径，**待实机核**） |
+| EX/S 突袭 | **只有 EX/S 有突袭**（普通关 YW-1..8 无）；突袭依赖「该关普通已通」，按关顺序排在普通之后。突袭理智**暂按普通关同价**计（待数据层核实）。MAA `Fight` 做不了 → 走 `event-copilot`（Copilot `is_raid`）或手点，`maa_week` 遇 `Raid` 只提示不 append。 |
+| EX/S 解锁链 | EX-i 未通打不了 EX-(i+1)（**依次解锁**）。执行：`python scripts/event-copilot/event_copilot.py run act52side --chain ex --try`（EX 普通）/ `--chain raid --try`（EX 突袭）/ `--chain s|sraid`（S）。**遇挫即停**（某关无作业/失败 → 不打后面的），跑完回写 `progress.event_act52side`。 |
+| 预算/药 | 预算 = 自然 1680 + 药存量（W42 = 920 → **2600**）。**药读数每周日手动测**：`python scripts/sanity-potion/sanity_potion.py`（写 `scheduling/data/sanity.json`）——该读数**已含周常药**，故不加 240。 |
+| ⚠️ W42 预算冲突 | 1-7 下限 2502 + 剿灭 125 + EX/S 首通+突袭 240 = **2867 > 2600** → 逐日 `unplaced={1-7:48}`（差 288）。**已升给用户裁定**（降 target / 活动期让位 / 多动药）。 |
 | 基建分工 | **全部交给 MAA 自带的「队列轮换」**：`Infrast` `mode=20000`、`facility` = Mfg/Trade/Power/Control/Reception/Office/Dorm/Processing/Training。MAA 进基建 → 当前班有人心情 0 → 点游戏内「一键轮换」→ 各设施收菜（Rotation 下不换干员）。**自研 `infrast_rotation.py` 已归档**（`历史版本/基建改MAA轮换+队列按天-2026-10-12/`）。 |
 | ⚠️ 队列口径 | **一天一天编辑**：`write`/`run` 默认只处理当天（读 `weekly_plan.daily`），非当天的 Fight 槽位在 GUI 里被**停用**；要整周才加 `--whole-week`。 |
 
 ## 命令
 
 ```bash
+python scripts/sanity-potion/sanity_potion.py               # ★每周日手动测理智药存量（写 scheduling/data/sanity.json，已含周常药）
 python scheduling/tools/plan_week.py --date 2026-10-13     # 生成周计划（确定性，含 daily）
 python scripts/maa-week/maa_week.py show  --date 2026-10-13  # 看当天分到多少
 python scripts/maa-week/maa_week.py write --date 2026-10-13  # 写 MAA GUI（只写当天，需关 MAA）
-python scripts/maa-week/maa_week.py run   --date 2026-10-13  # 直驱当天
+python scripts/maa-week/maa_week.py run   --date 2026-10-13  # 直驱当天（Raid/EX 自动跳过并提示可复制命令）
+python scripts/event-copilot/event_copilot.py run act52side --chain ex --try    # EX 首通解锁链（遇挫即停）
+python scripts/event-copilot/event_copilot.py run act52side --chain raid --try  # EX 突袭链（需该关普通已通）
 python scheduling/tools/build_site.py                      # 生成汇总网页
 python scheduling/tools/site_server.py                     # 起后端（公招推荐框）
 python scripts/skland/skland_cli.py status                  # 森空岛续期（401 时）
 ```
+
+> **流程（每周日）**：①手动跑 `sanity_potion.py` 测本周药存量 → ②`plan_week.py` 生成下周计划（预算 = 1680 + 药读数，**不加 240**）→ ③`maa_week.py write/run`。
 
 ## 已修的坑（都踩过）
 
@@ -51,9 +67,11 @@ python scripts/skland/skland_cli.py status                  # 森空岛续期（
 2. `plan_week.py` R2.5 代码块顺序错/重复 → 修（`ev`/`extra_san` 提前、删重复块）。
 3. 流程里同时有 MAA 收菜 + 换班收菜（重复）→ 去 MAA Infrast 任务。
 4. 活动关/1-7 没带 `series` → 退化成单次刷 → 修（活动 10、普通 6）。
-5. 每日 41 次（861 理智/天，打不完）→ 每日按 `day_cap=240+药/天` 封顶。
+5. 每日 41 次（861 理智/天，打不完）→ 每日按 `day_cap = ceil(周预算/7)` 封顶（现 406）。
 6. GUI「刷新数据/签到」不续期 → 森空岛 401 → 修（先 `refresh_token`）。
 7. 「读理智药」做成了按钮 → 移除（它是每周定时的活）。
+8. **签到后「今日」状态不更新** → 修（2026-10-12）：`checkin()` 成功后再拉一次 `attendance`，经队列 `attendance` 重渲染「签到」页。
+9. **「长草」页计划区永远空白** → 修（2026-10-12）：`_render_longcao()` 定义了却从未被调用；现建页即渲染 + 切页钩子重渲染，并补相关按钮。
 
 ## ⚠️ 未稳定 / 待测试（**别当成熟的用**）
 
@@ -81,6 +99,10 @@ python scripts/skland/skland_cli.py status                  # 森空岛续期（
 
 ## 监工对账（2026-10-12 夜，脚本硬核不靠肉眼）
 
+> ⚠ **2026-10-12 晚已修正口径**：预算 2840→**2600**、day_cap 406→**372**（去掉重复计入的周常 240），
+> 且 EX 首通加 seq 顺序 + 突袭规则。**下面 §✅/❌ 里出现的 2840 / 406 / 418 次 1-7 是旧口径，仅存档**；
+> 最新一轮见本节末尾「最新一轮（预算 2600）」。
+
 核对口径：`weekly_plan.json` 的 `daily` ↔ `tasks` 互相咬合、逐日 ≤ day_cap、≤ 预算、开放窗口、剿灭周上限、固源岩期末目标、商店代币。
 
 **✅ 自洽的（算过账，不是看着像）**
@@ -107,3 +129,28 @@ python scripts/skland/skland_cli.py status                  # 森空岛续期（
    而 `maa_week` 读的是前者 ⇒ 每次跑的都是旧账。本次已重新生成并把两者对齐（`W42` 现为镜像）。
 
 **口径待复核（未标来源，沿用自 RULE）**：`shards.per_run=1.245`、`shards.daily_use=92.4`（搓玉日耗）、`annihilation.jade_per_run=370`（周上限 1800 下第 5 次实际只值 ~320）。
+
+---
+
+### 最新一轮（2026-10-12 晚，预算 2600）—— 已重生成 `weekly_plan.json` + 镜像 `W42`
+
+**预算**：自然 1680 + 药 920 = **2600**（`weekly_potion` 恒 0）；**day_cap = ceil(2600/7) = 372**。
+**sanity_alloc**：剿灭 125 + EX/S 首通 120 + EX/S 突袭 120 + 1-7 2502 + 活动 0 + 培养 0 = **2867**（> 2600）。
+
+| 日期 | 星期 | 理智/上限 | runs | 突袭 |
+|---|---|---|---|---|
+| 2026-10-12 | 周一 | 367/372 | Annihilation×1、1-7×57 | — |
+| 2026-10-13 | 周二 | 367/372 | Annihilation×1、1-7×57 | — |
+| 2026-10-14 | 周三 | 367/372 | Annihilation×1、1-7×57 | — |
+| 2026-10-15 | 周四 | 367/372 | Annihilation×1、1-7×57 | — |
+| 2026-10-16 | 周五 | 367/372 | Annihilation×1、**YW-EX-1..8 各×1**、1-7×17 | **YW-EX-1..8**（按 seq 顺序） |
+| 2026-10-17 | 周六 | 372/372 | 1-7×62 | — |
+| 2026-10-18 | 周日 | 372/372 | 1-7×62 | — |
+
+- **EX 顺序**：`YW-EX-1→8` 普通 + 突袭全部落 10-16（开放首日），**严格按 1→8**（seq 1..16，跨天单调不减）；
+- **解锁链**：R2.5 读 `progress.event_act52side`，只排**未通**的关、从**第一个未通**起（前缀链）；EX 现 `已通 0/8` → 排 EX-1..8。执行走 `--chain ex/raid`（**遇挫即停**、跑完回写进度）；
+- **突袭**：8 条 `Raid`（`type=Raid`），排在对应普通之后；MAA `Fight` 不做 → `maa_week` 只提示不 append；
+- **`unplaced = {1-7: 48}`**（48 次 × 6 = 288 理智装不下）：自检 `_fit_to_schedule` 把活动次数回退到 0 后仍装不下 → 如实登记，**未硬凑**；
+- **活动 YW-6 实排 0 次**（预算被 1-7 下限 + 剿灭 + EX/S 吃穿）；
+- **❌ 需用户裁定**：`target=1000` 的 1-7 下限（2502）+ 剿灭（125）+ EX/S 首通+突袭（240）= **2867 > 2600**，逐日差 288。
+  选项：①降 `target`；②活动期 R3 优先（让 1-7 让位）；③临时多动药；④接受 unplaced。

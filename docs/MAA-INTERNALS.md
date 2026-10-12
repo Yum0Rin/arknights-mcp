@@ -541,7 +541,7 @@ TASK_DEFAULTS = {
    `enable` 由 Core 默认 `true`，并非它们返回 0 的原因。
 2. **`Infrast` 默认值补齐**：`{"enable": True}` 下 `{}` 必 0。建议给一个安全默认，如
    `{"enable": True, "mode": 0, "facility": ["Mfg","Trade","Power","Reception","Office","Dorm","Processing","Training","Control"]}`；
-   若走"只收菜/不换班"取向，另留 `mode=20000` 配方（见 §6.4）。**前提**：我们的《搓玉》方案是游戏内手点，**禁用 MAA 自带排班**——所以默认值不宜触发换班，建议默认给 `mode=20000` 或干脆不设 Infrast 默认、强制调用方显式传 `facility`+`mode`（更安全）。
+   若走"只收菜/不换班"取向，另留 `mode=20000` 配方（见 §6.4）。**前提**：我们的基建已改由 **MAA 自带的「队列轮换」**（`Infrast` `mode=20000`）承担——MAA 进基建 → 当前班有人心情 0 → 点游戏内「一键轮换」→ 各设施收菜（Rotation 下 MAA 不换干员、不由 MAA 自动排班），所以默认值取 `mode=20000`（不触发 MAA 自动换班）。
 3. **`Recruit` 默认 `confirm` 建议改 `[]`**：默认 `[3,4,5,6]` 会**自动确认**高星（真消耗许可/加急），对"只想看能不能出"的场景有副作用；若确实自动公招，可保留，但建议在注释里写明"会真实招募"。
 4. **`StartUp` 补 `start_game_enabled`**：当前默认不含该项（默认 false），需要自动开游戏时调用方还要手动传。可考虑默认 `{"client_type":"Official","start_game_enabled":True}`（与我们 `ark_operbox` 内部一致）。
 5. **`Fight` 建议加最小默认**（可选）：如 `{"medicine":0, "stone":0, "series":1}`，避免调用方漏传导致 `series` 语义不明；但 `stage` 必须调用方给，别设默认。

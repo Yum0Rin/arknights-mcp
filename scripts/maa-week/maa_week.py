@@ -125,6 +125,8 @@ def cmd_show(args):
         print("\n逐日分配（%s ← 今天；write/run 默认只下这一天）：" % today)
         for d in daily:
             runs = "、".join("%s×%d" % kv for kv in (d.get("runs") or {}).items()) or "无"
+            if d.get("raids"):
+                runs += "  突袭:%s" % "、".join(d.get("raids") or [])
             mark = ">>" if d.get("date") == today else "  "
             print("  %s %s(%s)  理智 %-5s / 上限 %-5s %s%s"
                   % (mark, d.get("date"), d.get("dow", ""), d.get("sanity", 0),
@@ -150,6 +152,16 @@ def _maa_running() -> bool:
     return "MAA.exe" in (r.stdout or "")
 
 
+def _event_id(plan) -> str:
+    return str((plan or {}).get("event") or "<活动id>")
+
+
+def _copilot_cmd(plan, kind: str) -> str:
+    """可直接复制的 event-copilot 命令（EX/S 首通/突袭链）。"""
+    return ("python scripts/event-copilot/event_copilot.py run %s --chain %s --try"
+            % (_event_id(plan), kind))
+
+
 def _clone_fight_slot(queue, slots, insert_at):
     """克隆一个现有 Fight 槽位（今天有新的关、原配置没这个槽位时用）。"""
     if slots:
@@ -171,6 +183,24 @@ def cmd_write(args):
     tasks, today, day = _today_tasks(plan, getattr(args, "date", "") or "")
     fights = [p for (t, p) in tasks if t == "Fight"]
     changed = []
+
+    # 预检（与 cmd_run 一致）：MAA 导航不了的关（如活动 EX）**不写进槽位**，
+    # 否则用户在 MAA GUI 点「开始」时该槽位 append=0 → 打死整队（见 stage_navigable 注释）。
+    blocked = [p.get("stage") for p in fights
+               if p.get("stage") and not stage_navigable(p["stage"])]
+    if blocked:
+        log("!! 以下关 MAA 导航不了（resource 无同名任务），**不写进槽位**：%s" % "、".join(blocked))
+        log("   处理：先跑 python scripts/maa-update/maa_update.py check（看远端是否已收录）；"
+            "仍无则走作业链（Copilot 用作业导航）——可直接复制：")
+        _cmds = []
+        if any("-EX-" in s for s in blocked):
+            _cmds.append(_copilot_cmd(plan, "ex"))
+        if any("-S-" in s and "-EX-" not in s for s in blocked):
+            _cmds.append(_copilot_cmd(plan, "s"))
+        for _c in (_cmds or [_copilot_cmd(plan, "ex")]):
+            log("         " + _c)
+    fights = [p for p in fights
+              if not (p.get("stage") and not stage_navigable(p["stage"]))]
 
     # --- Fight：按关卡匹配槽位（一天一天编辑的核心）---
     slots = [q for q in queue if q.get("TaskType") == "Fight"]
@@ -246,6 +276,11 @@ def cmd_write(args):
     log("写入口径：%s（当天）   分配=%s   理智=%s"
         % (today, "、".join("%s×%d" % kv for kv in (day.get("runs") or {}).items()) or "无",
            day.get("sanity")))
+    _raids = [p.get("stage") for (t, p) in tasks if t == "Raid"]
+    if _raids:
+        log("!! 当天含突袭 %s：MAA Fight 做不了活动突袭 → **不写槽位**，走 Copilot is_raid 或手点——可直接复制："
+            % "、".join(_raids))
+        log("         " + _copilot_cmd(plan, "raid"))
 
     if args.dry:
         log("[dry] 不写盘。将改动 %d 条：" % len(changed))
@@ -334,11 +369,31 @@ def _get_asst():
 
 
 def _shot(tag: str) -> str:
+    """留证截图。设备地址用 `_devices()` 实测（本机常见 `127.0.0.1:5555` 未注册、实际是 `emulator-5554`），
+    并**校验返回码/文件大小**——0 字节只打印警告，不静默留个空文件。"""
     TMP.mkdir(parents=True, exist_ok=True)
     p = TMP / ("fail_%s_%s.png" % (tag, dt.datetime.now().strftime("%H%M%S")))
-    with open(p, "wb") as f:
-        subprocess.run([ADB, "-s", ADDR, "exec-out", "screencap", "-p"],
-                       stdout=f, timeout=40)
+    devs = _devices()
+    if not devs:
+        try:
+            subprocess.run([ADB, "connect", ADDR], capture_output=True, timeout=15)
+        except Exception:  # noqa: BLE001
+            pass
+        devs = _devices()
+    dev = devs[0] if devs else ADDR
+    rc, size = None, 0
+    try:
+        with open(p, "wb") as f:
+            r = subprocess.run([ADB, "-s", dev, "exec-out", "screencap", "-p"],
+                               stdout=f, timeout=40)
+        rc = r.returncode
+        size = p.stat().st_size if p.exists() else 0
+    except Exception as e:  # noqa: BLE001
+        log("!! 截图异常（dev=%s）: %r" % (dev, e))
+    if rc != 0 or size == 0:
+        log("!! 截图失败/为空（dev=%s rc=%s size=%s 字节）: %s" % (dev, rc, size, p))
+    else:
+        log("截图已留证（dev=%s, %s 字节）: %s" % (dev, size, p))
     return str(p)
 
 
@@ -380,17 +435,22 @@ def stage_navigable(stage: str) -> bool:
     return bool(re.match(r"^([A-Za-z]{0,3})(\d{1,2})-(\d{1,2})(?:-?(\w+))*$", stage))
 
 
-def _preflight(tasks: list, strict: bool, dry: bool = False) -> list:
+def _preflight(tasks: list, strict: bool, dry: bool = False, event_id: str = "") -> list:
     """剔除 MAA 导航不了的 Fight 关（**别让一条 append=0 把整天的队列打死**）。"""
     out = []
+    _cmd_shown = False
     for name, params in tasks:
         stage = (params or {}).get("stage")
         if name == "Fight" and stage and not stage_navigable(stage):
             shot = "" if dry else _shot("unsupported_" + str(stage).replace("/", "_"))
             log("!! 跳过 %s：MAA resource 里没有该关卡任务（导航会失败）%s"
                 % (stage, ("→ 截图 %s" % shot) if shot else ""))
-            log("   处理：先 python scripts/maa-update/maa_update.py check 看远端资源是否已收录；"
-                "仍未收录就走 scripts/event-copilot（Copilot 用作业导航）或手点")
+            if not _cmd_shown:
+                log("   处理：先 python scripts/maa-update/maa_update.py check 看远端资源是否已收录；"
+                    "仍未收录 → 走作业链（Copilot 用作业导航）或手点——可直接复制：")
+                log("         python scripts/event-copilot/event_copilot.py run %s --chain ex --try"
+                    % (event_id or "<活动id>"))
+                _cmd_shown = True
             if not dry:
                 _report({"ts": _now(), "stage": "preflight", "skipped_stage": stage,
                          "reason": "MAA resource 无此关卡任务", "screenshot": shot})
@@ -442,6 +502,9 @@ def _today_tasks(plan: dict, date: str = ""):
                 if s > 1:
                     prms["series"] = s
                 out.append(("Fight", prms))
+        # 突袭（Raid）：MAA Fight 做不了活动突袭 → 独立类型，run 时跳过并提示走 Copilot/手点
+        for stage in (day.get("raids") or []):
+            out.append(("Raid", {"stage": stage, "_name": "%s 突袭" % stage}))
     for t in plan.get("tasks", []):
         if t.get("type") in ("Recruit", "Infrast", "Mall", "Award"):
             out.append((t["type"], merged_params(t)))
@@ -463,7 +526,7 @@ def cmd_run(args):
     # 预检：MAA 导航不了的关**跳过**而非打死整条队列（默认；--strict 则直接失败）
     if not getattr(args, "whole_week", False):
         tasks = _preflight(tasks, strict=getattr(args, "strict", False),
-                           dry=bool(args.dry))
+                           dry=bool(args.dry), event_id=_event_id(plan))
 
     if args.dry:
         log("[dry] 将按顺序跑 %d 个任务：%s" % (len(tasks), scope))
@@ -506,6 +569,17 @@ def cmd_run(args):
 
     tids = []
     for name, params in tasks:
+        if name == "Raid":
+            # 突袭：MAA `Fight` 做不了活动突袭（`is_raid` 只在 Copilot `copilot_list` 里，
+            # 见 docs/MAA-INTERNALS.md §2.10）→ 不 append，交给 event-copilot / 手点（非错误）。
+            _stage = (params or {}).get("stage")
+            log("!! Raid %s：MAA Fight 做不了活动突袭 → 走 Copilot is_raid 或手点；跳过 append——可直接复制："
+                % _stage)
+            log("         " + _copilot_cmd(plan, "raid"))
+            _report({**entry, "ok": True, "stage": "raid-skip", "raid_stage": _stage,
+                     "hint": "event-copilot --chain raid / 手点",
+                     "cmd": _copilot_cmd(plan, "raid")})
+            continue
         try:
             tid = a.append_task(name, params)
         except Exception as e:

@@ -10,15 +10,21 @@
   · 当期活动        ← `scheduling/data/event_*.json`（含每关理智 + 开放/结束日）
 
 预算
-  budget = 自然(240×7=1680) + 周常浓缩液(2×120=240) + 理智药存量
+  budget = 自然(240×7=1680) + 理智药存量
+  注：理智药存量**已包含周常药**（由每周日手动跑 scripts/sanity-potion/sanity_potion.py 测出，
+      写入 scheduling/data/sanity.json），故**不再另加周常浓缩液 240**（重复计入会把预算虚高）。
 
 规则（严格按优先级，先满足前面的，余下再给后面）
   R1 剿灭：打满周上限 → runs = ceil(1800/370) = 5 次 × 25 理智 = 125（**每天 1 次**）
   R2 固源岩下限：期末库存 ≥ target(1000)
         → 1-7 次数 = ceil((target + 日耗×7 - 库存) / 单次产出)
+  R2.5 EX/S 首通链：读 docs/state.json.progress.<活动> 的已通进度，
+        **只排未通的关、从第一个未通起的解锁链**（EX-1→EX-8 依次解锁，已通的不重复排）；
+        且 **只有 EX/S 有突袭**（普通关 YW-1..8 无），突袭依赖「该关普通已通」，
+        每关普通首通后紧跟一条该关 `Raid`（突袭）；进度缺失 → 当全未通
   R3 活动关：剩余预算装满（受开放窗口约束；次数由剩余预算反推）
   R4 填充：预算还有零头 → 继续 1-7（**理智必须花光**）
-  R5 每日分配：活动只在开放窗口内；剿灭每天 1；其余往"最空的天"填
+  R5 每日分配：活动只在开放窗口内；剿灭每天 1；带 seq 的首通按序单调不减；其余往"最空的天"填
 
 输出
   `scheduling/data/weekly_plan.json`（含 tasks / windows / budget / inventory / shards / rationale）
@@ -30,6 +36,7 @@ import datetime as dt
 import json
 import math
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -41,7 +48,9 @@ sys.path.insert(0, str(TOOLS))
 RULE = {
     "natural_per_day": 240,          # 自然回复 10/h
     "cap": 205,                      # 理智上限
-    "weekly_potion": 240,            # 周常浓缩液 ×2
+    # ⚠ 已删除 weekly_potion：周常浓缩液**不再单独计入预算**——理智药存量（sanity.json，
+    #   每周日手动跑 scripts/sanity-potion/sanity_potion.py 测出）**已包含周常药**，
+    #   重复计入会把预算虚高（2026-10-12 用户裁定：「预算理智药已经包含了周药，不可另行考虑周药」）。
     # 剿灭：25 理智/次；**用券（全权委托）只是速刷、跳过战斗，理智照扣**（2026-10-11 用户纠正）。
     # 券=每日任务当天领 1 张 → 每天 1 次（周一~周五 5 次 = 打满 1800 玉），一张一天才回转得过来。
     "annihilation": {"sanity": 25, "jade_per_run": 370, "weekly_jade_cap": 1800,
@@ -55,7 +64,15 @@ RULE = {
     # （= MAA GUI RoomList 里启用的那批；顺序无所谓）。AssistantChange 不启用。
     "infra_facilities": ["Mfg", "Trade", "Power", "Control", "Reception",
                          "Office", "Dorm", "Processing", "Training"],
+    # 突袭（raid）：**只有 EX 关和 S 关有突袭**，普通关（YW-1..8）没有；每关**打完普通首通后**才可打其突袭。
+    # MAA `Fight` 做不了活动突袭（`is_raid` 只在 Copilot 的 `copilot_list` 条目里，见 docs/MAA-INTERNALS.md §2.10）
+    # → 计划里用独立 task 类型 `Raid` 表示，执行交 scripts/event-copilot（Copilot is_raid）或手点。
+    # 突袭理智**先按与普通关相同计**（EX 10/10/15/15/15/15/20/20、S 15）—— **口径待数据层核实**。
+    "raid": {"only": ["EX", "S"], "after_normal": True, "type": "Raid"},
 }
+
+# 突袭任务类型名（与 plan_util / maa_week 共用口径）
+RAID_TYPE = "Raid"
 DEPOT = pathlib.Path(r"C:\MAA\data\DepotData.json")
 OUT = DATA / "weekly_plan.json"
 
@@ -88,6 +105,54 @@ def read_meds() -> dict:
         return {"sanity": san, "week": wk, "ts": ts}
     except Exception:  # noqa: BLE001
         return {"sanity": 0, "week": None, "ts": ""}
+
+
+_STAGE_CODE_RE = re.compile(r"[A-Za-z]+(?:-[A-Za-z]+)?-?\d+")
+
+
+def _stage_codes(raw) -> set:
+    """从进度字段（`list[str]` 或 `str`）解析关卡代号前缀集合。
+    容错：`\"YW-5(2星)\"` -> `\"YW-5\"`；`\"YW-EX-3\"` -> `\"YW-EX-3\"`（只取代号前缀，别被 `(2星)` 绊倒）。"""
+    out = set()
+    if isinstance(raw, str):
+        raw = [raw]
+    for it in (raw or []):
+        m = _STAGE_CODE_RE.search(str(it))
+        if m:
+            out.add(m.group(0))
+    return out
+
+
+def read_event_progress(event_id: str) -> dict:
+    """读 `docs/state.json.progress.<event_id>` 的「已通关」进度（**只读**，不写）。
+
+    返回 `{normal_done:set, raid_done:set, missing:bool}`：
+      · normal_done = first_clear_done ∪ ex_clear_done ∪ s_clear_done（普通关已通）；
+      · raid_done   = raid_clear_done（突袭已通，用关卡代号）；
+      · **字段缺失/格式意外 → 两个集合为空**（当「全未通」，宁可多排一次首通，也别漏排导致后面解锁不了）。
+    """
+    normal, raid, missing = set(), set(), True
+    try:
+        st = json.loads((ROOT / "docs" / "state.json").read_text(encoding="utf-8"))
+        _prog = st.get("progress") or {}
+        # state.json 里活动进度键是 `event_<id>`（如 event_act52side）；也兼容裸 <id>
+        pr = (_prog.get("event_%s" % event_id)
+              or _prog.get(event_id) or {})
+        for k in ("first_clear_done", "ex_clear_done", "s_clear_done"):
+            if k in pr:
+                missing = False
+                normal |= _stage_codes(pr.get(k))
+        if "raid_clear_done" in pr:
+            missing = False
+            raid |= _stage_codes(pr.get("raid_clear_done"))
+    except Exception:  # noqa: BLE001
+        pass
+    return {"normal_done": normal, "raid_done": raid, "missing": missing}
+
+
+def _num_suffix(code: str) -> int:
+    m = re.search(r"(\d+)$", str(code))
+    return int(m.group(1)) if m else 10 ** 9
 
 
 def read_events() -> list:
@@ -126,9 +191,15 @@ def _assemble_tasks(ann_runs, ev_stage, ev_runs, extra_tasks, r17_total, train_t
                       "params": {"stage": ev_stage, "times": ev_runs,
                                  "series": RULE.get("event_series", 10)},
                       "name": "活动刷代币"})
-    for code, cnt, _sn in extra_tasks:
-        tasks.append({"type": "Fight", "params": {"stage": code, "times": cnt},
-                      "name": "EX/S 首通"})
+    # EX/S 首通 + 突袭：带 seq（升序），plan_util 会按 seq「跨天单调不减」依次放置。
+    # 突袭**不是 Fight**（MAA Fight 做不了活动突袭）→ 用独立类型 Raid，执行交 Copilot/手点。
+    for e in extra_tasks:
+        if e.get("kind") == "raid":
+            tasks.append({"type": RAID_TYPE, "params": {"stage": e["stage"]},
+                          "name": e["name"], "seq": e["seq"]})
+        else:
+            tasks.append({"type": "Fight", "params": {"stage": e["stage"], "times": e["times"]},
+                          "name": e["name"], "seq": e["seq"]})
     if r17_total > 0:
         tasks.append({"type": "Fight", "params": {"stage": RULE["shards"]["stage"],
                                                   "times": r17_total,
@@ -212,14 +283,11 @@ def plan(date: dt.date) -> dict:
     stock = read_shard_stock()
     med = read_meds()
     meds = med["sanity"]
-    # 周常 240：只有「读数不在计划周内」时才加（否则存量里已经含了本周周常，会重复计）
-    weekly_potion = RULE["weekly_potion"]
-    if med["week"] and med["week"] == plan_week_id:
-        weekly_potion = 0
-        notes = ["理智药读数(%s)就在计划周内 → 周常 240 已含在存量，不重复计" % med["ts"]]
-    else:
-        notes = []
-    budget = RULE["natural_per_day"] * 7 + weekly_potion + meds
+    # 预算 = 自然 + 理智药存量（**药存量已含周常药 → 不再另加 240**，2026-10-12 用户裁定）
+    notes = ["预算 = 自然 %d + 理智药存量 %d = %d（药读数 %s；**已含周常药，不加 240**）"
+             % (RULE["natural_per_day"] * 7, meds, RULE["natural_per_day"] * 7 + meds,
+                med["ts"] or "无")]
+    budget = RULE["natural_per_day"] * 7 + meds
 
     # --- R1 剿灭 ---
     a = RULE["annihilation"]
@@ -252,9 +320,23 @@ def plan(date: dt.date) -> dict:
     ev_stage, ev_san, ev_runs, ev_win = None, 0, 0, {}
     shop_credit = {}          # 活动商店能白拿的材料 → 抵扣培养需求
 
-    # --- R2.5 EX / S 首通（开放即打，必做；先占预算）---
-    extra_tasks, extra_san = [], 0
+    # --- R2.5 EX / S 首通链（读进度：**只排未通、从第一个未通起的解锁链**；先占预算）---
+    #   依赖语义（2026-10-12 用户补充）：EX-i **未通就不能打 EX-(i+1)**（依次解锁）；
+    #   所以只排「未通」的关、按解锁顺序（EX-1→EX-8 / S-1）排成链，且**链是前缀式的**：
+    #   从第一个未通关开始，其后各关都在链内（已通的关跳过、不重复排首通）。
+    #   突袭依赖「该关普通已通」：普通已通(或在本链中先通)的关才排突袭，且**紧跟其普通之后**、
+    #   按关顺序（用 seq 保证「按序、跨天单调不减」，执行时遇挫即停由 event-copilot 负责）。
+    prog = read_event_progress(ev.get("event_id")) if ev else {"normal_done": set(), "raid_done": set(),
+                                                               "missing": True}
+    normal_done, raid_done = prog["normal_done"], prog["raid_done"]
+    extra_tasks, extra_san, extra_san_normal, extra_san_raid = [], 0, 0, 0
+    seq = 0
     if ev:
+        if prog["missing"]:
+            notes.append("⚠ 未读到活动进度（state.json.progress.%s 缺 first_clear_done/ex_clear_done/"
+                         "s_clear_done）→ **当全未通**（宁可多排一次首通，也别漏排导致后面解锁不了）"
+                         % ev.get("event_id"))
+        _combat_end = str(ev.get("combat_end") or ev.get("end") or "")[:10]
         for key, listkey, label in (("ex_open", "ex_stages", "EX"), ("s_open", "s_stages", "S")):
             d0 = str(ev.get(key) or "")[:10]
             if not d0:
@@ -263,17 +345,47 @@ def plan(date: dt.date) -> dict:
                 dd = dt.date.fromisoformat(d0)
             except Exception:  # noqa: BLE001
                 continue
-            if mon <= dd <= sun:
-                for s in (ev.get(listkey) or []):
-                    extra_tasks.append((s["code"], 1, int(s.get("sanity") or 0)))
-                    extra_san += int(s.get("sanity") or 0)
-                notes.append("★ 本周 %s 开放 %s 关 %d 个 → 首通共 %d 理智（必做）"
-                             % (d0, label, len(ev.get(listkey) or []),
-                                sum(int(s.get("sanity") or 0) for s in (ev.get(listkey) or []))))
-            elif dd > sun:
-                notes.append("%s 关 %s 开放（不在本周），届时首通（往期口径 %d 个 ≈ %d 理智）"
-                             % (label, d0, len(ev.get(listkey) or []),
-                                sum(int(s.get("sanity") or 0) for s in (ev.get(listkey) or []))))
+            _stages = ev.get(listkey) or []
+            _codes = [s["code"] for s in _stages]
+            _san_by = {s["code"]: int(s.get("sanity") or 0) for s in _stages}
+            _has_raid = label in RULE["raid"]["only"]
+            # 本关「可排进本周」= 开放日 ≤ 本周末 且 作战截止 ≥ 本周一（含「上周已开放、仍未通」）
+            _in_week = (dd <= sun) and (not _combat_end or _combat_end >= mon.isoformat())
+            if not _in_week:
+                notes.append("%s 关 %s 开放（不在本周，或本周前已结束），本周不排（已通 %d/%d，突袭 %d）"
+                             % (label, d0, sum(1 for c in _codes if c in normal_done), len(_codes),
+                                sum(1 for c in _codes if c in raid_done)))
+                continue
+            # 解锁链 = 从「第一个未通」起到末尾（前缀式；已通的前缀跳过）
+            first_un = next((i for i, c in enumerate(_codes) if c not in normal_done), None)
+            chain = _codes[first_un:] if first_un is not None else []
+            _n_norm = _n_raid = 0
+            for c in _codes:
+                _cleared = c in normal_done
+                _scheduled = c in chain            # 未通但落在本周链内 → 本周会通
+                if not _cleared and not _scheduled:
+                    continue                       # 普通既没通也不在本周链内 → 该关不可达（锁着）
+                san = _san_by.get(c, 0)
+                if not _cleared:                   # 已通的不再排首通
+                    seq += 1
+                    extra_tasks.append({"kind": "fight", "stage": c, "times": 1,
+                                        "sanity": san, "seq": seq, "name": "%s 首通" % c})
+                    extra_san += san; extra_san_normal += san; _n_norm += 1
+                if _has_raid and c not in raid_done:   # 突袭依赖「该关普通已通」→ 排在其后
+                    seq += 1
+                    extra_tasks.append({"kind": "raid", "stage": c, "times": 1,
+                                        "sanity": san, "seq": seq, "name": "%s 突袭" % c})
+                    extra_san += san; extra_san_raid += san; _n_raid += 1
+            if chain:
+                notes.append("★ %s 首通链：已通 %d/%d 关，本周排 %s..%s（共 %d 关普通%s）"
+                             "—— 依次解锁，前面未通则后面排不了"
+                             % (label, sum(1 for c in _codes if c in normal_done), len(_codes),
+                                chain[0], chain[-1], len(chain),
+                                ("；另排突袭 %d 关（按关顺序、紧跟其普通；理智按普通计，口径待核）" % _n_raid)
+                                if _has_raid else ""))
+            else:
+                notes.append("%s 首通链：%d 关普通**全部已通**，本周不排首通（未通突袭 %d 关照排）"
+                             % (label, len(_codes), _n_raid))
 
     # --- R3 活动：剩余预算反推 ---
     if ev:
@@ -297,14 +409,15 @@ def plan(date: dt.date) -> dict:
                            for it in shop if (it.get("limit") or 0) > 0 and not it.get("skip"))
             tok_per_run = int(stages[st].get("token_per_run") or 0) or 1
             cap_runs = math.ceil(need_tok / tok_per_run) if need_tok else 10 ** 9
-            ev_runs = min(left // ev_san, cap_runs) if ev_san else 0
+            # left 可能为负（如预算被 1-7 下限吃穿）→ clamp 到 ≥0，别让次数为负
+            ev_runs = max(0, min(left // ev_san, cap_runs)) if ev_san else 0
             train_budget = max(0, left - ev_runs * ev_san)
             # 注意：这里只报「预算上限/商店需求」；**实际排几次由 _fit_to_schedule 自检后定**，
             # 故「本周实排 N 次」在自检之后统一追加（避免回退后 note 与实际 times 不一致）。
             notes.append("活动 %s：开放 %s~%s，每局 %d 理智；商店要买 %d 代币 → 需 %d 次"
                          "（预算够 %d 次）"
                          % (st, ev_win["open"], ev_win["close"], ev_san,
-                            need_tok, cap_runs, left // ev_san if ev_san else 0))
+                            need_tok, cap_runs, (max(0, left) // ev_san) if ev_san else 0))
             # 商店能换的材料 → 直接抵扣培养需求
             try:
                 _idx = json.loads(pathlib.Path(r"C:\MAA\resource\item_index.json")
@@ -360,10 +473,14 @@ def plan(date: dt.date) -> dict:
         "range": "%s..%s" % (mon.isoformat(), sun.isoformat()),
         "generated_at": dt.datetime.now().strftime("%Y-%m-%dT%H:%M"),
         "by": "plan_week.py",
+        # 当期活动 id（供 maa_week 拼 event-copilot 命令；EX/S 首通链走 event-copilot 跑）
+        "event": (ev.get("event_id") if ev else None),
         "budget": {"sanity_natural": RULE["natural_per_day"] * 7,
-                   "weekly_potion": weekly_potion,
+                   # weekly_potion 恒 0（已废弃）：药存量已含周常药，不再另加（2026-10-12 裁定）
+                   "weekly_potion": 0,
                    "meds_available": meds,
                    "meds_week": med["week"],
+                   "meds_source": "scheduling/data/sanity.json（每周日手动跑 sanity_potion.py）",
                    "daily_natural": RULE["natural_per_day"]},
         "inventory": {"固源岩": stock},
         "shards": {"stock": stock, "target": sh["target"], "per_run": sh["per_run"],
@@ -383,9 +500,9 @@ def plan(date: dt.date) -> dict:
         train_tasks=train_tasks, ann_runs=ann_runs, r17=r17, ann_san=ann_san,
         extra_san=extra_san, train_spent=train_spent, budget=budget)
     used = ann_san + extra_san + san17 + ev_runs * ev_san + train_spent
-    notes.append("预算 %d；剿灭 %d + EX首通 %d + 1-7 %d + 活动 %d + 培养 %d = %d；补 1-7 %d 次花光"
-                 % (budget, ann_san, extra_san, san17, ev_runs * ev_san, round(train_spent),
-                    round(used), fill_runs))
+    notes.append("预算 %d；剿灭 %d + EX/S首通 %d + EX/S突袭 %d + 1-7 %d + 活动 %d + 培养 %d = %d；补 1-7 %d 次花光"
+                 % (budget, ann_san, extra_san_normal, extra_san_raid, san17,
+                    ev_runs * ev_san, round(train_spent), round(used), fill_runs))
     for _t in _fit_trace:
         notes.append("★ 排期自检：" + _t)
     # 自检回归后的「实排」口径 —— 与最终 tasks / sanity_alloc 对齐（此时 ev_runs / r17_total 已定稿）
@@ -395,7 +512,8 @@ def plan(date: dt.date) -> dict:
     notes.append("1-7：本周实排 %d 次（下限 %d + 填充 %d），共 %d 理智"
                  % (r17_total, r17, fill_runs, r17_total * 6))
     plan["rationale"] = {"notes": notes,
-                         "sanity_alloc": {"annihilation": ann_san, "EX首通": extra_san,
+                         "sanity_alloc": {"annihilation": ann_san, "EX/S首通": extra_san_normal,
+                                          "EX/S突袭": extra_san_raid,
                                           "1-7": r17_total * 6,
                                           "活动": ev_runs * ev_san, "培养": train_spent}}
     if train_info:

@@ -311,12 +311,15 @@ def ark_list_tasks(keyword: str = "") -> dict:
 # 按源码（docs/MAA-INTERNALS.md §2，MaaCore v6.19.0）：
 #   StartUp 必填 client_type（非空且合法，如 "Official"）；Infrast 必填 facility（字符串数组）；
 #   Recruit 必填 select/confirm（**整数数组**，不是 tag 名）。enable 由 Core 默认 true，非必填。
-# Infrast 默认 mode=20000（Rotation：Mfg/Trade/Reception 不换班，仅收菜/无人机/会客室），
-#   避免 mode=0（Default 自动换班）覆盖《搓玉》手排方案（铁律：禁用 MAA 自带排班）。
+# Infrast 默认 mode=20000（Rotation：收菜/无人机/会客室，不由 MAA 换干员），
+#   基建口径（2026-10-12 用户裁定）：基建**交给 MAA 自带的「队列轮换」**——
+#   MAA 进基建 → 当前班有人心情 0 → 点游戏内「一键轮换」→ 各设施收菜。
+#   facility = 要收哪些设施（9 项，与 plan/maa_week.TASK_DEFAULTS 同口径）。
 TASK_DEFAULTS = {
     "Recruit": {"select": [3, 4, 5, 6], "confirm": [3, 4, 5, 6], "times": 4},
     "StartUp": {"client_type": "Official"},
-    "Infrast": {"mode": 20000, "facility": ["Mfg", "Trade", "Reception"]},
+    "Infrast": {"mode": 20000, "facility": ["Mfg", "Trade", "Power", "Control", "Reception",
+                                            "Office", "Dorm", "Processing", "Training"]},
     "Depot": {"enable": True},
     "OperBox": {"enable": True},
 }

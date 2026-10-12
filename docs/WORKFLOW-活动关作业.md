@@ -41,6 +41,9 @@ python event_copilot.py goto                           # (可选)简易导航到
 python event_copilot.py run   act52side --stages 5,6,7,8   # 执行(单关失败逐候选换，失败退理智代价低)
 python event_copilot.py run   act52side --all --try
 python event_copilot.py run   act52side --stages 8 --loop 30   # 刷代币：同一关重复 30 次
+python event_copilot.py run   act52side --chain ex --try         # ★EX 首通解锁链（依次解锁、遇挫即停）
+python event_copilot.py run   act52side --chain raid --try       # ★EX 突袭链（需该关普通已通）
+python event_copilot.py run   act52side --stages 1,2 --raid      # 打指定关的突袭（is_raid=true）
 ```
 
 - 可选环境变量覆盖：`ARK_MAA_PATH` / `ARK_ADB` / `ARK_ADDR` / `ARK_TOUCH` / `ARK_FORMATION_INDEX`。
@@ -49,6 +52,44 @@ python event_copilot.py run   act52side --stages 8 --loop 30   # 刷代币：同
 - **准入（用户铁律）**：只有 `score == (0,0,0,0)`（全员/组都 E2+）的候选才算"**可抄**"；其余一律跳过。
   干员箱以**森空岛在线**为准（见坑 4）。
 - 选关时游戏**必须停在活动地图(关卡列表)**；`run` 里 MAA 用 OCR 找关卡代号（如 `YW-5`）并点击，找不到会左右翻页。
+
+---
+
+## 2bis. EX/S 解锁链与突袭（`--chain`，2026-10-12 用户口径）
+
+**依赖语义**：活动 **只有 EX / S 关有突袭**（普通关 YW-1..8 没有）；EX-i **未通就打不了 EX-(i+1)**
+（依次解锁）；突袭依赖「**该关普通已通**」。
+
+`run <event> --chain <kind>` 据此执行：
+
+| kind | 含义 |
+|---|---|
+| `ex` | EX 普通首通链（EX-1→EX-8，**只打未通的、从第一个未通起**） |
+| `raid` | EX 突袭链（仅「该关普通已通」的关；按关顺序） |
+| `s` / `sraid` | S 关普通 / 突袭，同理 |
+
+规则：
+1. **只排未通**：读 `docs/state.json.progress.event_<活动>`，已通的关不再打（省理智）；
+2. **遇挫即停**：某关**没有可抄作业**（或不在 MAA 资源）/ 执行失败 → **不再打后面的关**（后面本来没解锁），
+   日志明确写「卡在 EX-k」并给手点提示；
+3. `--try` 保留（该关逐候选重试）；链模式下「该关所有候选都失败」= 链停；
+4. **跑完/失败都回写** `docs/state.json.progress.event_act52side`。
+
+**突袭机制**：MAA 活动突袭只能走 Copilot（`copilot_list` 条目带 `is_raid: true`；MAA `Fight` 不支持），
+见 `MAA-INTERNALS.md` §2.10。本脚本把 `is_raid` 传进作业条目。
+
+**`progress.event_act52side` 字段约定**（`--chain` 会写）：
+
+| 字段 | 含义 |
+|---|---|
+| `first_clear_done` | 故事关（YW-1..8）已通代号，如 `["YW-8","YW-5(2星)"]`（脏后缀容错，只取代号前缀） |
+| `ex_clear_done` / `s_clear_done` | EX / S **普通**已通代号（本工作流新增） |
+| `raid_clear_done` | **突袭**已通代号（EX/S 共用；本工作流新增） |
+| `ex_pending` / `raid_pending` | 未通计数（由上面列表 + `event_<id>.json` 的关卡总数算出） |
+| `last_chain_note` | 最近一次 `--chain` 的结果串（本工作流新增），如 `EX突袭链：成功[YW-EX-1]；卡在 YW-EX-2（该关普通未通）` |
+
+> 字段缺失/格式意外时，计划层（`plan_week`）与链执行层都**当全未通**（宁可多排一次首通，也别漏排）。
+> 规划侧对应规则见 `docs/STATE-一键长草.md` 的 R2.5 / R2.6。
 
 ---
 

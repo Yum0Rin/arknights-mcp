@@ -1,15 +1,15 @@
 {
   "_schema": "arknights-decision-state-v1",
   "_doc": "机器可读的决策状态（单一事实源）。agent 每次醒来：读它 -> 判触发 -> 执行 -> 回写。循环协议见 docs/STATE.md，判据/公式见 docs/MASTER-PLAN.md。",
-  "updated_at": "2026-10-12 15:52",
+  "updated_at": "2026-10-12 19:49",
   "cycle": {
     "strategy": "搓玉向（合成玉最高优先，长期不停）",
     "last_decision_at": "2026-10-10 演练（森空岛在线取数，未驱动设备）",
     "last_execution_at": "2026-10-12 00:34"
   },
   "triggers": {
-    "infrast_next_swap_at": "2026-10-12 11:04",
-    "infrast_next_swap_direction": "队列2->队列1",
+    "infrast_next_swap_at": "不适用（基建由 MAA mode=20000 自己按心情 0 触发）",
+    "infrast_next_swap_direction": "不适用（同上；旧 A/B 班轮换字段已废弃）",
     "annihilation_week_reset": "每周一（周上限 1800 玉）",
     "event_combat_end": "2026-10-23 03:59",
     "event_exchange_end": "2026-10-30",
@@ -36,7 +36,9 @@
       "活动商店自动选择性购买（2026-10-12）：MAA 6.19.0 已支持 params.event_shop.blacklist（旧结论 FINDINGS §19 作废）；需实跑确认日志有 registered EventShop task 后，才把 event_act52side.json 的 skip 口径与 MAA 黑名单同源生成",
       "定时执行未配：每天需手动 python scripts/maa-week/maa_week.py run --date <日期>；选型待定 —— A 本机计划任务跑 maa_week（推荐）/ B MAA GUI 定时+启动前唤醒计算机 / C paseo schedule（三选一，遵守单客户端驱动铁律）",
       "EX 关执行方式（2026-10-16 前必须定）：MAA 当前导航不了 YW-EX-1..8（resource 无关卡定义，见 audit_findings）。选项：①等 MAA 发版含 EX 定义后 maa_update/软件升级 ②走 scripts/event-copilot（Copilot 作业导航）③手点首通。已加预检兜底（跳过+留证），不会打死队列。",
-      "搓玉 target=1000 vs 活动优先级（运筹级待裁定）：现规则 R2(1-7 下限) 先于 R3(活动) → 活动商店只能搬 ~2%。是否改为「活动期 R3 优先 / 活动期临时降 target」？"
+      "搓玉 target=1000 vs 活动优先级（运筹级待裁定）：现规则 R2(1-7 下限) 先于 R3(活动) → 活动商店只能搬 ~2%。是否改为「活动期 R3 优先 / 活动期临时降 target」？",
+      "★预算装不下（2026-10-12 预算改 2600 后暴露，升给用户裁定）：1-7 下限 417 次(2502) + 剿灭(125) + EX/S 首通+突袭(240) = 2867 > 预算 2600，逐日 day_cap=372 装不下 → weekly_plan.daily unplaced={1-7:48}（差 288 理智）。自检 _fit_to_schedule 把活动次数回退到 0 仍不够（活动本就 0）。选项：①降 shards.target；②活动期把 R3 提到 R2 前（让 1-7 让位）；③临时多动理智药；④接受 unplaced（少刷 48 次 1-7）。**待用户拍板。**",
+      "★EX/S 首通链需实机验证（2026-10-16 EX 开放后）：event_copilot run act52side --chain ex 需要 ①MAA 资源已有 EX 关卡（否则 --chain ex 在 EX-1 就「无作业/不在资源」链停）②prts.maa.plus 有该 EX 关的可抄作业（E2+ 准入）③突袭作业的 is_raid 行为与落点。链停时按提示手点；进度会自动回写 progress.event_act52side。若某 EX 关无作业 → 链停属预期，不代表故障。"
     ],
     "resolved_2026-10-10": [
       "待养前 N 值 = 4（德克萨斯/乌尔比安/伊芙利特/山）",
@@ -52,7 +54,10 @@
       "MAA 软件已升级 MaaCore 6.18.0 → 6.19.0（Release 2026-10-11，旧版在 C:\\MAA\\.old）；资源/软件 check 均最新。更新盘点与融合建议见 docs/MAA-6.19-融合评估.md（新增 OperProgress 培养任务、event_shop 黑名单解禁、库存保持改版、定时唤醒）。",
       "基建改口径（用户 2026-10-12 裁定）：交给 MAA 自带的「队列轮换」（Infrast mode=20000 / GUI Mode=Rotation；facility=Mfg/Trade/Power/Control/Reception/Office/Dorm/Processing/Training）；自研 infrast_rotation.py + skill arknights-infrast-rotation 已归档 历史版本/基建改MAA轮换+队列按天-2026-10-12/ 并从工作区删除。",
       "队列改按天编辑（用户 2026-10-12 裁定）：maa_week.write/run 默认只处理当天（读 weekly_plan.daily），非当天 Fight 槽位在 gui.new.json 里 IsEnable=false；--whole-week 才跑整周。",
-      "监工对账（2026-10-12 夜，脚本硬核）：daily↔tasks 咬合、逐日 ≤ day_cap 406、全周 2837 ≤ 预算 2840、EX 窗口、剿灭周上限、固源岩期末 1002 ≥ 1000 —— 全部自洽；另发现 3 个真问题（见 audit_findings_2026-10-12）与 weekly_plan.json 长期 stale（已重新生成 + W42 镜像对齐）。"
+      "监工对账（2026-10-12 夜，脚本硬核）：daily↔tasks 咬合、逐日 ≤ day_cap 406、全周 2837 ≤ 预算 2840、EX 窗口、剿灭周上限、固源岩期末 1002 ≥ 1000 —— 全部自洽；另发现 3 个真问题（见 audit_findings_2026-10-12）与 weekly_plan.json 长期 stale（已重新生成 + W42 镜像对齐）。",
+      "预算口径修正（2026-10-12 用户裁定）：「预算理智药已经包含了周药，不可另行考虑周药」→ plan_week 删除 weekly_potion（**永不加 240**），预算 2840→2600（=自然 1680 + 药 920），day_cap 406→372；药存量由「每周日手动跑 scripts/sanity-potion/sanity_potion.py」测出写 scheduling/data/sanity.json（该读数已含周常药）。窗口/自检/文档全部随口径更新。",
+      "EX 顺序 + 突袭规则落地（2026-10-12）：①EX/S 首通带 task 级 seq（EX-1→EX-8、S-1），plan_util.distribute_daily 按 seq 升序、跨天单调不减放置；②**只有 EX/S 有突袭**（普通关 YW-1..8 无），每关普通首通后紧跟一条该关 `Raid`（新 task 类型，突袭理智暂按普通同价、待核）；③maa_week 遇 Raid 不 append、只提示走 event-copilot（Copilot is_raid）/手点并计入 run_report（非错误）。W42 重生成 + 镜像 + weekly_plan_log.jsonl 留痕。",
+      "EX/S 首通「解锁依赖链」语义落地（2026-10-12 用户补充「还没打过的关需要依次解锁」）：①plan_week R2.5 改读 progress.event_<活动>，只排未通、从第一个未通起的前缀链（已通不重排，缺失当全未通），突袭依赖「该关普通已通」；②event_copilot 新增 run --chain ex/raid/s/sraid（依次解锁、遇挫即停、跑完回写进度）+ --raid(is_raid)；③maa_week 遇 Raid/EX 跳过时打印可复制命令；④新增 progress 字段 ex_clear_done/s_clear_done/raid_clear_done/last_chain_note。EX 现未开放→进度为空→本周仍排 EX-1..8 普通+8 突袭，预算/day_cap/unplaced 不变。"
     ],
     "audit_findings_2026-10-12": [
       "【已加护栏】EX 关 YW-EX-1..8 在 MAA resource（tasks.json / tasks/Stages/*.json / stages.json）无定义 → 现在导航必失败；remote MaaResource 与本地同日(10-09)且只提供 tasks/hotfix → maa_update.py apply 拿不到关卡定义（关卡定义随 MAA 软件版走）。maa_week.run 已加预检：导航不了的关跳过并留证（--strict 才失败），不再让 append=0 打死整天。",
@@ -73,7 +78,7 @@
         "YW-8(3星)"
       ],
       "first_clear_pending": [],
-      "first_clear_note": "普通 8 关全部首通（用户 2026-10-10 告知 + 我记账）。此后首通/刷关进度由 agent 自行记录在 state.json。",
+      "first_clear_note": "普通 8 关全部首通（用户 2026-10-10 告知 + 我记账）。此后首通/刷关进度由 agent 自行记录在 state.json。 字段约定（2026-10-12）：first_clear_done=故事关(YW-1..8)已通；ex_clear_done/s_clear_done=EX/S 普通已通；raid_clear_done=突袭已通(EX/S 共用)；ex_pending/raid_pending=未通计数；last_chain_note=最近一次 --chain 结果。由 scripts/event-copilot/event_copilot.py --chain 回写；plan_week R2.5 读这些字段做「只排未通、前缀链」。",
       "ex_pending": 8,
       "raid_pending": 8,
       "tokens_owned": 39,
@@ -84,7 +89,10 @@
         "干员信物（首发换满拿黄票）",
         "寻访凭证、模组数据块、聚合剂、技巧概要卷3、高级作战记录"
       ],
-      "farm_stage": "YW-6（全新装置 14 人用 + 改量装置 31 人前置）"
+      "farm_stage": "YW-6（全新装置 14 人用 + 改量装置 31 人前置）",
+      "ex_clear_done": [],
+      "s_clear_done": [],
+      "raid_clear_done": []
     },
     "oper_train": {
       "candidates_by_rate": [
@@ -489,6 +497,79 @@
         ],
         "no_device": "仅跑 Depot 识别；单客户端 127.0.0.1:5555，未跑其它设备任务。"
       }
+    },
+    {
+      "ts": "2026-10-12 19:30",
+      "action": "GUI 修复：签到状态即时刷新 + 长草页补完",
+      "result": "skland_gui.py：①签到成功后重拉 attendance 并重渲染「签到」页（新增队列类型 attendance）；②长草页 _render_longcao 此前定义了却从未被调用（计划区永远空白）→ 建页即渲染 + 切到该页重渲染（hook stackedWidget.currentChanged），并补「生成/刷新计划」「刷新计划」按钮与「快捷工具」卡；_popen_log 增 reload_plan 回调。",
+      "observations": {
+        "复现": "长草页只显示两个按钮、计划区空白（_render_longcao 无调用点）；签到后「今日」仍显示旧状态，须手动「刷新数据」",
+        "验证": "offscreen 冒烟：长草 sec 渲染 19 个控件；切页触发重渲染；attendance 队列消息正确落自 self.attendance；py_compile 通过",
+        "注意": "用户当时运行的旧 GUI 实例仍跑旧代码，需关掉重开才生效"
+      }
+    },
+    {
+      "ts": "2026-10-12 19:35",
+      "action": "执行层：修 6 个已复核问题（write 关卡预检 / Infrast 9 设施口径 / _shot 0 字节 / 反向口径残留 / 文档数字 / triggers）+ 实机验证 V1/V2/V3",
+      "result": "改 9 个文件：scripts/maa-week/maa_week.py、arknights_mcp.py、.opencode/agent/ark-exec.md、.opencode/agent/ark-orchestrator.md、docs/MAA-INTERNALS.md、docs/STATE.md、docs/STATE-一键长草.md、README.md、docs/state.json。py_compile 全过；write/run --dry 自测符合预期。",
+      "observations": {
+        "fix1_write预检": "cmd_write 对当天 Fight 过 stage_navigable()：EX 关不写槽位 + 日志列出；dry 10-16 只写 Annihilation×1/1-7×54，YW-6 停用；dry 10-12 正常 3 关。",
+        "fix2_infrast口径": "arknights_mcp.TASK_DEFAULTS['Infrast'].facility Mfg/Trade/Reception(3) → 9 项（Mfg/Trade/Power/Control/Reception/Office/Dorm/Processing/Training）；同文件『禁用 MAA 自带排班』注释改为 MAA 队列轮换口径。",
+        "fix3_shot": "_shot 先 _devices() 探测实际设备再截图 + 校验返回码/文件大小；自测 _devices()=['127.0.0.1:5555','emulator-5554']，出图 1025205 字节（非 0）。",
+        "fix4_反向口径": "ark-exec.md description、ark-orchestrator.md、MAA-INTERNALS.md §8、STATE.md §4、README.md 周期点，均改为『基建由 MAA Infrast mode=20000（队列轮换）承担』。",
+        "fix5_文档数字": "STATE-一键长草.md：day_cap 240+药/天 → ceil(周预算/7)=406（规则块 + 已修的坑#5）；EX 单价 15/15/18/18/21/21/24/30 → 10/10/15/15/15/15/20/20（与 event_act52side.json 一致，S-1=15）。",
+        "fix6_triggers": "state.json triggers.infra_next_swap_at/direction 改为『不适用（基建由 MAA mode=20000 自己按心情 0 触发）』（Python 全库扫描确认无活代码读取）。",
+        "V1_基建实机": "MAA 未运行（仅雷电）。ark_run_task('Infrast',{mode:20000,facility:9项}) id=2，195.6s，errors=[]，chains=['Infrast']。日志证据：InfrastEnterRotation 点 InfrastOverviewEnter(0.999958) → InfrastQueueRotation(score 1.000000)=真点了游戏内『队列轮换』；ProductOfFacility：Mfg0 CombatRecord/Mfg1 OriginStone/Mfg2-3 PureGold、Trade0 Money/Trade1 SyntheticJade、Reception General×2、Training SkillLevel → 各设施确有收菜/生产推进。子任务包 13 项固定为 ProcessTask/EnterRotation/Info/Mfg/Trade/Reception/Processing/Training（Rotation 下 Power/Control/Dorm/Office 无独立子任务、不换干员）。森空岛 ark_infrast_status：drone 144/250、tiredChars=[]、各站有人进驻。",
+        "V2_按天队列真写": "备份 gui.new.json.preV2-20261012-193304（另脚本自带 .bak-20261012-193308）。write --date 2026-10-12 真写 live：Fight 槽 Annihilation IsEnable=True/series=1/TimesLimit=1、YW-6 series=0→10/TimesLimit=60→1、1-7 series=6/TimesLimit=60；Infrast.Mode Custom→Rotation；OperProgress IsEnable→False；Roguelike 保持 False。另用 --maa-config 写副本模拟 10-16：EX 不写槽位（日志列 YW-EX-7/8/3）、YW-6→IsEnable=False（非当天停用）、Annihilation×1/1-7×54 —— 真写路径下预检+停用均成立。live 文件保持 10-12。",
+        "V3_EX预检": "ark_run_task('Fight',{stage:'YW-EX-1',times:1}) → ok=false / id=0；MAA 日志 `Unknown task: YW-EX-1` / `Cannot set stage YW-EX-1` / append_task invalid params —— 证实 MAA 导航不了 EX，结论未翻案。",
+        "no_device_side_effects": "只跑 StartUp(进游戏)+Infrast(收菜/队列轮换)+一次失败 append；未碎石/未吃理智药/未进商店消费，未碰用户游戏进度。",
+        "changed_files": [
+          "scripts/maa-week/maa_week.py",
+          "arknights_mcp.py",
+          ".opencode/agent/ark-exec.md",
+          ".opencode/agent/ark-orchestrator.md",
+          "docs/MAA-INTERNALS.md",
+          "docs/STATE.md",
+          "docs/STATE-一键长草.md",
+          "README.md",
+          "docs/state.json"
+        ],
+        "no_commit": "未 git commit（按指令，由总指挥提交）。"
+      }
+    },
+    {
+      "ts": "2026-10-12 19:41",
+      "action": "执行层：三条运筹口径修正（预算去周常240 / EX seq 顺序 / 突袭规则）+ 重生成计划 + 文档同步",
+      "result": "改 6 文件：scheduling/tools/plan_week.py、plan_util.py、scripts/maa-week/maa_week.py、docs/STATE-一键长草.md、docs/PLAN-一键长草.md、docs/DAILY-CHECKLIST-act52side.md、docs/MASTER-PLAN.md、docs/state.json。重生成 weekly_plan.json + 镜像 W42 + 追加 weekly_plan_log.jsonl。",
+      "budget": {
+        "sanity_natural": 1680,
+        "weekly_potion": 0,
+        "meds_available": 920,
+        "meds_week": "2026-W41",
+        "meds_source": "scheduling/data/sanity.json（每周日手动跑 sanity_potion.py）",
+        "daily_natural": 240
+      },
+      "day_cap": 372,
+      "unplaced": {
+        "1-7": 48
+      },
+      "no_device": "未跑任何 MAA/设备任务",
+      "no_commit": "未 git commit（按指令，由总指挥提交）",
+      "backup": "%TEMP%/opencode/snap-budget2600-exseq-*"
+    },
+    {
+      "ts": "2026-10-12 19:49",
+      "action": "执行层：EX/S 首通'解锁依赖链'语义落地（plan_week 读进度只排未通 / event-copilot --chain 遇挫即停 / maa_week 打印可复制命令 / 文档同步）",
+      "result": "改 6 文件：scheduling/tools/plan_week.py、scripts/event-copilot/event_copilot.py、scripts/maa-week/maa_week.py、docs/STATE-一键长草.md、docs/PLAN-一键长草.md、docs/DAILY-CHECKLIST-act52side.md、docs/WORKFLOW-活动关作业.md、docs/state.json。plan 新增 event 字段；重生成 weekly_plan.json + 镜像 W42 + weekly_plan_log.jsonl 追加。",
+      "new_progress_fields": [
+        "ex_clear_done",
+        "s_clear_done",
+        "raid_clear_done",
+        "last_chain_note"
+      ],
+      "self_test": "plan_week: 注入部分进度(EX-1,2已通/EX-1突袭已通)→链从 EX-3 起、EX-2 突袭照排、EX-1 不重排；event_copilot: stub 网络/设备→--chain ex 遇 EX-2 失败即停并回写 ex_clear_done=[EX-1];--chain raid 在 EX-2 普通未通处停但先跑 EX-1 突袭并回写 raid_clear_done=[EX-1]。",
+      "no_device": "未跑任何 MAA/设备任务",
+      "no_commit": "未 git commit（按指令）"
     }
   ]
 }

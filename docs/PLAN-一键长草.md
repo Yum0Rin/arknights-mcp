@@ -26,6 +26,8 @@
 ```
 StartUp(唤醒/启动客户端)
   → Fight(剿灭 Annihilation)          # 先剿灭
+  → Fight(EX/S 首通 ×1/关，seq 顺序)   # 活动开放后：EX-1→EX-8，按 seq
+  → Raid(EX/S 突袭 ×1/关，seq 顺序)    # 只有 EX/S 有突袭；紧跟该关普通后（MAA 不 append）
   → Fight(活动关 ×N)                   # 再活动
   → Fight(1-7 ×M)                      # 搓玉固源岩
   → Recruit(公招)
@@ -33,6 +35,15 @@ StartUp(唤醒/启动客户端)
   → Mall(信用商店)
   → Award(领取奖励)                     # 必须最后（先产出才有奖领）
 ```
+
+- **EX/S 首通链 + 突袭（2026-10-12 改定）**：EX-i **未通就打不了 EX-(i+1)**（依次解锁）→ 计划只排**未通**的关、
+  从**第一个未通**起的前缀链（读 `state.json.progress.event_<活动>`；已通不重排；缺失当全未通），逐日**按 seq 跨天单调不减**；
+  **只有 EX/S 有突袭**（普通关 YW-1..8 无），突袭依赖「该关普通已通」，排在普通之后（`type=Raid`，单次）。
+  MAA `Fight` 做不了活动突袭（`is_raid` 只在 Copilot `copilot_list` 里，见 `MAA-INTERNALS.md` §2.10）
+  → `maa_week` 遇 `Raid` **不 append**，只提示「交 event-copilot / 手点」并计入 `run_report`（非错误）。
+  执行用 **`--chain`**（依次解锁、**遇挫即停**、跑完回写进度）：
+  `python scripts/event-copilot/event_copilot.py run act52side --chain ex --try`（EX 普通）/
+  `--chain raid --try`（EX 突袭）/ `--chain s` / `--chain sraid`。
 
 - **基建口径（2026-10-12 改定）**：基建**全部**交给 MAA `Infrast` `mode=20000`（队列轮换 = 当前班心情 0 时点游戏内「一键轮换」+ 收菜）；自研换班脚本作历史版本。
 - **公招口径（已定）**：日常 `times=4`（攒许可）、`select/confirm=[3,4,5]`、**6 星不自动**。
@@ -71,7 +82,7 @@ StartUp(唤醒/启动客户端)
 - **决策变量** `x_i` = 第 i 个关卡本周刷的次数（含 1-7、活动关、CE-6 等）。
 - **目标** 最大化总效用：`Σ u_i · x_i`，`u_i` = 每理智边际收益（见 §3.2 的价值尺度）。
 - **约束**：
-  1. 理智：`Σ cost_i·x_i ≤ 周预算`（自然 1680 + 周常 240 = **1920**，可动用理智药 ≈1200 作缓冲）。
+  1. 理智：`Σ cost_i·x_i ≤ 周预算`（自然 1680 + **理智药存量**；⚠ 药存量**已含周常药**，**不再另加周常 240**，见 §3.3 A.1）。
   2. 剿灭：`x_annih ≤ 5`（周上限 1800 玉，25 理智/次）。
   3. 活动：代币产出 `≥ 目标集缺口`；活动时间窗 `≤ 作战截止`。
   4. 搓玉：1-7 产出固源岩 `≥ 库存保底缺口`（默认可累积，非硬下限，看库存）。
@@ -95,7 +106,8 @@ StartUp(唤醒/启动客户端)
 ### 3.3 要素清单（**★ 请逐项确认是否周全**）
 
 **A. 预算侧**
-1. 周理智预算：自然 1680 + 周常浓缩液×2 = 1920。
+1. 周理智预算：自然 1680 + **理智药存量**（每周日手动跑 `scripts/sanity-potion/sanity_potion.py` 测出，写 `scheduling/data/sanity.json`）。
+   ⚠ **药读数已含周常浓缩液 → 不再另加 240**（2026-10-12 用户裁定；重复计入会把预算虚高）。
 2. 理智上限 205、每 12h 回 120 → **溢出约束**（每天至少花 2 次、花到 ≤85）→ 影响"节奏"不只"总量"。
 3. 可动用理智药存量：**每 7 天从仓库读一次**（保质期≈14 天，7 天刷新足够）；过期会自动转理智（上限 999）。
    数据源：MAA `Depot` 只认「基础物品」模板、**不含理智药** → 理智药要走「消耗物品」tab 截图 OCR（见 `docs/WORKFLOW-仓库取数.md` §3/§6）。
@@ -195,26 +207,34 @@ scheduling/data/weekly_plan_log.jsonl # 每周归档（追加）
 
 ```json
 {
-  "week": "2026-W42", "range": "2026-10-13..2026-10-19",
-  "generated_at": "2026-10-13T04:30", "by": "paseo-schedule",
-  "budget": {"sanity_natural": 1680, "weekly_potion": 240, "meds_available": 1200},
+  "week": "2026-W42", "range": "2026-10-12..2026-10-18",
+  "generated_at": "2026-10-12T19:40", "by": "plan_week.py",
+  "budget": {"sanity_natural": 1680, "weekly_potion": 0, "meds_available": 920,
+             "meds_source": "scheduling/data/sanity.json（每周日手动跑 sanity_potion.py）"},
   "tasks": [
     {"type": "StartUp", "params": {"client_type": "Official", "start_game_enabled": true}},
     {"type": "Fight", "params": {"stage": "Annihilation", "times": 5}},
-    {"type": "Fight", "params": {"stage": "YW-6", "times": 60}},
-    {"type": "Fight", "params": {"stage": "1-7", "times": 50}},
-    {"type": "Recruit", "params": {"select": [3,4,5,6], "confirm": [4,5], "times": 50}},
-    {"type": "Infrast", "params": {"mode": 20000, "facility": ["Mfg","Trade","Reception"]}},
+    {"type": "Fight", "params": {"stage": "YW-EX-1", "times": 1}, "name": "YW-EX-1 首通", "seq": 1},
+    {"type": "Raid",  "params": {"stage": "YW-EX-1"}, "name": "YW-EX-1 突袭", "seq": 2},
+    {"type": "Fight", "params": {"stage": "YW-EX-2", "times": 1}, "name": "YW-EX-2 首通", "seq": 3},
+    {"type": "Raid",  "params": {"stage": "YW-EX-2"}, "name": "YW-EX-2 突袭", "seq": 4},
+    {"type": "Fight", "params": {"stage": "1-7", "times": 417, "series": 6}},
+    {"type": "Recruit", "params": {"select": [3,4,5], "confirm": [3,4,5], "times": 4}},
+    {"type": "Infrast", "params": {"mode": 20000, "facility": ["Mfg","Trade","Power","Control","Reception","Office","Dorm","Processing","Training"]},
+     "name": "基建·队列轮换"},
     {"type": "Mall", "params": {"enable": true}},
     {"type": "Award", "params": {"enable": true}}
   ],
   "side": [],              // 基建交 MAA 自带队列轮换后不再有附带脚本
   "rationale": {
-    "sanity_alloc": {"annihilation": 125, "event": 1260, "1-7": 535},
-    "notes": ["活动作战截止 10-23 → 代币本周刷够", "1-7 补固源岩至保底 1000"]
+    "sanity_alloc": {"annihilation": 125, "EX/S首通": 120, "EX/S突袭": 120, "1-7": 2502, "活动": 0, "培养": 0},
+    "notes": ["预算 = 自然 1680 + 药 920 = 2600（已含周常药，不加 240）", "1-7 补固源岩至保底 1000", "unplaced={1-7:48}（2867>2600，待裁定）"]
   }
 }
 ```
+
+> 约定：`seq` 是任务级字段（升序）；带 `seq` 的任务由 `plan_util.distribute_daily` 按序跨天单调不减放置。
+> `daily[].raids` 列出当天要打的突袭关（按 seq 顺序）；`maa_week` 遇 `Raid` 不 append、只提示。
 
 ## 8. 分期落地
 

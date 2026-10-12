@@ -1,13 +1,15 @@
 {
   "week": "2026-W42",
   "range": "2026-10-12..2026-10-18",
-  "generated_at": "2026-10-12T19:15",
+  "generated_at": "2026-10-12T19:48",
   "by": "plan_week.py",
+  "event": "act52side",
   "budget": {
     "sanity_natural": 1680,
-    "weekly_potion": 240,
+    "weekly_potion": 0,
     "meds_available": 920,
     "meds_week": "2026-W41",
+    "meds_source": "scheduling/data/sanity.json（每周日手动跑 sanity_potion.py）",
     "daily_natural": 240
   },
   "inventory": {
@@ -82,19 +84,19 @@
     {
       "type": "Fight",
       "params": {
-        "stage": "YW-6",
-        "times": 4,
-        "series": 10
-      },
-      "name": "活动刷代币"
-    },
-    {
-      "type": "Fight",
-      "params": {
         "stage": "YW-EX-1",
         "times": 1
       },
-      "name": "EX/S 首通"
+      "name": "YW-EX-1 首通",
+      "seq": 1
+    },
+    {
+      "type": "Raid",
+      "params": {
+        "stage": "YW-EX-1"
+      },
+      "name": "YW-EX-1 突袭",
+      "seq": 2
     },
     {
       "type": "Fight",
@@ -102,7 +104,16 @@
         "stage": "YW-EX-2",
         "times": 1
       },
-      "name": "EX/S 首通"
+      "name": "YW-EX-2 首通",
+      "seq": 3
+    },
+    {
+      "type": "Raid",
+      "params": {
+        "stage": "YW-EX-2"
+      },
+      "name": "YW-EX-2 突袭",
+      "seq": 4
     },
     {
       "type": "Fight",
@@ -110,7 +121,16 @@
         "stage": "YW-EX-3",
         "times": 1
       },
-      "name": "EX/S 首通"
+      "name": "YW-EX-3 首通",
+      "seq": 5
+    },
+    {
+      "type": "Raid",
+      "params": {
+        "stage": "YW-EX-3"
+      },
+      "name": "YW-EX-3 突袭",
+      "seq": 6
     },
     {
       "type": "Fight",
@@ -118,7 +138,16 @@
         "stage": "YW-EX-4",
         "times": 1
       },
-      "name": "EX/S 首通"
+      "name": "YW-EX-4 首通",
+      "seq": 7
+    },
+    {
+      "type": "Raid",
+      "params": {
+        "stage": "YW-EX-4"
+      },
+      "name": "YW-EX-4 突袭",
+      "seq": 8
     },
     {
       "type": "Fight",
@@ -126,7 +155,16 @@
         "stage": "YW-EX-5",
         "times": 1
       },
-      "name": "EX/S 首通"
+      "name": "YW-EX-5 首通",
+      "seq": 9
+    },
+    {
+      "type": "Raid",
+      "params": {
+        "stage": "YW-EX-5"
+      },
+      "name": "YW-EX-5 突袭",
+      "seq": 10
     },
     {
       "type": "Fight",
@@ -134,7 +172,16 @@
         "stage": "YW-EX-6",
         "times": 1
       },
-      "name": "EX/S 首通"
+      "name": "YW-EX-6 首通",
+      "seq": 11
+    },
+    {
+      "type": "Raid",
+      "params": {
+        "stage": "YW-EX-6"
+      },
+      "name": "YW-EX-6 突袭",
+      "seq": 12
     },
     {
       "type": "Fight",
@@ -142,7 +189,16 @@
         "stage": "YW-EX-7",
         "times": 1
       },
-      "name": "EX/S 首通"
+      "name": "YW-EX-7 首通",
+      "seq": 13
+    },
+    {
+      "type": "Raid",
+      "params": {
+        "stage": "YW-EX-7"
+      },
+      "name": "YW-EX-7 突袭",
+      "seq": 14
     },
     {
       "type": "Fight",
@@ -150,13 +206,22 @@
         "stage": "YW-EX-8",
         "times": 1
       },
-      "name": "EX/S 首通"
+      "name": "YW-EX-8 首通",
+      "seq": 15
+    },
+    {
+      "type": "Raid",
+      "params": {
+        "stage": "YW-EX-8"
+      },
+      "name": "YW-EX-8 突袭",
+      "seq": 16
     },
     {
       "type": "Fight",
       "params": {
         "stage": "1-7",
-        "times": 418,
+        "times": 417,
         "series": 6
       },
       "name": "搓玉/填充"
@@ -211,21 +276,24 @@
   "side": [],
   "rationale": {
     "notes": [
+      "预算 = 自然 1680 + 理智药存量 920 = 2600（药读数 2026-10-11；**已含周常药，不加 240**）",
       "固源岩 1128 → 期末需 ≥1000：1-7 下限 417 次（周耗 647，单次产 1.245）",
-      "★ 本周 2026-10-16 开放 EX 关 8 个 → 首通共 120 理智（必做）",
-      "S 关 2026-10-23 开放（不在本周），届时首通（往期口径 1 个 ≈ 15 理智）",
-      "活动 YW-6：开放 2026-10-09~2026-10-23，每局 21 理智；商店要买 5110 代币 → 需 244 次（预算够 4 次）",
+      "★ EX 首通链：已通 0/8 关，本周排 YW-EX-1..YW-EX-8（共 8 关普通；另排突袭 8 关（按关顺序、紧跟其普通；理智按普通计，口径待核））—— 依次解锁，前面未通则后面排不了",
+      "S 关 2026-10-23 开放（不在本周，或本周前已结束），本周不排（已通 0/1，突袭 0）",
+      "活动 YW-6：开放 2026-10-09~2026-10-23，每局 21 理智；商店要买 5110 代币 → 需 244 次（预算够 0 次）",
       "活动商店可白拿 5 种材料（已从培养需求里抵扣）",
       "培养：总缺口 2541 理智（材料 6 + 龙门币 2535）；本周投 0 理智刷 无",
-      "预算 2840；剿灭 125 + EX首通 120 + 1-7 2502 + 活动 84 + 培养 0 = 2831；补 1-7 1 次花光",
-      "活动 YW-6：本周实排 4 次（每局 21 理智，共 84 理智）",
-      "1-7：本周实排 418 次（下限 417 + 填充 1），共 2508 理智"
+      "预算 2600；剿灭 125 + EX/S首通 120 + EX/S突袭 120 + 1-7 2502 + 活动 0 + 培养 0 = 2867；补 1-7 0 次花光",
+      "★ 排期自检：活动已降到 0，仍有排不下的次数 {'1-7': 48}（容量确实不足）",
+      "活动 YW-6：本周实排 0 次（每局 21 理智，共 0 理智）",
+      "1-7：本周实排 417 次（下限 417 + 填充 0），共 2502 理智"
     ],
     "sanity_alloc": {
       "annihilation": 125,
-      "EX首通": 120,
-      "1-7": 2508,
-      "活动": 84,
+      "EX/S首通": 120,
+      "EX/S突袭": 120,
+      "1-7": 2502,
+      "活动": 0,
       "培养": 0
     }
   },
@@ -262,76 +330,85 @@
       "dow": "周一",
       "runs": {
         "Annihilation": 1,
-        "YW-6": 1,
-        "1-7": 60
+        "1-7": 57
       },
-      "sanity": 406,
+      "raids": [],
+      "sanity": 367,
       "cap": 240,
-      "day_cap": 406,
+      "day_cap": 372,
       "over": false,
       "opens": [],
-      "unplaced": {}
+      "unplaced": {
+        "1-7": 48
+      }
     },
     {
       "date": "2026-10-13",
       "dow": "周二",
       "runs": {
         "Annihilation": 1,
-        "YW-6": 1,
-        "1-7": 60
+        "1-7": 57
       },
-      "sanity": 406,
+      "raids": [],
+      "sanity": 367,
       "cap": 240,
-      "day_cap": 406,
+      "day_cap": 372,
       "over": false,
       "opens": [],
-      "unplaced": {}
+      "unplaced": {
+        "1-7": 48
+      }
     },
     {
       "date": "2026-10-14",
       "dow": "周三",
       "runs": {
         "Annihilation": 1,
-        "YW-6": 1,
-        "1-7": 60
+        "1-7": 57
       },
-      "sanity": 406,
+      "raids": [],
+      "sanity": 367,
       "cap": 240,
-      "day_cap": 406,
+      "day_cap": 372,
       "over": false,
       "opens": [],
-      "unplaced": {}
+      "unplaced": {
+        "1-7": 48
+      }
     },
     {
       "date": "2026-10-15",
       "dow": "周四",
       "runs": {
         "Annihilation": 1,
-        "YW-6": 1,
-        "1-7": 60
+        "1-7": 57
       },
-      "sanity": 406,
+      "raids": [],
+      "sanity": 367,
       "cap": 240,
-      "day_cap": 406,
+      "day_cap": 372,
       "over": false,
       "opens": [],
-      "unplaced": {}
+      "unplaced": {
+        "1-7": 48
+      }
     },
     {
       "date": "2026-10-16",
       "dow": "周五",
       "runs": {
         "Annihilation": 1,
+        "YW-EX-1": 1,
+        "YW-EX-2": 1,
+        "YW-EX-3": 1,
+        "YW-EX-4": 1,
+        "YW-EX-5": 1,
+        "YW-EX-6": 1,
         "YW-EX-7": 1,
         "YW-EX-8": 1,
-        "YW-EX-3": 1,
-        "1-7": 54
+        "1-7": 17
       },
-      "sanity": 404,
-      "cap": 240,
-      "day_cap": 406,
-      "over": false,
-      "opens": [
+      "raids": [
         "YW-EX-1",
         "YW-EX-2",
         "YW-EX-3",
@@ -341,38 +418,63 @@
         "YW-EX-7",
         "YW-EX-8"
       ],
-      "unplaced": {}
+      "sanity": 367,
+      "cap": 240,
+      "day_cap": 372,
+      "over": false,
+      "opens": [
+        "YW-EX-1",
+        "YW-EX-1",
+        "YW-EX-2",
+        "YW-EX-2",
+        "YW-EX-3",
+        "YW-EX-3",
+        "YW-EX-4",
+        "YW-EX-4",
+        "YW-EX-5",
+        "YW-EX-5",
+        "YW-EX-6",
+        "YW-EX-6",
+        "YW-EX-7",
+        "YW-EX-7",
+        "YW-EX-8",
+        "YW-EX-8"
+      ],
+      "unplaced": {
+        "1-7": 48
+      }
     },
     {
       "date": "2026-10-17",
       "dow": "周六",
       "runs": {
-        "YW-EX-4": 1,
-        "YW-EX-5": 1,
-        "YW-EX-1": 1,
-        "1-7": 61
+        "1-7": 62
       },
-      "sanity": 406,
+      "raids": [],
+      "sanity": 372,
       "cap": 240,
-      "day_cap": 406,
+      "day_cap": 372,
       "over": false,
       "opens": [],
-      "unplaced": {}
+      "unplaced": {
+        "1-7": 48
+      }
     },
     {
       "date": "2026-10-18",
       "dow": "周日",
       "runs": {
-        "YW-EX-6": 1,
-        "YW-EX-2": 1,
-        "1-7": 63
+        "1-7": 62
       },
-      "sanity": 403,
+      "raids": [],
+      "sanity": 372,
       "cap": 240,
-      "day_cap": 406,
+      "day_cap": 372,
       "over": false,
       "opens": [],
-      "unplaced": {}
+      "unplaced": {
+        "1-7": 48
+      }
     }
   ]
 }

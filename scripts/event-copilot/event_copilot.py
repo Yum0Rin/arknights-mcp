@@ -28,6 +28,18 @@
   plan    <event> [--top N]    抓作业并按干员箱打分，打印每关推荐 + 候选
   run     <event> --stages 5,6,7,8 [--try]   执行(单关失败逐候选重试)
   run     <event> --all
+  run     <event> --stages 1,2 --raid       打活动突袭(is_raid=true，只能走 Copilot)
+  run     <event> --chain ex                 ★按解锁链打 EX 普通（EX-1→EX-8，遇挫即停）
+  run     <event> --chain raid               按解锁链打 EX 突袭（需该关普通已通）
+  run     <event> --chain s | --chain sraid  同理，S 关
+
+解锁依赖链（2026-10-12 用户口径）
+--------------------------------
+活动 **只有 EX / S 关有突袭**，普通关(YW-1..8)没有。EX-i 未通就打不了 EX-(i+1)
+（依次解锁）；突袭依赖「该关普通已通」。故：
+  · `--chain` 只排**未通**的关、从**第一个未通**起按顺序跑；
+  · **遇挫即停**：某关没作业 / 执行失败 → 后面本来没解锁，直接结束（不跳关）；
+  · 跑完/失败都**回写** docs/state.json.progress.<event_<id>>（ex/s_clear_done、raid_clear_done、*_pending）。
 
 示例
 ----
@@ -35,6 +47,8 @@
   python event_copilot.py plan act52side
   python event_copilot.py run  act52side --stages 5,6,7,8
   python event_copilot.py run  act52side --all --try
+  python event_copilot.py run  act52side --chain ex --try         # EX 普通解锁链
+  python event_copilot.py run  act52side --chain raid --try       # EX 突袭解锁链
 
 前置：MAA(含 MaaCore) 已装在 C:\\MAA；模拟器已开、adb 可连 127.0.0.1:5555。
 """
@@ -44,6 +58,7 @@ import argparse
 import json
 import os
 import pathlib
+import re
 import shutil
 import sys
 import time
@@ -64,6 +79,11 @@ RES_RAW = "https://raw.githubusercontent.com/MaaAssistantArknights/MaaResource/m
 TILE_DIR = pathlib.Path(MAA) / "resource" / "Arknights-Tile-Pos"
 COPILOT_DIR = pathlib.Path(MAA) / "config" / "copilot"
 BOX_FILE = pathlib.Path(os.environ.get("ARK_BOX", str(pathlib.Path(MAA) / "data" / "OperBoxData.json")))
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]          # 仓库根
+DOCS = ROOT / "docs"
+STATE_JSON = DOCS / "state.json"
+EVENT_DATA = ROOT / "scheduling" / "data"                    # event_<id>.json
 
 MAX_CORE = (6, 18, 0)  # 本机 MaaCore 版本 upper-bound，作业 minimum_required 更高则跳过
 
@@ -157,6 +177,116 @@ def stages_of(event_id: str):
 
 
 # ---------------------------------------------------------------------------
+# 进度（docs/state.json.progress.<event_<id>>）—— 首通/突袭链依赖它
+# ---------------------------------------------------------------------------
+_STAGE_CODE_RE = re.compile(r"[A-Za-z]+(?:-[A-Za-z]+)?-?\d+")
+
+
+def _stage_codes(raw) -> set:
+    """解析进度字段里的关卡代号前缀（容错 `\"YW-5(2星)\"` -> `\"YW-5\"`）。"""
+    out = set()
+    if isinstance(raw, str):
+        raw = [raw]
+    for it in (raw or []):
+        m = _STAGE_CODE_RE.search(str(it))
+        if m:
+            out.add(m.group(0))
+    return out
+
+
+def _num_suffix(code: str) -> int:
+    m = re.search(r"(\d+)$", str(code))
+    return int(m.group(1)) if m else 10 ** 9
+
+
+def event_data(event_id: str) -> dict:
+    """读 scheduling/data/event_<id>.json（含 ex_stages/s_stages 的**权威顺序**）。"""
+    p = EVENT_DATA / ("event_%s.json" % event_id)
+    try:
+        return json.load(open(p, encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def read_prog(event_id: str) -> dict:
+    """读 state.json 里该活动的已通进度（只读）。
+    返回 {normal_done:set, raid_done:set, key:str}；缺失/异常 → 空集合（当全未通）。"""
+    normal, raid = set(), set()
+    key = "event_%s" % event_id
+    try:
+        st = json.load(open(STATE_JSON, encoding="utf-8"))
+        pr = (st.get("progress") or {}).get(key) or (st.get("progress") or {}).get(event_id) or {}
+        for k in ("first_clear_done", "ex_clear_done", "s_clear_done"):
+            normal |= _stage_codes(pr.get(k))
+        raid |= _stage_codes(pr.get("raid_clear_done"))
+    except Exception:  # noqa: BLE001
+        pass
+    return {"normal_done": normal, "raid_done": raid, "key": key}
+
+
+def update_progress(event_id: str, normal_ok=(), raid_ok=(), chain_note: str = ""):
+    """把本轮**已通**的关写回 state.json.progress.<event_<id>>（沿用既有字段风格）。
+
+    · 普通关 → 按类型写进 ex_clear_done / s_clear_done（EX/S）或 first_clear_done（故事关）；
+    · 突袭   → raid_clear_done（用关卡代号）；
+    · 顺带刷新 ex_pending / raid_pending 计数与 updated_at。
+    """
+    try:
+        st = json.load(open(STATE_JSON, encoding="utf-8"))
+    except Exception as e:  # noqa: BLE001
+        log("[!] 读 state.json 失败，进度未回写: %r" % e)
+        return
+    pr = (st.setdefault("progress", {})).setdefault("event_%s" % event_id, {})
+    for k in ("first_clear_done", "ex_clear_done", "s_clear_done", "raid_clear_done"):
+        pr.setdefault(k, [])
+
+    def _add(key, code):
+        if code and code not in pr[key]:
+            pr[key].append(code)
+
+    for c in normal_ok:
+        if "-EX-" in c:
+            _add("ex_clear_done", c)
+        elif "-S-" in c:
+            _add("s_clear_done", c)
+        else:
+            _add("first_clear_done", c)
+    for c in raid_ok:
+        _add("raid_clear_done", c)
+
+    d = event_data(event_id)
+    ex = [s["code"] for s in (d.get("ex_stages") or [])]
+    ss = [s["code"] for s in (d.get("s_stages") or [])]
+    if ex:
+        pr["ex_pending"] = max(0, len(ex) - len(set(ex) & set(pr["ex_clear_done"])))
+    if ex or ss:
+        allr = set(ex) | set(ss)
+        pr["raid_pending"] = max(0, len(allr) - len(allr & set(pr["raid_clear_done"])))
+    if chain_note:
+        pr["last_chain_note"] = chain_note
+    st["updated_at"] = time.strftime("%Y-%m-%d %H:%M")
+    json.dump(st, open(STATE_JSON, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    log("[*] 已回写进度 -> %s" % STATE_JSON)
+
+
+# 链模式：kind -> (组标签, event 数据字段, 是否突袭)
+CHAIN_KINDS = {
+    "ex":    ("EX", "ex_stages", False),
+    "raid":  ("EX", "ex_stages", True),      # EX 突袭
+    "s":     ("S",  "s_stages",  False),
+    "sraid": ("S",  "s_stages",  True),      # S 突袭
+}
+
+
+def chain_codes(event_id: str, kind: str):
+    """该链的**按解锁顺序**的关卡代号数组（EX-1→EX-8 / S-1）。"""
+    _lbl, listkey, _raid = CHAIN_KINDS[kind]
+    codes = [s["code"] for s in (event_data(event_id).get(listkey) or [])]
+    return sorted(codes, key=_num_suffix)
+
+
+
+# ---------------------------------------------------------------------------
 # 作业抓取 + 打分
 # ---------------------------------------------------------------------------
 def _min_required_ok(c) -> bool:
@@ -247,9 +377,15 @@ def _make_asst(cb):
     return a
 
 
-def run_plan(event_id, plan, try_all=False, per_stage_timeout=360, formation_index=FORMATION_INDEX, loop=1):
+def run_plan(event_id, plan, try_all=False, per_stage_timeout=360, formation_index=FORMATION_INDEX,
+             loop=1, is_raid=False, stop_on_fail=False):
     """plan: [(stage_tuple, [(score, content, title, id), ...]), ...]
-    逐关执行；try_all=True 时某关失败则自动换下一个候选（失败会退理智，代价低）。"""
+    逐关执行；try_all=True 时某关失败则自动换下一个候选（失败会退理智，代价低）。
+
+    · `is_raid=True`：作业条目带 `is_raid`（**活动突袭只能走 Copilot**，MAA `Fight` 不支持）；
+    · `stop_on_fail=True`（链模式）：某关未过 → **不再打后面的关**（后面本来就没解锁），直接结束；
+    · 返回 `{stage_code: ok(bool)}`（供调用方回写进度）。
+    """
     state = {"error": False}
 
     def cb(msg, detail, arg):
@@ -258,23 +394,29 @@ def run_plan(event_id, plan, try_all=False, per_stage_timeout=360, formation_ind
             log("    [x] TaskChainError")
 
     a = _make_asst(cb)
+    results = {}
 
     for stage, cands in plan:
         code = stage[0]
         ok = False
         tried = cands if try_all else cands[:1]
+        if not tried:
+            log("[!] %s 无可用候选" % code)
         for j, (sc, content, title, cid) in enumerate(tried):
             if not content.get("actions"):
                 continue
             p = save_copilot(event_id, code, content)
-            log("[*] %s 候选%d id=%s %s -> %s" % (code, j + 1, cid, title, p.name))
+            log("[*] %s%s 候选%d id=%s %s -> %s"
+                % (code, "（突袭）" if is_raid else "", j + 1, cid, title, p.name))
             state["error"] = False
             tid = a.append_task("Copilot", {
                 "formation": True,
                 "formation_index": formation_index,   # 只用第四编队，不动别的编队
                 "ignore_requirements": True,          # 练度不那么够也能用
                 "loop_times": loop,                   # >1 = 刷关(重复同一关)
-                "copilot_list": [{"id": 0, "filename": str(p)}],
+                "copilot_list": [{"id": 0, "filename": str(p),
+                                  "nav_name_override": None,
+                                  "is_raid": bool(is_raid)}],   # 突袭开关（活动突袭必走 Copilot）
             })
             if not tid:
                 log("    append 失败，跳过该候选")
@@ -290,9 +432,14 @@ def run_plan(event_id, plan, try_all=False, per_stage_timeout=360, formation_ind
                 ok = True
                 break
             log("    [x] 该候选未过，尝试下一个")
+        results[code] = ok
         if not ok:
             log("[!] %s 所有候选均未成功（可能已 2 星通关，或需更高练度/换作业）" % code)
+            if stop_on_fail:
+                log("[!] 链模式：卡在 %s → **链停**，不再打后面的关（后面本来就没解锁）" % code)
+                break
     log("=== 完成 ===")
+    return results
 
 
 # ---------------------------------------------------------------------------
@@ -330,8 +477,95 @@ def cmd_plan(args):
                 i + 1, cid, mark, sc[0], sc[1], sc[2], sc[3], title))
 
 
+def _ov_index(event_id: str) -> dict:
+    """MAA overview 里的 stage code -> (name, level_id)。"""
+    return {code: (name, level_id) for (code, name, level_id, _fn) in stages_of(event_id)}
+
+
+def _build_plan(event_id, codes, own, strict, first_missing_is_stop=True):
+    """按 codes 顺序抓作业。返回 (plan, missing_code)：
+    某关不在 MAA 资源（未开放/需 sync）或没有可抄作业 → 记为「卡点」并**不再往后抓**。"""
+    ov = _ov_index(event_id)
+    plan = []
+    for code in codes:
+        if code not in ov:
+            log("[!] %s 不在 MAA 资源（未开放 / 需 sync）→ 无法导航" % code)
+            return plan, code
+        name, level_id = ov[code]
+        cands = candidates_for(level_id, name, own, strict=strict)
+        if not cands:
+            log("[!] %s 无可用候选（可抄*）" % code)
+            return plan, code
+        plan.append(((code, name, level_id),
+                     [(sc, content, title, cid) for (sc, negv, cid, content, title) in cands]))
+    return plan, None
+
+
+def _writeback(event_id, results, is_raid, note=""):
+    """把本轮已通的关回写 state.json（跑完/失败都回写；失败时只更新 last_chain_note）。"""
+    ok = [c for c, v in (results or {}).items() if v]
+    if is_raid:
+        update_progress(event_id, raid_ok=ok, chain_note=note)
+    else:
+        update_progress(event_id, normal_ok=ok, chain_note=note)
+
+
+def _cmd_run_chain(args, own):
+    """按「解锁链」执行（严格顺序、遇挫即停、跑完回写进度）。"""
+    kind = args.chain
+    lbl, listkey, is_raid = CHAIN_KINDS[kind]
+    codes = chain_codes(args.event, kind)
+    if not codes:
+        log("[!] event_%s.json 里没有 %s 的关卡定义（%s）—— 跑 sync 或检查活动数据" % (args.event, lbl, listkey))
+        return
+    prog = read_prog(args.event)
+    normal_key = "ex" if kind in ("ex", "raid") else "s"
+    mode = "突袭" if is_raid else "普通"
+    blocked = None
+    if is_raid:
+        todo = []
+        for c in codes:
+            if c not in prog["normal_done"]:
+                blocked = c            # 该关普通未通 → 它和后面都没解锁（链到此为止）
+                break
+            if c in prog["raid_done"]:
+                continue
+            todo.append(c)
+    else:
+        first_un = next((i for i, c in enumerate(codes) if c not in prog["normal_done"]), None)
+        todo = codes[first_un:] if first_un is not None else []
+    if not todo:
+        if blocked:
+            log("[=] %s %s链：没有可打的突袭（卡在 %s：该关普通未通，先跑 --chain %s）"
+                % (lbl, mode, blocked, normal_key))
+        else:
+            log("[=] %s %s链：没有要打的关（已全通 / 未解锁）" % (lbl, mode))
+        return
+    log("[*] %s %s链（依次解锁，遇挫即停）：%s" % (lbl, mode, " → ".join(todo)))
+    plan, miss = _build_plan(args.event, todo, own, getattr(args, "strict", True))
+    res = {}
+    if plan:
+        res = run_plan(args.event, plan, try_all=args.try_, per_stage_timeout=args.timeout,
+                       formation_index=args.formation, loop=1, is_raid=is_raid, stop_on_fail=True)
+    ok = [c for c, v in res.items() if v]
+    # 「卡在哪」= todo 里第一个没成功的关；若 todo 全成功但链因「普通未通」到下不去 → 卡在 blocked
+    stuck = next((c for c in todo if not res.get(c)), None)
+    extra = ""
+    if stuck is None and blocked:
+        stuck, extra = blocked, "（该关普通未通）"
+    if stuck and miss == stuck:
+        extra = "（该关无作业/不在 MAA 资源 → 请换作业站作业或手点通关）"
+        log("[!] %s 无作业/不在 MAA 资源 → 链停" % stuck)
+    note = "%s%s链：成功[%s]；%s" % (lbl, mode, ",".join(ok) or "无",
+                                   ("卡在 %s%s" % (stuck, extra)) if stuck else "全部完成")
+    log("[=] " + note)
+    _writeback(args.event, res, is_raid=is_raid, note=note)
+
+
 def cmd_run(args):
     own = load_box()
+    if getattr(args, "chain", ""):
+        return _cmd_run_chain(args, own)
     stages = stages_of(args.event)
     if not stages:
         log("找不到活动 %s 的关卡" % args.event)
@@ -343,21 +577,16 @@ def cmd_run(args):
     def selected(code: str) -> bool:
         return want is None or code in want or code.split("-", 1)[-1] in want
 
-    plan = []
-    for code, name, level_id, _fn in stages:
-        if not selected(code):
-            continue
-        cands = candidates_for(level_id, name, own, strict=getattr(args, "strict", True))
-        if not cands:
-            log("[!] %s 无可用候选（可抄*）" % code)
-            continue
-        plan.append(((code, name, level_id),
-                     [(sc, content, title, cid) for (sc, negv, cid, content, title) in cands]))
+    codes = [code for (code, _n, _l, _f) in stages if selected(code)]
+    plan, _miss = _build_plan(args.event, codes, own, getattr(args, "strict", True))
     if not plan:
         log("[!] 没有要执行的关卡")
         return
-    run_plan(args.event, plan, try_all=args.try_, per_stage_timeout=args.timeout,
-             formation_index=args.formation, loop=args.loop)
+    res = run_plan(args.event, plan, try_all=args.try_, per_stage_timeout=args.timeout,
+                   formation_index=args.formation, loop=args.loop, is_raid=getattr(args, "raid", False))
+    _writeback(args.event, res, is_raid=getattr(args, "raid", False),
+               note="%s：成功[%s]" % ("突袭" if getattr(args, "raid", False) else "普通",
+                                     ",".join(c for c, v in res.items() if v) or "无"))
 
 
 def _adb_tap(xy: str):
@@ -441,6 +670,11 @@ def main():
 
     p = sub.add_parser("run"); p.add_argument("event")
     p.add_argument("--stages", default=""); p.add_argument("--all", action="store_true")
+    p.add_argument("--raid", action="store_true",
+                   help="按突袭打（is_raid=true；活动突袭只能走 Copilot，MAA Fight 不支持）")
+    p.add_argument("--chain", choices=["ex", "raid", "s", "sraid"], default="",
+                   help="按解锁链执行（ex=EX普通 / raid=EX突袭 / s=S普通 / sraid=S突袭）："
+                        "依次解锁、遇挫即停、跑完回写进度")
     p.add_argument("--try", dest="try_", action="store_true")
     p.add_argument("--timeout", type=int, default=360)
     p.add_argument("--loop", type=int, default=1, help="重复次数(=1 通关一次；>1 刷代币)")
@@ -464,8 +698,8 @@ def main():
     ap.set_defaults(func=None)
 
     args = ap.parse_args()
-    if args.cmd == "run" and not args.stages and not args.all:
-        ap.error("run 需要 --stages 或 --all")
+    if args.cmd == "run" and not args.stages and not args.all and not args.chain:
+        ap.error("run 需要 --stages 或 --all（或 --chain ex|raid|s|sraid 跑解锁链）")
     args.func(args)
 
 
