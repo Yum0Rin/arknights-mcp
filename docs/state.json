@@ -5,7 +5,7 @@
   "cycle": {
     "strategy": "搓玉向（合成玉最高优先，长期不停）",
     "last_decision_at": "2026-10-10 演练（森空岛在线取数，未驱动设备）",
-    "last_execution_at": "2026-10-12 00:34"
+    "last_execution_at": "2026-10-12 20:08（MAA GUI 点开始跑完当天；理智 205→1）"
   },
   "triggers": {
     "infrast_next_swap_at": "不适用（基建由 MAA mode=20000 自己按心情 0 触发）",
@@ -62,7 +62,9 @@
     "audit_findings_2026-10-12": [
       "【已加护栏】EX 关 YW-EX-1..8 在 MAA resource（tasks.json / tasks/Stages/*.json / stages.json）无定义 → 现在导航必失败；remote MaaResource 与本地同日(10-09)且只提供 tasks/hotfix → maa_update.py apply 拿不到关卡定义（关卡定义随 MAA 软件版走）。maa_week.run 已加预检：导航不了的关跳过并留证（--strict 才失败），不再让 append=0 打死整天。",
       "【待用户裁定】搓玉 target=1000 使 1-7 下限 417 次（2508 理智）先占预算 → 活动只剩 4 次（84 理智），而商店非 skip 限购项需 5110 代币（≈244 次）→ 商店只能搬 ~2%。与「活动有时间窗、搓玉无止境」冲突。",
-      "【口径待复核】shards.per_run=1.245 / shards.daily_use=92.4（搓玉日耗）/ annihilation.jade_per_run=370（周上限 1800 下第 5 次实际只值 ~320）—— 均沿用自 RULE，未标来源。"
+      "【口径待复核】shards.per_run=1.245 / shards.daily_use=92.4（搓玉日耗）/ annihilation.jade_per_run=370（周上限 1800 下第 5 次实际只值 ~320）—— 均沿用自 RULE，未标来源。",
+      "【高·已实测】计划含药预算但执行侧从不设 medicine → 只能跑自然理智：2026-10-12 GUI 实跑 1-7 只跑到理智耗尽（205→1，约 34 次）就结束，计划是 57 次，差 23 次≈138 理智（=药没用）。GUI 三个 Fight 槽 UseMedicine 均 False、MedicineCount 0；maa_week 的 write/run 都没同步药量。修：plan 逐日出「当天用药量」，write 同步 UseMedicine/MedicineCount(+ExpireDays)，run 传 medicine。",
+      "【中·GUI 已警告】次数不被 series 整除 → 余数浪费：「战斗次数 (57) 无法被 连战次数 (6) 整除, 余数无法用尽」（57 = 9×6+3）。修：plan_week 产出的次数按该关 series 取整（向下 54 或向上 60），别再出非整倍数。"
     ]
   },
   "progress": {
@@ -115,11 +117,11 @@
       "gap_2026-10-12": "乌尔比安（E1L1/技7/专精0 → E2L60+专三）【合成感知】缺口：卷3×26、三水锰矿×6 均『库存+合成』已够（不用刷）；实需刷 异铁组×12(14-12,≈484理智)+酮凝集组×12(14-14,≈323理智) 合出聚合剂×6；近卫双芯片×4 = 制造站合成(近卫芯片组×8→PR-D-2≈576理智 + 芯片助剂×4→凭证商店)；另需 龙门币704690(升级524690+精英化180000) / 经验563886。来源：官方 building_data.json workshopFormulas+manufactFormulas。"
     },
     "annihilation": {
-      "week": "2026-W41",
-      "jade": 1800,
+      "week": "2026-W42",
+      "jade": 370,
       "cap": 1800,
-      "done": true,
-      "note": "2026-10-10 实测已满，周一04:00重置"
+      "done": false,
+      "note": "2026-10-12 19:53 由 MAA GUI（用户在 GUI 点「Link Start!」）跑 1 次 → 合成玉 +370（剿灭模式 370/1800）；按每天 1 次打到 1800"
     }
   },
   "inventory": {
@@ -570,6 +572,13 @@
       "self_test": "plan_week: 注入部分进度(EX-1,2已通/EX-1突袭已通)→链从 EX-3 起、EX-2 突袭照排、EX-1 不重排；event_copilot: stub 网络/设备→--chain ex 遇 EX-2 失败即停并回写 ex_clear_done=[EX-1];--chain raid 在 EX-2 普通未通处停但先跑 EX-1 突袭并回写 raid_clear_done=[EX-1]。",
       "no_device": "未跑任何 MAA/设备任务",
       "no_commit": "未 git commit（按指令）"
+    },
+    {
+      "ts": "2026-10-12 20:08",
+      "action": "MAA GUI「点开始」实跑当天队列（用户要求：调好 GUI 配置后自己去 GUI 点开始）",
+      "result": "配置：maa_week write --date 2026-10-12（Fight 只留当天 3 关→实际 2 关：Annihilation×1 / 1-7×57，YW-6 停用；Infrast.Mode=Rotation；空 Plans 的 OperProgress 停用）→ 启动 C:\\MAA\\MAA.exe → UIAutomation InvokePattern.Invoke() 点「Link Start!」。7 条任务链全部完成，20:07:59「所有任务全部完成！」：唤醒 3s / 剿灭 49s（+370 玉，370-1800）/ 1-7 8m31s（**只 34 次，理智 205→1，药未用**）/ 公招 44s / 基建 2m1s（Rotation：会客室→制造站01-04 收菜）/ 信用 1m59s / 领奖 32s。理智 2026-10-13 16:26 回满。",
+      "evidence": "C:\\MAA\\debug\\gui.log（19:53:13→20:07:59）；页面/按钮：HwndWrapper[MAA;;…] 主窗 + Button 'Link Start!'",
+      "finding": "两个执行断点：①计划含药但执行不设 medicine（1-7 只跑 34/57）②次数 57 不被 series 6 整除（GUI 警告余数无法用尽）"
     }
   ]
 }
