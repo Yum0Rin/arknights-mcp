@@ -79,63 +79,63 @@
     },
     {
       "code": "YW-EX-1",
-      "sanity": 15,
+      "sanity": 10,
       "level_id": "",
       "token_per_run": 15,
       "verified": false
     },
     {
       "code": "YW-EX-2",
-      "sanity": 15,
+      "sanity": 10,
       "level_id": "",
       "token_per_run": 15,
       "verified": false
     },
     {
       "code": "YW-EX-3",
-      "sanity": 18,
+      "sanity": 15,
       "level_id": "",
       "token_per_run": 18,
       "verified": false
     },
     {
       "code": "YW-EX-4",
-      "sanity": 18,
+      "sanity": 15,
       "level_id": "",
       "token_per_run": 18,
       "verified": false
     },
     {
       "code": "YW-EX-5",
-      "sanity": 21,
+      "sanity": 15,
       "level_id": "",
       "token_per_run": 21,
       "verified": false
     },
     {
       "code": "YW-EX-6",
-      "sanity": 21,
+      "sanity": 15,
       "level_id": "",
       "token_per_run": 21,
       "verified": false
     },
     {
       "code": "YW-EX-7",
-      "sanity": 24,
+      "sanity": 20,
       "level_id": "",
       "token_per_run": 24,
       "verified": false
     },
     {
       "code": "YW-EX-8",
-      "sanity": 30,
+      "sanity": 20,
       "level_id": "",
       "token_per_run": 30,
       "verified": false
     },
     {
       "code": "YW-S-1",
-      "sanity": 30,
+      "sanity": 15,
       "level_id": "",
       "token_per_run": 30,
       "verified": false
@@ -146,8 +146,10 @@
       "name": "旅骨的信物",
       "price": 360,
       "limit": 5,
+      "remaining": 1,
       "kind": "干员信物",
-      "priority": "高"
+      "priority": "高",
+      "note": "只差最后 1 张（首发已换 4）→ 补满拿黄票；remaining 用于目标代币，别按 limit=5 全算"
     },
     {
       "name": "寻访凭证",
@@ -266,7 +268,9 @@
       "price": 2,
       "limit": 200,
       "kind": "家具",
-      "priority": "中"
+      "priority": "中",
+      "skip": true,
+      "note": "性价比 0.45(<1)，不划算，不换"
     },
     {
       "name": "糖",
@@ -375,8 +379,10 @@
       "name": "诗人的假日",
       "price": 500,
       "limit": 1,
+      "skip": true,
       "kind": "时装",
-      "priority": "中"
+      "priority": "中",
+      "note": "用户口径：看情况换 → 默认不计入目标代币"
     }
   ],
   "shop_note": "全量 OCR 自游戏内『劳工配给所』(左右翻页, MAA Custom+SlowlySwipeToTheLeft)。价格/限购部分「看图核准」(作战记录/技巧概要/龙门币/材料页)，仍**建议以 PRTS/企鹅物流最终核对**。limit=0 且 unlimited=true 者为无限库存(按需买)。",
@@ -387,42 +393,42 @@
   "ex_stages": [
     {
       "code": "YW-EX-1",
-      "sanity": 15
+      "sanity": 10
     },
     {
       "code": "YW-EX-2",
-      "sanity": 15
+      "sanity": 10
     },
     {
       "code": "YW-EX-3",
-      "sanity": 18
+      "sanity": 15
     },
     {
       "code": "YW-EX-4",
-      "sanity": 18
+      "sanity": 15
     },
     {
       "code": "YW-EX-5",
-      "sanity": 21
+      "sanity": 15
     },
     {
       "code": "YW-EX-6",
-      "sanity": 21
+      "sanity": 15
     },
     {
       "code": "YW-EX-7",
-      "sanity": 24
+      "sanity": 20
     },
     {
       "code": "YW-EX-8",
-      "sanity": 30
+      "sanity": 20
     }
   ],
   "s_stages": [
     {
       "code": "YW-S-1",
-      "sanity": 30
+      "sanity": 15
     }
   ],
-  "stage_note": "EX/S 关代码与理智按往期 sidestory 口径估，待实机/PRTS 核对"
+  "stage_note": "EX/S 理智改用往期 sidestory 42 期一致口径（EX 10/10/15/15/15/15/20/20；S 15），2026-10-16 EX 开放后以官方表复核"
 }

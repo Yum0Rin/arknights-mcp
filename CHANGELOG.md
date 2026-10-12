@@ -4,6 +4,32 @@
 版本号遵循 [语义化版本 SemVer](https://semver.org/lang/zh-CN/)。
 
 ## [Unreleased]
+### Fixed
+- **培养成本：接入官方升级经验/龙门币，并支持按「当前练度」只算剩余段**（2026-10-12）：
+  `fetch_gamedata.py` 增拉官方 `gamedata_const.json`；`oper_cost.py` 用其
+  `characterExpMap` / `characterUpgradeCostMap` / `evolveGoldCost` / `maxLevel`
+  替代原先的**星级常量估计**，并把经验/龙门币按 `LS-6`/`CE-6`（36 理智≈10000）折成理智计入缺口。
+  新增 `--from-skland`（森空岛含 `skill_lvl`/`spec`）/ `--elite --level --skill-lvl --spec`，
+  只算「当前练度 → 目标」的材料，不再从 E0L1 起算（高估）。
+  ⚠ 仍存：`plan_week.py` 调 `oper_cost.compute()` **未传 `from_skland`** → 技能等级按 1 算（高估），待改。
+- **逐日理智分配：补全非活动关单价（修「负载虚低」漏判）**（2026-10-12）：
+  `plan_util.load_costs()` 原先只读 `event_*.json`，导致培养关（如 `MN-4`=12 理智）按 0 计，
+  单日真实负载虚低（406 → 实际 418），自检探针漏判。现改为
+  **本机关卡表（`C:\MAA\resource\stages.json` 的 `apCost`）铺底 → 内置已知 → 活动价目表覆盖 → 显式兜底**；
+  活动关以 `event_*.json` 的 `sanity` 为权威。
+- **逐日理智分配：修「末尾任务被静默丢弃」**（2026-10-12）：
+  `day_cap` 旧版只算「自然 + 均摊药」，**漏了周常浓缩液 240**，且排不下的次数被 `continue` 静默丢弃
+  （W42 丢了 417 理智）。现 `day_cap = ceil(周总预算/7)`（含周常 240 + 药），
+  窄窗关（EX/S）在窗口内多天分摊，排不下的登记进 `unplaced`（不静默丢、不硬塞爆表）。
+- **口径统一：固源岩 `target` 500 → 1000**（2026-10-12，运筹层裁定）：
+  `plan_week.py` 的 `RULE.shards.target` 改为 1000，与 `MASTER-PLAN` / `state.json` / 每日清单一致。
+- **剿灭改「每天 1 次」**（2026-10-12）：周一~周五各 1 次打满 1800 玉上限（旧版 `5 次/周` 分摊语义不清）；
+  `plan_week.py` 组装任务时**显式排出剿灭**（`StartUp → 剿灭 → 活动 → EX/S → 1-7 → 培养 → 日常`）。
+
+### Added
+- **`.opencode/agent/` 子 agent 定义**（2026-10-12）：`ark-data`（取数）/ `ark-exec`（执行）/
+  `ark-verify`（复盘对账）/ `ark-orchestrator`（总指挥），配合既有 `arknights-*` skills 分权。
+
 ### Changed
 - **GUI 整体重做：CustomTkinter → PySide6 + PySide6-Fluent-Widgets**（2026-10-12）：
   Win11 Fluent Design（左 NavigationInterface 图标+文字导航 / CardWidget / TableWidget /

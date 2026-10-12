@@ -1,6 +1,6 @@
 # 一键长草 · 现状速查（on-call 先读这份）
 
-> 更新：2026-10-11 夜
+> 更新：2026-10-12（oper_cost 按当前练度 + 官方升级经验/龙门币；剿灭改每天 1 次）
 > **单一事实源：`scheduling/data/weekly_plan.json`**（别读别的快照/旧对话）
 
 ## 入口
@@ -15,7 +15,7 @@
 ```
 预算 = 自然(240×7) + 周常浓缩液(240，仅当"理智药读数不在本计划周"才加) + 理智药存量
 R1 剿灭：5 次×25=125，每天 1 次；若 state.json.progress.annihilation.done(W=本周) → 跳过
-R2 固源岩：期末 ≥ RULE.shards.target(现 500) → 1-7 次数
+R2 固源岩：期末 ≥ RULE.shards.target(现 1000) → 1-7 次数
 R2.5 EX/S 首通：开放日落在本周 → 各关×1 必做，先占预算
 R3 活动：按"商店要买总量"封顶，剩余预算反推次数
 R3.5 培养：目标 RULE.train_targets(现「乌尔比安」)；商店能换的材料先抵扣；再用剩余预算刷
@@ -63,7 +63,7 @@ python scripts/skland/skland_cli.py status                  # 森空岛续期（
 | **`side.if_due` 到期判定** | 新加（查 `state.json.triggers`），**未实跑验证**（只过了编译） |
 | **`side.args` 支持** | 新加，**未实跑** |
 | **每趟 `day_cap` 封顶** | 逻辑已改（自然+均摊药），**只做过 dry/计算验证**，未长时间实跑 |
-| **培养成本** | 缺「升级(1→Lv) 的经验/龙门币」（官方表没有，未接）；「常用技能」**假设技能 1**（该 M3 哪个未定）；精英化龙门币用的是**星级常量**，未交叉核 |
+| **培养成本** | ✅ 改用官方 `gamedata_const`（`characterExpMap`/`characterUpgradeCostMap`/`evolveGoldCost`），`oper_cost.py` 支持按当前练度只算剩余段。⚠ 仍：`plan_week` 调 `compute()` **未传 `from_skland`** → 技能等级按 1 算（高估）；「常用技能」仍假设技能 1 |
 | **`series` 连战** | 活动 10 / 普通 6 已实测能跑通；但**余数批次**（如 123 = 12×10+3）未逐次确认 |
 | **本周(W41)执行** | **只跑到一半**（用户中途放弃），账不完整 |
 | **商店兑换 / 代币记录** | **未做**（需进游戏内商店 OCR） |
@@ -72,7 +72,7 @@ python scripts/skland/skland_cli.py status                  # 森空岛续期（
 ## 待办
 
 - [ ] EX/S 关代码与理智**实机核对**（现在是往期口径估）
-- [ ] 「升级(1→Lv)」的经验/龙门币 仍未计入培养成本（官方表没有）
+- [x] ~~「升级(1→Lv)」的经验/龙门币未计入~~ **已修（2026-10-12）**：官方 `gamedata_const.json` 有 `characterExpMap`/`characterUpgradeCostMap`/`evolveGoldCost`，`oper_cost.py` 已接入，并按**当前练度**只算剩余段（`--from-skland`，含技能/专精）。
 - [ ] 「常用技能」目前假设技能 1（该 M3 哪个待定）
 - [ ] 本周(W41)只跑到一半（用户中途放弃），下周一(W42)按 `weekly_plan.W42.json` 重跑
 - [ ] 商店兑换/代币记录（需进游戏内商店 OCR）

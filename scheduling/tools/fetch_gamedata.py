@@ -29,7 +29,7 @@ MIRRORS = [
     "https://cdn.jsdelivr.net/gh/Kengxxiao/ArknightsGameData@master/zh_CN/gamedata/excel/",
     "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/gamedata/excel/",
 ]
-FILES = ["character_table.json", "item_table.json", "uniequip_table.json"]
+FILES = ["character_table.json", "item_table.json", "uniequip_table.json", "gamedata_const.json"]
 UA = {"User-Agent": "Mozilla/5.0 arknights-mcp/fetch_gamedata"}
 
 

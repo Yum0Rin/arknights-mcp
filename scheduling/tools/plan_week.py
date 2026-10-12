@@ -42,9 +42,12 @@ RULE = {
     "natural_per_day": 240,          # 自然回复 10/h
     "cap": 205,                      # 理智上限
     "weekly_potion": 240,            # 周常浓缩液 ×2
+    # 剿灭：25 理智/次；**用券（全权委托）只是速刷、跳过战斗，理智照扣**（2026-10-11 用户纠正）。
+    # 券=每日任务当天领 1 张 → 每天 1 次（周一~周五 5 次 = 打满 1800 玉），一张一天才回转得过来。
     "annihilation": {"sanity": 25, "jade_per_run": 370, "weekly_jade_cap": 1800,
-                     "per_day": 1},
-    "shards": {"item_id": "30012", "target": 500, "stage": "1-7",
+                     "per_day": 1, "via_ticket": True},
+    # target=1000（口径统一 2026-10-12：MASTER-PLAN / state.json / 每日清单均写「库存固源岩 ≥1000」）
+    "shards": {"item_id": "30012", "target": 1000, "stage": "1-7",
                "per_run": 1.245, "daily_use": 92.4},
     "filler": "1-7",
     "train_targets": ["乌尔比安"],   # 本期只养乌尔比安（用户 2026-10-11 定）
@@ -108,6 +111,95 @@ def pick_event(events: list, mon: dt.date, sun: dt.date):
     return None
 
 
+def _assemble_tasks(ann_runs, ev_stage, ev_runs, extra_tasks, r17_total, train_tasks) -> list:
+    """按当前各关次数组装本周 tasks（StartUp→剿灭→活动→EX/S→1-7→培养→日常）。"""
+    tasks = [{"type": "StartUp", "params": {"client_type": "Official", "start_game_enabled": True}}]
+    tasks.append({"type": "Fight", "params": {"stage": "Annihilation", "times": ann_runs},
+                  "name": "剿灭"})
+    if ev_stage and ev_runs:
+        # 活动关用「连战」：times 仍是总次数，series=10 让 MAA 每次开战连打 10 局
+        tasks.append({"type": "Fight",
+                      "params": {"stage": ev_stage, "times": ev_runs,
+                                 "series": RULE.get("event_series", 10)},
+                      "name": "活动刷代币"})
+    for code, cnt, _sn in extra_tasks:
+        tasks.append({"type": "Fight", "params": {"stage": code, "times": cnt},
+                      "name": "EX/S 首通"})
+    if r17_total > 0:
+        tasks.append({"type": "Fight", "params": {"stage": RULE["shards"]["stage"],
+                                                  "times": r17_total,
+                                                  "series": RULE.get("normal_series", 6)},
+                      "name": "搓玉/填充"})
+    for code, cnt in sorted(train_tasks.items(), key=lambda kv: -kv[1]):
+        tasks.append({"type": "Fight", "params": {"stage": code, "times": cnt},
+                      "name": "培养刷材料"})
+    tasks += [
+        {"type": "Recruit", "params": {"select": [3, 4, 5], "confirm": [3, 4, 5], "times": 4}},
+        # MAA 只管「会客室/线索搜集」；其余收菜与换班交给 infrast_rotation.py（见 side）
+        {"type": "Infrast", "params": {"mode": 20000, "facility": ["Reception"]},
+         "name": "会客室/线索"},
+        {"type": "Mall", "params": {"enable": True}},
+        {"type": "Award", "params": {"enable": True}},
+    ]
+    return tasks
+
+
+def _build_windows(ev_stage, ev_win, ev) -> dict:
+    """窗口表：剿灭不限 + 农场关 + EX/S 首通（不登记窗口会被 plan_util 当成「全周可排」）。"""
+    win_map = {"Annihilation": {}}
+    if ev_stage:
+        win_map[ev_stage] = ev_win
+    if ev:
+        _combat_end = str(ev.get("combat_end") or ev.get("end"))[:10]
+        for _key, _listkey in (("ex_open", "ex_stages"), ("s_open", "s_stages")):
+            _o = str(ev.get(_key) or "")[:10]
+            if not _o:
+                continue
+            for _s in (ev.get(_listkey) or []):
+                _c = _s.get("code")
+                if _c:
+                    win_map[_c] = {"open": _o, "close": _combat_end}
+    return win_map
+
+
+def _fit_to_schedule(plan, *, ev_stage, ev_runs, ev_san, extra_tasks, train_tasks,
+                     ann_runs, r17, ann_san, extra_san, train_spent, budget,
+                     max_iters=2000):
+    """排期自检回退 —— 让 plan 一定能被 plan_util.distribute_daily 完整装下（无 unplaced）。
+
+    步骤：
+      1. 按「活动优先、余下补 1-7 filler」把预算装满（与旧 R4 口径一致，只是 r17_total
+         会随活动次数变化而重算）；
+      2. 调 `plan_util.distribute_daily(plan)` 做逐日自检，取其中的 `unplaced`；
+      3. 若还有排不下的次数 → 活动关 `ev_runs` 减 1（释放的理智按当前 ev_runs 重新回流
+         给 filler/1-7），回流后重新组装 tasks、再自检；
+      4. 循环到「unplaced 为空」或「活动降到 0」为止。
+
+    返回 (plan, ev_runs, r17_total, fill_runs, trace)。`trace` 是每次回退的留痕说明。
+    """
+    import plan_util  # 单向依赖：plan_util 不 import plan_week，无循环 import
+    san17 = r17 * 6
+    trace, fill_runs, r17_total = [], 0, r17
+    for _ in range(max_iters):
+        used = ann_san + extra_san + san17 + ev_runs * ev_san + train_spent
+        fill_runs = max(0, (budget - used) // 6)
+        r17_total = int(r17 + fill_runs)
+        plan["tasks"] = _assemble_tasks(ann_runs, ev_stage, ev_runs, extra_tasks,
+                                        r17_total, train_tasks)
+        daily = plan_util.distribute_daily(plan)
+        # 每个 day 里登记的是同一份 unplaced（见 plan_util），取第一份即可
+        unplaced = dict((daily[0].get("unplaced") if daily else {}) or {})
+        if not unplaced:
+            break
+        if ev_runs <= 0:
+            trace.append("活动已降到 0，仍有排不下的次数 %s（容量确实不足）" % unplaced)
+            break
+        trace.append("活动 %s 次数 %d→%d（逐日装不下 %s，释放理智回流 filler）"
+                     % (ev_stage, ev_runs, ev_runs - 1, unplaced))
+        ev_runs -= 1
+    return plan, ev_runs, r17_total, fill_runs, trace
+
+
 def plan(date: dt.date) -> dict:
     mon, sun, wk = _week(date)
     plan_week_id = "%d-%s" % (mon.year, wk)
@@ -146,8 +238,8 @@ def plan(date: dt.date) -> dict:
     else:
         need = sh["target"] + sh["daily_use"] * 7 - stock
         r17 = max(0, math.ceil(need / sh["per_run"]))
-        notes.append("固源岩 %d → 期末需 ≥%d：1-7 至少 %d 次（周耗 %.0f）"
-                     % (stock, sh["target"], r17, sh["daily_use"] * 7))
+        notes.append("固源岩 %d → 期末需 ≥%d：1-7 下限 %d 次（周耗 %.0f，单次产 %.3f）"
+                     % (stock, sh["target"], r17, sh["daily_use"] * 7, sh["per_run"]))
     san17 = r17 * 6
 
     ev = pick_event(read_events(), mon, sun)
@@ -191,16 +283,22 @@ def plan(date: dt.date) -> dict:
             left = budget - ann_san - san17 - extra_san
             # 活动优先：次数按「商店要买的总量」封顶（活动=囤资源期，能换的都换）
             shop = ev.get("shop") or []
-            need_tok = sum((it.get("price") or 0) * (it.get("limit") or 0)
-                           for it in shop if (it.get("limit") or 0) > 0)
+            # 目标代币：只算限购项；有 remaining(剩余可购) 用 remaining，否则用 limit；skip=true 项不计（如时装"看情况"）
+            def _qty(it):
+                r = it.get("remaining")
+                return int(r) if r is not None else int(it.get("limit") or 0)
+            need_tok = sum((it.get("price") or 0) * _qty(it)
+                           for it in shop if (it.get("limit") or 0) > 0 and not it.get("skip"))
             tok_per_run = int(stages[st].get("token_per_run") or 0) or 1
             cap_runs = math.ceil(need_tok / tok_per_run) if need_tok else 10 ** 9
             ev_runs = min(left // ev_san, cap_runs) if ev_san else 0
             train_budget = max(0, left - ev_runs * ev_san)
-            notes.append("活动 %s：开放 %s~%s，每局 %d 理智；商店要买 %d 代币 → 需 %d 次，"
-                         "本周排 %d 次（预算够 %d 次）"
+            # 注意：这里只报「预算上限/商店需求」；**实际排几次由 _fit_to_schedule 自检后定**，
+            # 故「本周实排 N 次」在自检之后统一追加（避免回退后 note 与实际 times 不一致）。
+            notes.append("活动 %s：开放 %s~%s，每局 %d 理智；商店要买 %d 代币 → 需 %d 次"
+                         "（预算够 %d 次）"
                          % (st, ev_win["open"], ev_win["close"], ev_san,
-                            need_tok, cap_runs, ev_runs, left // ev_san if ev_san else 0))
+                            need_tok, cap_runs, left // ev_san if ev_san else 0))
             # 商店能换的材料 → 直接抵扣培养需求
             try:
                 _idx = json.loads(pathlib.Path(r"C:\MAA\resource\item_index.json")
@@ -250,43 +348,7 @@ def plan(date: dt.date) -> dict:
     except Exception as e:  # noqa: BLE001
         notes.append("培养估值失败：%r" % e)
 
-    # --- R4 填充：花光预算 ---
-    used = ann_san + san17 + ev_runs * ev_san + train_spent
-    fill_runs = max(0, (budget - used) // 6)
-    r17_total = int(r17 + fill_runs)
-    notes.append("预算 %d；剿灭 %d + 1-7 %d + 活动 %d + 培养 %d = %d；补 1-7 %d 次花光"
-                 % (budget, ann_san, san17, ev_runs * ev_san, train_spent, used, fill_runs))
-
-    # --- R2.5 EX / S 首通 —— 已在前面算过（勿重复！）---
-
-    tasks = [{"type": "StartUp", "params": {"client_type": "Official", "start_game_enabled": True}}]
-    tasks.append({"type": "Fight", "params": {"stage": "Annihilation", "times": ann_runs},
-                  "name": "剿灭"})
-    if ev_stage and ev_runs:
-        # 活动关用「连战」：times 仍是总次数，series=10 让 MAA 每次开战连打 10 局
-        tasks.append({"type": "Fight",
-                      "params": {"stage": ev_stage, "times": ev_runs,
-                                 "series": RULE.get("event_series", 10)},
-                      "name": "活动刷代币"})
-    for code, cnt, _sn in extra_tasks:
-        tasks.append({"type": "Fight", "params": {"stage": code, "times": cnt},
-                      "name": "EX/S 首通"})
-    if r17_total > 0:
-        tasks.append({"type": "Fight", "params": {"stage": RULE["shards"]["stage"],
-                                                  "times": r17_total,
-                                                  "series": RULE.get("normal_series", 6)},
-                      "name": "搓玉/填充"})
-    for code, cnt in sorted(train_tasks.items(), key=lambda kv: -kv[1]):
-        tasks.append({"type": "Fight", "params": {"stage": code, "times": cnt},
-                      "name": "培养刷材料"})
-    tasks += [
-        {"type": "Recruit", "params": {"select": [3, 4, 5], "confirm": [3, 4, 5], "times": 4}},
-        # MAA 只管「会客室/线索搜集」；其余收菜与换班交给 infrast_rotation.py（见 side）
-        {"type": "Infrast", "params": {"mode": 20000, "facility": ["Reception"]},
-         "name": "会客室/线索"},
-        {"type": "Mall", "params": {"enable": True}},
-        {"type": "Award", "params": {"enable": True}},
-    ]
+    # --- 组装 plan（tasks 先留空，交由 _fit_to_schedule 填 + 自检）---
     plan = {
         "week": "%d-%s" % (mon.year, wk),
         "range": "%s..%s" % (mon.isoformat(), sun.isoformat()),
@@ -300,19 +362,39 @@ def plan(date: dt.date) -> dict:
         "inventory": {"固源岩": stock},
         "shards": {"stock": stock, "target": sh["target"], "per_run": sh["per_run"],
                    "daily_use": sh["daily_use"], "stage": sh["stage"]},
-        "windows": {**({"Annihilation": {}}),
-                    **({ev_stage: ev_win} if ev_stage else {})},
-        "tasks": tasks,
+        "windows": _build_windows(ev_stage, ev_win, ev),
+        "tasks": [],
         "side": [
             # 换班（收菜 → 菲亚梅塔置换 → 13房切队列 → 换班后再收菜）
             # 收菜跟着换班走；只在到期时跑（if_due 查 state.json.triggers），别每趟跑
             {"script": "scripts/infrast-rotation/infrast_rotation.py", "args": ["all"],
              "when": "换班到期时", "if_due": "infra_next_swap_at"},
         ],
-        "rationale": {"notes": notes,
-                      "sanity_alloc": {"annihilation": ann_san, "1-7": r17_total * 6,
-                                       "活动": ev_runs * ev_san, "培养": train_spent}},
     }
+
+    # --- R4 填充 + 排期自检 —— 保证逐日排得下（无 unplaced）---
+    # 注意：used 必须把 EX/S 首通（extra_san）算进去，否则 filler 会多排 1-7 → 超预算。
+    # 若 distribute_daily 报 unplaced，则活动次数 -1、重算 filler/1-7 后重排，直到装得下。
+    plan, ev_runs, r17_total, fill_runs, _fit_trace = _fit_to_schedule(
+        plan, ev_stage=ev_stage, ev_runs=ev_runs, ev_san=ev_san, extra_tasks=extra_tasks,
+        train_tasks=train_tasks, ann_runs=ann_runs, r17=r17, ann_san=ann_san,
+        extra_san=extra_san, train_spent=train_spent, budget=budget)
+    used = ann_san + extra_san + san17 + ev_runs * ev_san + train_spent
+    notes.append("预算 %d；剿灭 %d + EX首通 %d + 1-7 %d + 活动 %d + 培养 %d = %d；补 1-7 %d 次花光"
+                 % (budget, ann_san, extra_san, san17, ev_runs * ev_san, round(train_spent),
+                    round(used), fill_runs))
+    for _t in _fit_trace:
+        notes.append("★ 排期自检：" + _t)
+    # 自检回归后的「实排」口径 —— 与最终 tasks / sanity_alloc 对齐（此时 ev_runs / r17_total 已定稿）
+    if ev_stage:
+        notes.append("活动 %s：本周实排 %d 次（每局 %d 理智，共 %d 理智）"
+                     % (ev_stage, ev_runs, ev_san, ev_runs * ev_san))
+    notes.append("1-7：本周实排 %d 次（下限 %d + 填充 %d），共 %d 理智"
+                 % (r17_total, r17, fill_runs, r17_total * 6))
+    plan["rationale"] = {"notes": notes,
+                         "sanity_alloc": {"annihilation": ann_san, "EX首通": extra_san,
+                                          "1-7": r17_total * 6,
+                                          "活动": ev_runs * ev_san, "培养": train_spent}}
     if train_info:
         plan["training"] = {
             "targets": [t["name"] for t in train_info["targets"]],

@@ -1,15 +1,15 @@
 {
   "_schema": "arknights-decision-state-v1",
   "_doc": "机器可读的决策状态（单一事实源）。agent 每次醒来：读它 -> 判触发 -> 执行 -> 回写。循环协议见 docs/STATE.md，判据/公式见 docs/MASTER-PLAN.md。",
-  "updated_at": "2026-10-11 02:40",
+  "updated_at": "2026-10-12 00:52",
   "cycle": {
     "strategy": "搓玉向（合成玉最高优先，长期不停）",
     "last_decision_at": "2026-10-10 演练（森空岛在线取数，未驱动设备）",
-    "last_execution_at": "2026-10-11 02:40"
+    "last_execution_at": "2026-10-12 00:34"
   },
   "triggers": {
-    "infrast_next_swap_at": "2026-10-11 14:33",
-    "infrast_next_swap_direction": "队列1->队列2",
+    "infrast_next_swap_at": "2026-10-12 11:04",
+    "infrast_next_swap_direction": "队列2->队列1",
     "annihilation_week_reset": "每周一（周上限 1800 玉）",
     "event_combat_end": "2026-10-23 03:59",
     "event_exchange_end": "2026-10-30",
@@ -30,14 +30,21 @@
       "9. 领奖 Award（**放最后**：先做任务才有奖领，2026-10-10 用户定）"
     ],
     "pending_decisions": [
-      "EX/突袭各关理智单价（企鹅 stages?server=CN 取 act52side_09..16；EX 未开放，开放后再取）",
-      "干员信物阶梯价明细（本期只差最后 1 张，价待核）"
+      "EX/突袭各关理智单价（2026-10-12 已改用往期 sidestory 42 期一致口径 EX 10/10/15/15/15/15/20/20、S 15；EX 2026-10-16 开放后仍需实机/官方表复核）",
+      "plan_week 调 oper_cost.compute() 未传 from_skland → 技能按 1 算（高估，乌尔比安技能已 7）；待改",
+      "定时执行未配：每天需手动 python scripts/maa-week/maa_week.py run --date <日期>；是否配计划任务/paseo 待定"
     ],
     "resolved_2026-10-10": [
       "待养前 N 值 = 4（德克萨斯/乌尔比安/伊芙利特/山）",
       "活动时间（官方 activity_table + PRTS 双证）：作战结束 2026-10-23 03:59；活动/商店结束 2026-10-30 03:59",
       "理智药存量 ≈1200 理智（已实测）",
       "本周剿灭已满（1800/1800）"
+    ],
+    "resolved_2026-10-11": [
+      "活动商店目标代币口径落地：全店限购项，排除『家具零件』(性价比0.45<1→skip:true)、『诗人的假日』时装默认不换(skip:true)、『旅骨的信物』remaining=1；event_act52side.json 已加 skip 字段，W42 已重跑 (2026-10-11 执行层落地)"
+    ],
+    "resolved_2026-10-12": [
+      "固源岩 target 口径统一为 1000（运筹层裁定；代码 RULE 残留 500 已改）。"
     ]
   },
   "progress": {
@@ -83,7 +90,8 @@
         "山 E0L1 →E2（森空岛实测，材料缺口大）"
       ],
       "N": 4,
-      "N_by": "用户 2026-10-10 拍板 N=4（按 required_rate 降序取前 4）"
+      "N_by": "用户 2026-10-10 拍板 N=4（按 required_rate 降序取前 4）",
+      "gap_2026-10-12": "乌尔比安（E1L1/技7/专精0 → E2L60+专三）【合成感知】缺口：卷3×26、三水锰矿×6 均『库存+合成』已够（不用刷）；实需刷 异铁组×12(14-12,≈484理智)+酮凝集组×12(14-14,≈323理智) 合出聚合剂×6；近卫双芯片×4 = 制造站合成(近卫芯片组×8→PR-D-2≈576理智 + 芯片助剂×4→凭证商店)；另需 龙门币704690(升级524690+精英化180000) / 经验563886。来源：官方 building_data.json workshopFormulas+manufactFormulas。"
     },
     "annihilation": {
       "week": "2026-W41",
@@ -95,7 +103,42 @@
   },
   "inventory": {
     "lmd": null,
-    "rock_固源岩": null,
+    "rock_固源岩": 1128,
+    "depot_snapshot": {
+      "source": "MAA Depot 任务（ark_depot，2026-10-12 00:49 执行层）",
+      "file": "C:\\MAA\\data\\DepotData.json",
+      "syncTime": "2026-10-12T00:50:21.033642+08:00",
+      "categories": 81,
+      "note": "覆盖旧快照 2026-10-09（61 类目，异铁/酮凝集/双酮等读成 0）。旧文件备份 DepotData.json.bak-20261012-0050。API 跑 Depot 不落盘，本文件由 agent 按 MAA 同构 schema 手工写回。",
+      "key_items": {
+        "30041_异铁碎片": 402,
+        "30042_异铁": 398,
+        "30043_异铁组": 171,
+        "30044_异铁块": 49,
+        "30051_双酮": 443,
+        "30052_酮凝集": 281,
+        "30053_酮凝集组": 141,
+        "30054_酮阵列": 3,
+        "30022_糖": 759,
+        "30023_糖组": 171,
+        "30083_轻锰矿": 120,
+        "30073_扭转醇": 85,
+        "30031_酯原料": 504,
+        "30032_聚酸酯": 382,
+        "30033_聚酸酯组": 84,
+        "30012_固源岩": 1128,
+        "30013_固源岩组": 111,
+        "30014_提纯源岩": 32,
+        "30062_装置": 233,
+        "30063_全新装置": 154,
+        "3301_技巧概要卷1": 2695,
+        "3302_技巧概要卷2": 545,
+        "3303_技巧概要卷3": 9,
+        "3221_近卫芯片": 9,
+        "3222_近卫芯片组": 8,
+        "32001_芯片助剂": 19
+      }
+    },
     "ap_supply_理智药": "≈1200 理智（浓缩液+120×5、加强剂+60×10、月饼×1）；其中约 480 理智（浓缩液×2 + 加强剂×4）到期 10/12，其余 10/19",
     "ap_supply_来源": "docs/WORKFLOW-仓库取数.md §5（2026-10-10 游戏内仓库 OCR 实测）",
     "sanity_实机": "2/205（2026-10-10 17:44 实机，刷完 YW-6 共27场后）",
@@ -104,6 +147,8 @@
   "ops_learning": {
     "doc": "docs/ops_manual.json",
     "pending": [
+      "【待建定时脚本】活动商店『领奖 + 选择性兑换』—— MAA 无 blacklist(FINDINGS §19)，须按优先级逐项手动 tap；代币达阈值时触发；脚本拟放 scripts/event-shop/",
+      "【待建定时脚本】干员养成（升级/精英化/技能/模组）—— B 类全空白，须实机学习模式逐项记 ops_manual；脚本拟放 scripts/oper-train/",
       "培养干员(升级/精英化/技能/模组) —— B类，全空白，下次实操走学习模式",
       "活动普通EX切栏(act52side) —— 已记act37side坐标，act52side待记",
       "进活动商店翻页入口坐标 —— 翻页动作已会，入口待记"
@@ -259,6 +304,177 @@
         "命名口径": "log 的『队列1/2』与游戏行标签相反（log 更像按 A/B 班顺序）；本轮已在 infrast_rotation_log.jsonl 加 direction_game_labels/roster 字段消除歧义。",
         "副作用": "菲亚梅塔置换当时贸易站1 暂降 2/3（但书被撤下），切队列后已自然恢复；宿舍1 原 4 人被移出后进入休整池。",
         "状态": "A班在岗（工作区 31/34）；无人机 250/250 满（有溢出）；龙门币 213787（未变）；下次换班 ≥2026-10-11 14:33。"
+      }
+    },
+    {
+      "ts": "2026-10-11 23:04",
+      "action": "基建队列轮换 队列2→队列1（游戏标签 队列1→队列2，A班→B班）——改用脚本 infrast_rotation.py all 一键执行",
+      "result": "脚本收菜 + 菲亚梅塔置换但书心情 + 13 房间切队列（切 12 / 跳过 1）+ 换班后再收菜，全部完成；下次换班 ≥2026-10-12 11:04，方向 队列2→队列1（目标 A 班）。",
+      "observations": {
+        "方式": "首次由 scripts/infrast-rotation/infrast_rotation.py all 一把过（02:33 那次是 agent 手动逐房间）。",
+        "state回写": "脚本执行后 state.json 未自动同步（updated_at 仍停在 02:40）→ 本次已补写 triggers/log。",
+        "待核": "switched=12/skipped=1，跳过的是哪个房间脚本未记名，下次换班前留意。"
+      }
+    },
+    {
+      "ts": "2026-10-12 00:00",
+      "action": "运筹层调整：剿灭口径修正 + oper_cost 改造 + 建 agent 团队 + 全局规则",
+      "result": "①剿灭=券速刷但理智照扣 25/次、每天 1 次（plan_week sanity 改回 25，每天1次分配本已对）；②oper_cost.py 改为按当前练度只算剩余段 + 接入官方 gamedata_const 的升级经验/龙门币（乌尔比安实测：经验 563886、升级龙门币 524690、精英化 180000、缺 4 材料：卷3×26/锰矿×6/聚合剂×6/近卫双芯片×4）；③fetch_gamedata.py FILES 加 gamedata_const.json；④建 agent 团队 ark-orchestrator(运筹)/ark-data(数据)/ark-exec(执行)/ark-verify(复盘)；⑤全局 AGENTS.md 加『随时留痕』『被打断记得有活』两条。",
+      "observations": {
+        "挂起": "商店目标代币档待定→W42 待重跑；plan_week 调 compute 未传 from_skland（技能按1算，高估）；定时执行未配。",
+        "待重启": "新建 agent 文件 + 全局 AGENTS.md 改动需重启 opencode 才生效。",
+        "快照": "oper_cost.py/fetch_gamedata.py 旧版在 %TEMP%/opencode/snap-20261012-ulpia-cost/；weekly_plan.W41/W42 旧版在 %TEMP%/opencode/weekly_plan.*.bak-20261011-2340。"
+      }
+    },
+    {
+      "ts": "2026-10-11 23:57",
+      "action": "执行层落地活动商店兑换口径 + W42 重跑",
+      "result": "event_act52side.json 家具零件加 skip:true/note；plan_week.py --date 2026-10-12 重跑，写回 weekly_plan.W42.json",
+      "observations": {
+        "shop_skip": "家具零件 skip:true (性价比0.45<1)；时装『诗人的假日』此前已 skip:true",
+        "sanity_alloc": {
+          "annihilation": 125,
+          "1-7": 162,
+          "活动": 2541,
+          "培养": 11.9995
+        },
+        "YW6_times": 121,
+        "note": "商店要买 5110 代币 → 需 244 次，本周排 121 次（预算够 121 次）",
+        "backup": "weekly_plan.W42.json.bak-20261011-2356 (temp/opencode)"
+      }
+    },
+    {
+      "ts": "2026-10-12 00:06",
+      "action": "修 W42 两个真 bug（执行层）：plan_week.py 的 filler 漏算 EX 首通理智 → over-commit；plan_util.distribute_daily 的 day_cap 漏周常240 + EX 未登记开放窗 → 逐日丢理智。已重跑 + 断言验证。",
+      "result": "plan_week sanity_alloc = {annihilation125, EX首通162, 1-7:0, 活动2541, 培养12} = 2840 = budget，filler 0（普通口径 2828 不含 MN-4 的 12）。distribute 7 天 sanity = [403,403,403,403,406,405,405]，合计 2828 == 计划 Fight 合计（价目表口径），不再丢；max=406=day_cap；EX-1..8 落在 10-16~10-18；剿灭周一~周五各 1。",
+      "observations": {
+        "bug1": "used = ann_san + extra_san + san17 + ev_runs*ev_san + train_spent（补了 extra_san）；sanity_alloc 增 EX首通 行；1-7 归 0。",
+        "bug2": "day_cap = ceil(budget_total/n)（含周常240，W42=406）；plan_week 登记 EX/S 开放窗（ex_open..combat_end）；distribute 改为「窄窗关穷举摆放给宽窗关留容量 + 宽窗填充 + 兜底不丢」，不再额外补 1-7。",
+        "verification": "断言①分配合计2828==计划Fight合计2828(差0)；②每天≤day_cap(406)；③EX-1..8 全在10-16~10-18；④剿灭周一~周五各1、周末0。",
+        "caveat": "plan_util 价目表不含非活动关（MN-4 培养关）→ MN-4 按 0 计；真实 12 理智未计入逐日 sanity，计划账 2840 含它。day_cap=406 时若把 MN-4 的 12 计入则需 ~410（粒度所限），故按价目表口径 406 严格成立。",
+        "files": [
+          "scheduling/tools/plan_week.py",
+          "scheduling/tools/plan_util.py"
+        ],
+        "backup": "%TEMP%/opencode/snap-w42fix-20261011-235949/",
+        "no_device": "未跑任何 MAA/设备任务"
+      }
+    },
+    {
+      "ts": "2026-10-12 00:13",
+      "action": "执行层：act52side EX/S 首通理智改用往期 sidestory 一致口径 + W42 重跑",
+      "result": "event_act52side.json 的 ex_stages/stages 里 YW-EX-1..8 sanity 改为 10/10/15/15/15/15/20/20（EX 合计 120，原 162）；stages/s_stages 里 YW-S-1 30→15；stage_note 更新。重跑 plan_week.py --date 2026-10-12 → weekly_plan.W42.json。",
+      "observations": {
+        "字段改动": "ex_stages[].sanity ×8、stages[].sanity ×8（EX）、stages[].sanity + s_stages[].sanity（S-1）、stage_note；token_per_run 按指示未动（仅 farm 关 YW-6 用到，EX/S 不影响）",
+        "EX合计": 120,
+        "sanity_alloc": {
+          "annihilation": 125,
+          "EX首通": 120,
+          "1-7": 0,
+          "活动": 2583,
+          "培养": 11.9995
+        },
+        "YW6_times": 123,
+        "逐日": [
+          "2026-10-12 剿灭1+YW6-18=403",
+          "10-13 403",
+          "10-14 403",
+          "10-15 403",
+          "10-16 剿灭1+EX×8+YW6-13+MN-4×1=418",
+          "10-17 YW6-19=399",
+          "10-18 YW6-19=399"
+        ],
+        "diff_vs_上版": "EX 首通 162→120（-42，预算流向活动）；活动 2541→2583（+42）；YW6 121→123",
+        "backup": "%TEMP%/opencode/event_act52side.json.bak-20261012-0011",
+        "no_device": "未跑任何 MAA/设备任务",
+        "to_verify": "2026-10-16 EX 开放后以官方表复核 EX/S 理智"
+      }
+    },
+    {
+      "ts": "2026-10-12 00:22",
+      "action": "执行层：plan_util.distribute_daily 修「窄窗关(EX)全挤开放首日 → 10-16 单日 418 爆表」。改为：窄窗关在窗口内多天分摊 + 严格不超 day_cap + 放不下的登记 unplaced（不静默丢、不硬塞爆表）。",
+      "result": "重跑 plan_week.py --date 2026-10-12 → weekly_plan.W42.json（tasks/budget 与上版逐字一致，仅 generated_at 变）。distribute 逐日 sanity=[403,403,403,403,395,402,398]，max=403 ≤ 406；EX-1..8 各 1 次、分摊在 10-16(3)/10-17(3)/10-18(2)；剿灭 10-12..10-16 各 1、10-17/18 为 0；合计 2807。",
+      "observations": {
+        "断言": "①每天≤406 PASS(max=403)；②EX-1..8 各1且落在10-16~10-18 PASS；③剿灭12~16各1/17~18为0 PASS；④分配合计==计划Fight合计 FAIL：2807 vs 2828，差 21。",
+        "根因": "计划本身超了 1 次：cap=406 时 123 次 YW-6 数学上放不下。穷举 3^8 个 EX 落点证明：含剿灭的 days0-4 每天最多 18 次(403)；days4-6 含 EX 后 Σfloor((406-L)/21) 上限=50；合计最多 122 次。放 123 次最低需 cap=407。",
+        "冲突": "「每天≤406」与「123 次 YW-6 全不丢」互斥（差 1 次 = 21 理智，粒度所限）。",
+        "处理": "distribute 默认保 cap（严格≤day_cap）；放不下的 1 次 YW-6 记入 unplaced（非静默丢弃）；有 unplaced 时不补 1-7 填充（避免『丢了A又悄悄补B』）。",
+        "备选": "要保不丢 → cap 需 407，分布 [403,403,403,403,402,407,407] 合计2828（①差1）；或 plan_week 把活动关 YW-6 由 123 次降到 122 次（释放 21）→ 重跑后 ①~④ 全 PASS（④ 2807==2807）。",
+        "changed_files": [
+          "scheduling/tools/plan_util.py"
+        ],
+        "backup": "%TEMP%/opencode/snap-exspread-20261012-001333/",
+        "no_device": "未跑任何 MAA/设备任务"
+      }
+    },
+    {
+      "ts": "2026-10-12 00:30",
+      "action": "执行层：plan_week.py 加「排期自检回退」——根治 ④，让计划一定能被逐日完整装下（不靠顺延/day_cap 容差）。运筹层选项(c) 落地。",
+      "result": "plan() 组装 tasks 后调 plan_util.distribute_daily 自检；有 unplaced 就把活动关 YW-6 次数 -1、按当前 ev_runs 重算 filler/1-7、重排再查，循环到排得下或活动降到 0。W42 实测 YW-6 123→122 即排下。重跑 weekly_plan.W42.json：逐日 sanity=[403,403,403,403,406,404,403] max=406≤406；unplaced={}；YW-6 times=122；EX-1..8 各1落 10-16~10-18；剿灭 10-12..10-16 各1。",
+      "observations": {
+        "断言": "①每天≤day_cap(406) PASS(max406)；②EX-1..8各1且在10-16~10-18 PASS；③剿灭周一~周五各1 PASS；④unplaced为空 且 tasks与逐日分配逐关相等 PASS；⑤YW-6 times=122 PASS。",
+        "实现": "新增模块级 _assemble_tasks / _build_windows / _fit_to_schedule；plan() 里原内联的 tasks/win_map 组装改为调这两个 helper，tasks 交由 _fit_to_schedule 填（先按 budget 装满活动+filler，再逐日自检回退）。plan_util 不 import plan_week → 无循环 import。",
+        "diff_vs_上版": "活动 2583→2562（123→122 次，-21）；1-7 0→3（+18 filler）；计划 Fight 合计 2828→2819；unplaced {YW-6:1}→{}。",
+        "changed_files": [
+          "scheduling/tools/plan_week.py",
+          "scheduling/data/weekly_plan.W42.json"
+        ],
+        "backup": "%TEMP%/opencode/snap-selfcheck-20261012-002428/",
+        "no_device": "未跑任何 MAA/设备任务"
+      }
+    },
+    {
+      "ts": "2026-10-12 00:34",
+      "action": "执行层：plan_week.py 固源岩 target 500→1000（运筹层裁定口径统一）+ 顺手修 note 文字不一致 + W42 重跑",
+      "result": "RULE['shards']['target'] 500→1000（state.json/MASTER-PLAN/每日清单本就写 1000，代码里 500 是残留）。note 一致性修复：活动关『本周排 N 次』从 R3 预估段移到排期自检之后（用定稿 ev_runs）；R2 的 1-7 文字改标『下限』，自检后追加『实排』行；STATE-一键长草.md 里 (现 500)→(现 1000)。重跑 weekly_plan.W42.json。",
+      "observations": {
+        "sanity_alloc": {
+          "annihilation": 125,
+          "EX首通": 120,
+          "1-7": 1764,
+          "活动": 819,
+          "培养": 11.9995
+        },
+        "YW6_times": 39,
+        "r17_times": 294,
+        "diff_vs_上版": "1-7 3→294 次（保底 1000 强制拉满，sanity 18→1764）；活动 122→39 次（2562→819）；EX首通 120 不变；计划 Fight 合计 2819→2840 = budget。",
+        "逐日": [
+          "10-12 剿灭1+YW6-7+1-7×39+MN-4×1=406",
+          "10-13 剿灭1+1-7×63=403",
+          "10-14 剿灭1+1-7×63=403",
+          "10-15 剿灭1+1-7×63=403",
+          "10-16 剿灭1+EX×3+YW6-16=406",
+          "10-17 EX×3+YW6-16+1-7×3=404",
+          "10-18 EX×2+1-7×63=403"
+        ],
+        "unplaced": {},
+        "max_day": 406,
+        "day_cap": 406,
+        "note": "固源岩 stock=1282，target 1000 + 周耗 647 → 需 365 → 下限 294 次；预算 831 只够活动 39 次",
+        "caveat": "MN-4 在 plan_util 价目表外按 0 计，逐日 sanity 合计 2828 低于计划 2840（差 = MN-4 的 12），与前几版同口径",
+        "backup": "%TEMP%/opencode/snap-target1000-20261012-002819/（plan_week.py + weekly_plan.W42.json + plan_util.py）",
+        "changed_files": [
+          "scheduling/tools/plan_week.py",
+          "scheduling/data/weekly_plan.W42.json",
+          "docs/STATE-一键长草.md"
+        ],
+        "no_device": "未跑任何 MAA/设备任务"
+      }
+    },
+    {
+      "ts": "2026-10-12 00:52",
+      "action": "执行层：重新识别仓库（MAA Depot 任务）——修正旧快照把异铁/酮凝集读成 0 的问题",
+      "result": "ark_connect(127.0.0.1:5555, maatouch) → MAA 空闲(running=false) → ark_depot 识别成功：81 类目（旧 61）。异铁碎片 30041=402 / 异铁 30042=398 / 异铁组 30043=171 / 异铁块 30044=49；双酮 30051=443 / 酮凝集 30052=281 / 酮凝集组 30053=141 / 酮阵列 30054=3。已写回 C:\\MAA\\data\\DepotData.json（1590B，syncTime 2026-10-12T00:50:21+08:00，81 类目）；旧文件备份 DepotData.json.bak-20261012-0050。",
+      "observations": {
+        "坑1_起手必须在仓库页": "在首页直接跑 Depot 会失败：MAA 的 DepotBegin 在首页被 SwitchTheme@ToggleSettingsMenu.png 假命中(0.994，实为助理立绘旁两个圆形按钮)，于是跳过 QuickSwitch 导航、直接点『仓库』；其后二次点击落到物品格 → 弹出物品详情盖住顶部『材料』tab → DepotMaterialTab 认不出 → 20 次重试后 TaskChainError。解法：先进入仓库页再跑，识别即正常。",
+        "坑2_API不落盘": "DepotData.json 只有 MAA GUI 会写；走 API(ark_depot) 时数据只在回调 items 里，TaskChainError 时更不写文件。回调 done=true 那一帧才是完整数据。本次由 agent 按同构 schema 手工写回文件。",
+        "坑3_errors非致命": "ark_depot 返回 errors:[\"Depot\"]（导航子任务报错），但 DepotRecognitionTask 回调 done=true、数据完整，且与实机画面数值一致（2001=14000/2002=4156/2003=1206/2004=19），可用。",
+        "差分_固源岩": "固源岩 30012 由 1282(旧) → 1128(新)，-154。运筹层 00:34 用的 stock=1282 需按 1128 复核。",
+        "对下游_乌尔比安缺口可核": "异铁组 171、酮凝集组 141（缺口各 12）库存充足；近卫芯片组 8 + 近卫芯片 9 + 芯片助剂 19 够合成近卫双芯片×4；技巧概要卷3 库存仅 9。",
+        "changed_files": [
+          "C:\\MAA\\data\\DepotData.json"
+        ],
+        "no_device": "仅跑 Depot 识别；单客户端 127.0.0.1:5555，未跑其它设备任务。"
       }
     }
   ]
