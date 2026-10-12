@@ -128,9 +128,9 @@ def cmd_show(args):
             if d.get("raids"):
                 runs += "  突袭:%s" % "、".join(d.get("raids") or [])
             mark = ">>" if d.get("date") == today else "  "
-            print("  %s %s(%s)  理智 %-5s / 上限 %-5s %s%s"
+            print("  %s %s(%s)  理智 %-5s / 软上限 %-5s 药 %-4s %s%s"
                   % (mark, d.get("date"), d.get("dow", ""), d.get("sanity", 0),
-                     d.get("day_cap", d.get("cap", "")), runs,
+                     d.get("day_cap", d.get("cap", "")), d.get("medicine", 0), runs,
                      "  ⚠未排下:%s" % d["unplaced"] if d.get("unplaced") else ""))
     r = plan.get("rationale", {})
     if r.get("sanity_alloc"):
@@ -232,7 +232,14 @@ def cmd_write(args):
         slot["Name"] = p.get("_name") or stage
         if "series" in p:
             slot["Series"] = int(p["series"])
-        changed.append("Fight %-12s ×%-4d series=%s" % (stage, times, p.get("series", "不变")))
+        # 用药：把当天药量同步到 GUI 槽位（只配药的关有计划药量；剿灭/EX 为 0）
+        med = int(p.get("medicine") or 0)
+        slot["UseMedicine"] = bool(med)
+        slot["MedicineCount"] = med
+        slot["MedicineExpireDays"] = 2
+        slot["UseExpiringMedicine"] = bool(med)     # 临期药也吃（2 天阈值，沿用现有字段语义）
+        changed.append("Fight %-12s ×%-4d series=%s 药=%d"
+                       % (stage, times, p.get("series", "不变"), med))
     for st, q in by_stage.items():
         if st and st not in today_stages and q.get("IsEnable"):
             q["IsEnable"] = False
@@ -495,12 +502,18 @@ def _today_tasks(plan: dict, date: str = ""):
             if t.get("type") == "Fight" and p.get("stage"):
                 series_map[p["stage"]] = int(p.get("series") or 1)
                 name_map[p["stage"]] = t.get("name") or p["stage"]
+        med_stages = set(plan.get("medicine_stages") or [])
+        day_med = int(day.get("medicine") or 0)
         for stage, runs in (day.get("runs") or {}).items():
             if runs > 0:
                 prms = {"stage": stage, "times": int(runs), "_name": name_map.get(stage, stage)}
-                s = series_map.get(stage, int(os.environ.get("ARK_SERIES", "1")))
+                s = series_map.get(stage, int(os.environ.get("ARK_SERIES", "10")))
                 if s > 1:
                     prms["series"] = s
+                # 用药：只给「配上药的关」（1-7/活动关）；剿灭/EX 首通不吃药
+                if stage in med_stages and day_med > 0:
+                    prms["medicine"] = day_med
+                    prms["medicine_expire_days"] = 2      # 临期药也吃（沿用现有字段语义）
                 out.append(("Fight", prms))
         # 突袭（Raid）：MAA Fight 做不了活动突袭 → 独立类型，run 时跳过并提示走 Copilot/手点
         for stage in (day.get("raids") or []):

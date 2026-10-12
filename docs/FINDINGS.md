@@ -278,3 +278,31 @@
   ⚠️ **但「DLL 有字符串」≠「已跑通」**：仍需实跑一次看日志有没有 `registered EventShop task`（见评估文档 §三 P0）。
 - **教训（复用 §19 的）**：升级后再评估一次是有价值的动作 —— 本次就是升级把一条旧限制解掉了；
   同时提醒**接口要以运行版 DLL/源码为准**，`params` 用前先看日志有没有对应注册行。
+
+## 22. 【口径错数据】连战上限我们写死成 6，其实是 **10**（2026-10-12，用户当场指出）
+
+- **现象**：`plan_week.RULE` 一直用 `normal_series = 6`（活动关用 10）。用户指出「连战上限是 10 不是 6，
+  你去 MAA GUI 版本搜也是一样的，可能 maa cli 没及时维护」。核对：**用户对**。
+- **源码判据**（dev-v2 `src/MaaCore/Task/Interface/FightTask.cpp:91-97`）：
+  ```cpp
+  const int series = params.get("series", 1);
+  bool is_new_series_list = Task.get("FightSeries-OldMethodFlag") == nullptr;
+  if (series < -1 || (series > 10 && is_new_series_list) || (series > 6 && !is_new_series_list)) { ... }
+  ```
+  ⇒ **资源里没有 `FightSeries-OldMethodFlag` 这个任务 = 新列表（上限 10）**；有 = 旧列表（上限 6）。
+- **本机属哪一支（实测）**：`C:\MAA\resource\tasks\tasks.json` **无** 该键（`FightSeries-OldMethodFlag in d == False`），
+  `asst.log` 也报过 `Unknown task: FightSeries-OldMethodFlag` ⇒ **新列表，上限 10**。
+- **根因（不是"抄错一个数"这么简单）**：
+  1. `MAA-INTERNALS.md` 其实**两条都写了**（`>10`（新列表）/`>6`（旧列表））—— 信息是全的；
+  2. 但 `RULE` 把「旧列表的上限 6」当**通用值**写死，**从没核过本机属于哪一支**；
+  3. **最该抓的信号是自相矛盾**：同一份 `RULE` 里活动关用 `series=10` —— 若真是旧列表，活动关第一次
+     `set_params` 就该失败；而活动关 `series=10` **早就实测跑通过**（10-11 刷 YW-6 就是 10）。
+     **两个互斥口径同时存在，却没人拿去交叉验证**。
+- **纪律修正（写死进流程）**：
+  1. 写进代码/文档的**外部数字必须绑「判据 + 证据」**：出自哪个版本、哪一行源码、哪次实测；
+  2. **同一规则里出现互斥口径 = 立即核实的信号**（不是"取个保守值先跑"）；
+  3. **能用现成实验自证的必须交叉验证**（本例：`series=10` 已跑通即等于"本机是新列表"）；
+  4. **别写死上限** —— 改成按运行版资源判定（`FightSeries-OldMethodFlag` 在不在），代码自己判分支。
+- **修**：`RULE.normal_series` 6 → 10（`maa_week` 的 `ARK_SERIES` 默认同改）；`MAA-INTERNALS.md` 的 series 说明
+  补「本机无 OldMethodFlag → 上限 10」；待办：把上限做成**运行时按资源判定**而不是常量。
+

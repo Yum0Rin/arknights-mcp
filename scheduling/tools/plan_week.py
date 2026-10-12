@@ -16,15 +16,19 @@
 
 规则（严格按优先级，先满足前面的，余下再给后面）
   R1 剿灭：打满周上限 → runs = ceil(1800/370) = 5 次 × 25 理智 = 125（**每天 1 次**）
-  R2 固源岩下限：期末库存 ≥ target(1000)
-        → 1-7 次数 = ceil((target + 日耗×7 - 库存) / 单次产出)
+  R2 固源岩下限：期末库存 ≥ target（**条件**：有活动要打 → 500；无 → 1000）
+        → 1-7 下限 = ceil((target + 日耗×7 - 库存) / 单次产出)，**向上取整到 series 整倍数**
   R2.5 EX/S 首通链：读 docs/state.json.progress.<活动> 的已通进度，
         **只排未通的关、从第一个未通起的解锁链**（EX-1→EX-8 依次解锁，已通的不重复排）；
         且 **只有 EX/S 有突袭**（普通关 YW-1..8 无），突袭依赖「该关普通已通」，
         每关普通首通后紧跟一条该关 `Raid`（突袭）；进度缺失 → 当全未通
-  R3 活动关：剩余预算装满（受开放窗口约束；次数由剩余预算反推）
-  R4 填充：预算还有零头 → 继续 1-7（**理智必须花光**）
+  R3 活动关：**在 ann + EX/S首通 + 1-7下限 之后**吃剩余预算（上限仍是「商店要买总量反推」的次数）
+  R3.5 培养：再剩 → 培养刷材料
+  R4 1-7 填充：最后剩 → 1-7 填充（**理智尽量花光**）
   R5 每日分配：活动只在开放窗口内；剿灭每天 1；带 seq 的首通按序单调不减；其余往"最空的天"填
+  次数取整：每个 Fight 关的次数**按该关 series 取整**（下限向上、活动/填充向下）；余数回流预算，
+        逐日分配也保持**每天是该关 series 的整倍数**（否则 GUI 会警告「余数无法用尽」）
+  用药：逐日视图带 `medicine`（= max(0, 当天理智 − 自然 240)）；只**配上药的关**（1-7/活动关）
 
 输出
   `scheduling/data/weekly_plan.json`（含 tasks / windows / budget / inventory / shards / rationale）
@@ -55,10 +59,17 @@ RULE = {
     # 券=每日任务当天领 1 张 → 每天 1 次（周一~周五 5 次 = 打满 1800 玉），一张一天才回转得过来。
     "annihilation": {"sanity": 25, "jade_per_run": 370, "weekly_jade_cap": 1800,
                      "per_day": 1, "via_ticket": True},
-    # target=1000（口径统一 2026-10-12：MASTER-PLAN / state.json / 每日清单均写「库存固源岩 ≥1000」）
-    "shards": {"item_id": "30012", "target": 1000, "stage": "1-7",
+    # 固源岩下限：**随「本期有没有活动要打」而变**（2026-10-12 用户裁定）
+    #   · 有活动要打（选中活动且还有未完成：首通/突袭未打完 或 商店还要买）→ 下限 500（1-7 让位给活动）
+    #   · 无活动要打 → 下限 1000
+    "shards": {"item_id": "30012", "stage": "1-7",
+               "target_activity": 500, "target_idle": 1000,
                "per_run": 1.245, "daily_use": 92.4},
     "filler": "1-7",
+    # 连战上限：本机 resource **无** `FightSeries-OldMethodFlag` → 走新列表分支，上限 **10**
+    # （活动关与普通关都用 10；旧文档写 6 是旧列表口径，已作废）。
+    "normal_series": 10,
+    "event_series": 10,
     "train_targets": ["乌尔比安"],   # 本期只养乌尔比安（用户 2026-10-11 定）
     # 基建：交给 MAA 自带的「队列轮换」(Infrast mode=20000)，这里只决定**收哪些设施**
     # （= MAA GUI RoomList 里启用的那批；顺序无所谓）。AssistantChange 不启用。
@@ -203,7 +214,7 @@ def _assemble_tasks(ann_runs, ev_stage, ev_runs, extra_tasks, r17_total, train_t
     if r17_total > 0:
         tasks.append({"type": "Fight", "params": {"stage": RULE["shards"]["stage"],
                                                   "times": r17_total,
-                                                  "series": RULE.get("normal_series", 6)},
+                                                  "series": RULE.get("normal_series", 10)},
                       "name": "搓玉/填充"})
     for code, cnt in sorted(train_tasks.items(), key=lambda kv: -kv[1]):
         tasks.append({"type": "Fight", "params": {"stage": code, "times": cnt},
@@ -240,26 +251,21 @@ def _build_windows(ev_stage, ev_win, ev) -> dict:
 
 
 def _fit_to_schedule(plan, *, ev_stage, ev_runs, ev_san, extra_tasks, train_tasks,
-                     ann_runs, r17, ann_san, extra_san, train_spent, budget,
-                     max_iters=2000):
-    """排期自检回退 —— 让 plan 一定能被 plan_util.distribute_daily 完整装下（无 unplaced）。
+                     ann_runs, r17, fill_runs, ann_san, extra_san, train_spent, budget,
+                     series17=1, series_ev=1, max_iters=2000):
+    """排期自检回退 —— 让 plan 能被 plan_util.distribute_daily 完整装下（尽量无 unplaced）。
 
-    步骤：
-      1. 按「活动优先、余下补 1-7 filler」把预算装满（与旧 R4 口径一致，只是 r17_total
-         会随活动次数变化而重算）；
-      2. 调 `plan_util.distribute_daily(plan)` 做逐日自检，取其中的 `unplaced`；
-      3. 若还有排不下的次数 → 活动关 `ev_runs` 减 1（释放的理智按当前 ev_runs 重新回流
-         给 filler/1-7），回流后重新组装 tasks、再自检；
-      4. 循环到「unplaced 为空」或「活动降到 0」为止。
+    **回退顺序**（用户 2026-10-12 裁定：1-7 让位于活动）：
+      ① 先减「**填充用 1-7**」（`fill_runs`，按 series17 递减；**1-7 下限 `r17` 不动**）；
+      ② 填充归 0 后再减**活动关次数**（`ev_runs`，按 series_ev 递减）；
+      ③ 两者都不动了还有 unplaced → 记 trace（容量确实不足：多半是 1-7下限+剿灭+EX 本身超容量）。
+    旧行为「活动被压到 0、1-7 吃掉全部预算」已作废。
 
-    返回 (plan, ev_runs, r17_total, fill_runs, trace)。`trace` 是每次回退的留痕说明。
+    返回 (plan, ev_runs, r17_total, fill_runs, trace)。
     """
     import plan_util  # 单向依赖：plan_util 不 import plan_week，无循环 import
-    san17 = r17 * 6
-    trace, fill_runs, r17_total = [], 0, r17
+    trace = []
     for _ in range(max_iters):
-        used = ann_san + extra_san + san17 + ev_runs * ev_san + train_spent
-        fill_runs = max(0, (budget - used) // 6)
         r17_total = int(r17 + fill_runs)
         plan["tasks"] = _assemble_tasks(ann_runs, ev_stage, ev_runs, extra_tasks,
                                         r17_total, train_tasks)
@@ -268,13 +274,21 @@ def _fit_to_schedule(plan, *, ev_stage, ev_runs, ev_san, extra_tasks, train_task
         unplaced = dict((daily[0].get("unplaced") if daily else {}) or {})
         if not unplaced:
             break
-        if ev_runs <= 0:
-            trace.append("活动已降到 0，仍有排不下的次数 %s（容量确实不足）" % unplaced)
-            break
-        trace.append("活动 %s 次数 %d→%d（逐日装不下 %s，释放理智回流 filler）"
-                     % (ev_stage, ev_runs, ev_runs - 1, unplaced))
-        ev_runs -= 1
-    return plan, ev_runs, r17_total, fill_runs, trace
+        if fill_runs > 0:
+            step = min(fill_runs, max(1, series17))
+            trace.append("回退①填充 1-7 %d→%d 次（逐日装不下 %s）" % (fill_runs, fill_runs - step, unplaced))
+            fill_runs -= step
+            continue
+        if ev_runs > 0:
+            step = min(ev_runs, max(1, series_ev))
+            trace.append("回退②活动 %s %d→%d 次（填充已为 0，逐日仍装不下 %s）"
+                         % (ev_stage, ev_runs, ev_runs - step, unplaced))
+            ev_runs -= step
+            continue
+        trace.append("填充=0、活动=0，仍有排不下 %s（容量确实不足：1-7下限+剿灭+EX 本身超容量）"
+                     % unplaced)
+        break
+    return plan, ev_runs, int(r17 + fill_runs), fill_runs, trace
 
 
 def plan(date: dt.date) -> dict:
@@ -304,17 +318,8 @@ def plan(date: dt.date) -> dict:
         pass
     ann_san = ann_runs * a["sanity"]
 
-    # --- R2 固源岩下限 → 1-7 ---
+    # （R2 固源岩下限移到 R2.5 之后算 —— 因为 target 取决于「本期是否有活动要打」）
     sh = RULE["shards"]
-    if stock is None:
-        r17 = 0
-        notes.append("未读到固源岩库存（DepotData 缺失）→ 1-7 暂按填充处理")
-    else:
-        need = sh["target"] + sh["daily_use"] * 7 - stock
-        r17 = max(0, math.ceil(need / sh["per_run"]))
-        notes.append("固源岩 %d → 期末需 ≥%d：1-7 下限 %d 次（周耗 %.0f，单次产 %.3f）"
-                     % (stock, sh["target"], r17, sh["daily_use"] * 7, sh["per_run"]))
-    san17 = r17 * 6
 
     ev = pick_event(read_events(), mon, sun)
     ev_stage, ev_san, ev_runs, ev_win = None, 0, 0, {}
@@ -387,38 +392,29 @@ def plan(date: dt.date) -> dict:
                 notes.append("%s 首通链：%d 关普通**全部已通**，本周不排首通（未通突袭 %d 关照排）"
                              % (label, len(_codes), _n_raid))
 
-    # --- R3 活动：剩余预算反推 ---
+    # --- R2 固源岩下限（**条件 target**：有活动要打 → 500；无 → 1000）---
+    #   「有活动要打」= 选中活动 且（首通/突袭链非空 或 商店还要买）。在 R2.5 + 商店需求之后才判。
+    ev_stage, ev_san, ev_win, need_tok, cap_runs, tok_per_run = None, 0, {}, 0, 10 ** 9, 1
     if ev:
-        st = ev.get("farm")
-        stages = {s.get("code"): s for s in ev.get("stages", [])}
-        if st not in stages:                      # 没指定就取理智最高的关（产料最多）
-            st = max(stages, key=lambda k: stages[k].get("sanity") or 0, default=None)
-        if st:
-            ev_stage = st
-            ev_san = int(stages[st].get("sanity") or 0)
-            ev_win = {"open": str(ev.get("start"))[:10], "close": str(ev.get("combat_end")
-                                                                   or ev.get("end"))[:10]}
-            left = budget - ann_san - san17 - extra_san
-            # 活动优先：次数按「商店要买的总量」封顶（活动=囤资源期，能换的都换）
+        _st = ev.get("farm")
+        _stages = {s.get("code"): s for s in ev.get("stages", [])}
+        if _st not in _stages:                    # 没指定就取理智最高的关（产料最多）
+            _st = max(_stages, key=lambda k: _stages[k].get("sanity") or 0, default=None)
+        if _st:
+            ev_stage = _st
+            ev_san = int(_stages[_st].get("sanity") or 0)
+            ev_win = {"open": str(ev.get("start"))[:10],
+                      "close": str(ev.get("combat_end") or ev.get("end"))[:10]}
             shop = ev.get("shop") or []
-            # 目标代币：只算限购项；有 remaining(剩余可购) 用 remaining，否则用 limit；skip=true 项不计（如时装"看情况"）
-            def _qty(it):
-                r = it.get("remaining")
-                return int(r) if r is not None else int(it.get("limit") or 0)
+
+            def _qty(it):   # 限购项目标代币：remaining 优先，否则 limit；skip 项不计
+                _r = it.get("remaining")
+                return int(_r) if _r is not None else int(it.get("limit") or 0)
             need_tok = sum((it.get("price") or 0) * _qty(it)
                            for it in shop if (it.get("limit") or 0) > 0 and not it.get("skip"))
-            tok_per_run = int(stages[st].get("token_per_run") or 0) or 1
+            tok_per_run = int(_stages[_st].get("token_per_run") or 0) or 1
             cap_runs = math.ceil(need_tok / tok_per_run) if need_tok else 10 ** 9
-            # left 可能为负（如预算被 1-7 下限吃穿）→ clamp 到 ≥0，别让次数为负
-            ev_runs = max(0, min(left // ev_san, cap_runs)) if ev_san else 0
-            train_budget = max(0, left - ev_runs * ev_san)
-            # 注意：这里只报「预算上限/商店需求」；**实际排几次由 _fit_to_schedule 自检后定**，
-            # 故「本周实排 N 次」在自检之后统一追加（避免回退后 note 与实际 times 不一致）。
-            notes.append("活动 %s：开放 %s~%s，每局 %d 理智；商店要买 %d 代币 → 需 %d 次"
-                         "（预算够 %d 次）"
-                         % (st, ev_win["open"], ev_win["close"], ev_san,
-                            need_tok, cap_runs, (max(0, left) // ev_san) if ev_san else 0))
-            # 商店能换的材料 → 直接抵扣培养需求
+            # 商店能换的材料 → 抵扣培养需求
             try:
                 _idx = json.loads(pathlib.Path(r"C:\MAA\resource\item_index.json")
                                   .read_text(encoding="utf-8"))
@@ -430,8 +426,36 @@ def plan(date: dt.date) -> dict:
                         shop_credit[iid] = shop_credit.get(iid, 0) + lim
             except Exception:  # noqa: BLE001
                 pass
+
+    has_activity_work = bool(ev) and (bool(extra_tasks) or need_tok > 0)
+    _series17, _series_ev = int(RULE["normal_series"]), int(RULE.get("event_series", 10))
+    if stock is None:
+        r17, target = 0, int(sh["target_idle"])
+        notes.append("未读到固源岩库存（DepotData 缺失）→ 1-7 暂按填充处理")
+    else:
+        target = int(sh["target_activity"] if has_activity_work else sh["target_idle"])
+        _need = target + sh["daily_use"] * 7 - stock
+        _raw17 = max(0, math.ceil(_need / sh["per_run"]))
+        r17 = int(math.ceil(_raw17 / _series17) * _series17)   # 下限**向上**对齐 series（保库存下限）
+        notes.append("固源岩 %d → 期末需 ≥%d（%s）→ 1-7 下限 %d 次（原始 %d 向上对齐 series=%d；"
+                     "周耗 %.0f，单次产 %.3f）"
+                     % (stock, target, "有活动要打→target=500" if has_activity_work else "无活动→target=1000",
+                        r17, _raw17, _series17, sh["daily_use"] * 7, sh["per_run"]))
+    san17 = r17 * 6
+
+    # --- R3 活动：**在 ann + EX/S首通 + 1-7下限 之后**吃剩余预算（活动期 1-7 让位）---
+    ev_runs = 0
+    if ev_stage:
+        left = budget - ann_san - extra_san - san17
+        _raw_ev = max(0, min(left // ev_san, cap_runs)) if ev_san else 0
+        ev_runs = (_raw_ev // _series_ev) * _series_ev       # 向下对齐 series
+        notes.append("活动 %s：开放 %s~%s，每局 %d 理智；商店要买 %d 代币 → 需 %d 次；"
+                     "预算剩 %d → 活动排 %d 次（原始 %d 向下对齐 series=%d）"
+                     % (ev_stage, ev_win["open"], ev_win["close"], ev_san, need_tok, cap_runs,
+                        max(0, left), ev_runs, _raw_ev, _series_ev))
     if not ev:
         notes.append("本期无进行中的活动 → 预算全给 1-7")
+
 
     # --- R3.5 培养：按缺口"刷材料"关卡分配，产出额外 Fight 任务 ---
     train_tasks, train_spent, train_info = {}, 0, None
@@ -443,8 +467,6 @@ def plan(date: dt.date) -> dict:
             notes.append("活动商店可白拿 %d 种材料（已从培养需求里抵扣）"
                          % len(train_info.get("credited") or {}))
         val = train_info["val"]
-        if not ev:
-            train_budget = max(0, budget - ann_san - san17)
         rows = [r for r in train_info["rows"] if (r.get("det") or {}).get("farm")]
         rows.sort(key=lambda r: -(r.get("sanity") or 0))
         for r in rows:
@@ -483,8 +505,13 @@ def plan(date: dt.date) -> dict:
                    "meds_source": "scheduling/data/sanity.json（每周日手动跑 sanity_potion.py）",
                    "daily_natural": RULE["natural_per_day"]},
         "inventory": {"固源岩": stock},
-        "shards": {"stock": stock, "target": sh["target"], "per_run": sh["per_run"],
-                   "daily_use": sh["daily_use"], "stage": sh["stage"]},
+        "shards": {"stock": stock, "target": target,
+                   "target_activity": sh["target_activity"], "target_idle": sh["target_idle"],
+                   "target_reason": ("有活动要打 → 500" if has_activity_work else "无活动 → 1000"),
+                   "per_run": sh["per_run"], "daily_use": sh["daily_use"], "stage": sh["stage"]},
+        # 「配上药的关」= 允许吃理智药的关（1-7 / 活动农场关）。剿灭/EX 首通不配药。
+        "medicine_stages": [x for x in (sh["stage"], ev_stage) if x],
+        "series": {"normal": _series17, "event": _series_ev},
         "windows": _build_windows(ev_stage, ev_win, ev),
         "tasks": [],
         # side = 「run 时要额外交给本机脚本的活」。**基建已交还 MAA 自带的队列轮换**（见 tasks 里的 Infrast），
@@ -492,17 +519,20 @@ def plan(date: dt.date) -> dict:
         "side": [],
     }
 
-    # --- R4 填充 + 排期自检 —— 保证逐日排得下（无 unplaced）---
-    # 注意：used 必须把 EX/S 首通（extra_san）算进去，否则 filler 会多排 1-7 → 超预算。
-    # 若 distribute_daily 报 unplaced，则活动次数 -1、重算 filler/1-7 后重排，直到装得下。
+    # --- R4 1-7 填充（剩余预算，向下对齐 series）→ 排期自检回退 ---
+    #   used 必须含 EX/S 首通（extra_san）与活动（ev_runs*ev_san），否则 filler 会超预算。
+    _used0 = ann_san + extra_san + san17 + ev_runs * ev_san + train_spent
+    fill_runs = max(0, (budget - _used0) // 6)
+    fill_runs = (fill_runs // _series17) * _series17
     plan, ev_runs, r17_total, fill_runs, _fit_trace = _fit_to_schedule(
         plan, ev_stage=ev_stage, ev_runs=ev_runs, ev_san=ev_san, extra_tasks=extra_tasks,
-        train_tasks=train_tasks, ann_runs=ann_runs, r17=r17, ann_san=ann_san,
-        extra_san=extra_san, train_spent=train_spent, budget=budget)
-    used = ann_san + extra_san + san17 + ev_runs * ev_san + train_spent
-    notes.append("预算 %d；剿灭 %d + EX/S首通 %d + EX/S突袭 %d + 1-7 %d + 活动 %d + 培养 %d = %d；补 1-7 %d 次花光"
-                 % (budget, ann_san, extra_san_normal, extra_san_raid, san17,
-                    ev_runs * ev_san, round(train_spent), round(used), fill_runs))
+        train_tasks=train_tasks, ann_runs=ann_runs, r17=r17, fill_runs=fill_runs,
+        ann_san=ann_san, extra_san=extra_san, train_spent=train_spent, budget=budget,
+        series17=_series17, series_ev=_series_ev)
+    used = ann_san + extra_san + r17_total * 6 + ev_runs * ev_san + train_spent
+    notes.append("预算 %d；剿灭 %d + EX/S首通 %d + EX/S突袭 %d + 1-7 %d(下限 %d+填充 %d) + 活动 %d + 培养 %d = %d"
+                 % (budget, ann_san, extra_san_normal, extra_san_raid, r17_total * 6, r17, fill_runs,
+                    ev_runs * ev_san, round(train_spent), round(used)))
     for _t in _fit_trace:
         notes.append("★ 排期自检：" + _t)
     # 自检回归后的「实排」口径 —— 与最终 tasks / sanity_alloc 对齐（此时 ev_runs / r17_total 已定稿）

@@ -85,6 +85,7 @@ Python 绑定：`Asst.load(path=C:\MAA)` 加载 `MaaCore.dll` 与 `resource/`；
 | `DrGrandet` | bool | `false` | 否 | 省理智碎石（等 1 点理智恢复再碎） |
 
 - `series` 校验（`FightTask.cpp:95-103`）：`<-1` 或 `>10`（新列表）或 `>6`（旧列表，资源含 `FightSeries-OldMethodFlag`）→ **返回 false**。
+  **本机口径（2026-10-12 核实）**：`C:\MAA\resource\tasks\tasks.json` **无** `FightSeries-OldMethodFlag`（asst.log 也报 `Unknown task: FightSeries-OldMethodFlag`）⇒ 走**新列表**分支，**上限 10**（GUI 同样是 10）。**旧文档写 6 是旧列表口径，已作废**；`normal_series`/`event_series` 均取 10。
 - `expiring_medicine`（旧名）已弃用，传它会映射到 `medicine_expire_days`（`FightTask.cpp:72-80`）。
 
 ### 2.4 Recruit（公招，`RecruitTask.cpp:16-101`）

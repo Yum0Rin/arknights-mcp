@@ -243,6 +243,16 @@ def distribute_daily(plan: dict) -> list:
     # 旧版只算「自然 + 药/天」，漏了周常 240，导致末尾任务排不下被丢（W42 丢了 417 理智）。
     _n = n or 7
     day_cap = (budget_total(plan, _n) + _n - 1) // _n
+    # day_cap = **软目标**（尽量不超，用于显示/over 标记）。连战批次（如 YW-6 series=10 = 210 理智）
+    # 粒度粗，硬按 day_cap 会放不下第 2 个批次 → 大量理智被剩。故另设**硬上限** = day_cap + 最大批次。
+    _max_uc = 0
+    for _t in plan.get("tasks", []):
+        if _t.get("type") in ("Fight", RAID_TYPE):
+            _p = _t.get("params") or {}
+            if _p.get("stage"):
+                _s = max(1, int(_p.get("series") or 1))
+                _max_uc = max(_max_uc, _s * cost.get(_p["stage"], 0))
+    hard_cap = day_cap + _max_uc
     acc = [{} for _ in range(n)]
     load = [0] * n
     opens = [[] for _ in range(n)]
@@ -250,8 +260,7 @@ def distribute_daily(plan: dict) -> list:
     # 不静默 continue，否则自检/调用方无从察觉（复盘层的隐患）。
     window_unplaced = {}
 
-    jobs = []          # Fight 任务（含带 seq 的有序首通）
-    raid_jobs = []     # Raid（突袭）任务：单次、不 append 给 MAA，但仍占理智/占位
+    jobs = []          # Fight/Raid 任务（含带 seq 的有序首通）
     for t in plan.get("tasks", []):
         tt = t.get("type")
         p = t.get("params") or {}
@@ -260,8 +269,9 @@ def distribute_daily(plan: dict) -> list:
             times = p.get("times")
             if not stage or not isinstance(times, int) or times <= 0:
                 continue
+            series = max(1, int(p.get("series") or 1))
         elif tt == RAID_TYPE:
-            times = 1
+            times, series = 1, 1
             if not stage:
                 continue
         else:
@@ -280,9 +290,19 @@ def distribute_daily(plan: dict) -> list:
             for i in idxs:
                 if dates[i].isoformat()[:10] == o:
                     opens[i].append(stage)
-        rec = {"stage": stage, "times": times, "cost": cost.get(stage, 0), "idxs": idxs,
-               "seq": t.get("seq"), "kind": ("raid" if tt == RAID_TYPE else "fight")}
-        (raid_jobs if tt == RAID_TYPE else jobs).append(rec)
+        jobs.append({"stage": stage, "times": times, "cost": cost.get(stage, 0), "idxs": idxs,
+                     "series": series, "nb": times // series, "rem": times % series,
+                     "seq": t.get("seq"), "kind": ("raid" if tt == RAID_TYPE else "fight")})
+
+    def _expand(js):
+        """把 job 拆成**连战批次** units（每个 unit = series 局，cost = series×单局理智）。
+        逐日分配按 unit 走 → 每天该关次数必为 series 的整倍数（GUI 不再警告「余数无法用尽」）。"""
+        out = []
+        for j in js:
+            for _ in range(j["nb"]):
+                out.append({"stage": j["stage"], "n": j["series"], "cost": j["series"] * j["cost"],
+                            "idxs": j["idxs"], "kind": j["kind"], "seq": j.get("seq")})
+        return out
 
     # 拆成：剿灭 / 有序（带 seq 的首通+突袭）/ 窄窗（可用天 < 全周）/ 宽窗（可用天 = 全周）
     ann, narrow, wide, ordered = [], [], [], []
@@ -295,19 +315,25 @@ def distribute_daily(plan: dict) -> list:
             narrow.append(j)
         else:
             wide.append(j)
-    ordered += raid_jobs
-    ordered.sort(key=lambda j: j["seq"] if j.get("seq") is not None else 10 ** 9)
+    ordered_units = sorted(_expand(ordered),
+                           key=lambda u: u["seq"] if u.get("seq") is not None else 10 ** 9)
 
     unplaced = dict(window_unplaced)   # {stage: 放不下的次数}——容量不够/窗口不覆盖本周时**如实登记**，不静默丢、不硬塞爆表
+    # 次数取整后的「单关余数」（times % series）也如实登记（plan_week 已对齐，正常为 0）
+    for j in jobs:
+        if j["rem"]:
+            unplaced[j["stage"]] = unplaced.get(j["stage"], 0) + j["rem"]
 
-    def _put(j, i):
-        acc[i][j["stage"]] = acc[i].get(j["stage"], 0) + 1
-        load[i] += j["cost"]
+    def _put(u, i):
+        acc[i][u["stage"]] = acc[i].get(u["stage"], 0) + u["n"]
+        load[i] += u["cost"]
 
-    # 剿灭：每天 1 次（剿灭券每日领，只能排到窗内前 times 天）
-    for j in ann:
-        for i in j["idxs"][:j["times"]]:
-            _put(j, i)
+    # 剿灭：每天 1 次（units 依次排到窗内前几天）
+    for k, u in enumerate(_expand(ann)):
+        if k < len(u["idxs"]):
+            _put(u, u["idxs"][k])
+        else:
+            unplaced[u["stage"]] = unplaced.get(u["stage"], 0) + u["n"]
 
     # 有序首通（EX-1→EX-8 普通 + 突袭；带 seq）：**按 seq 升序、跨天单调不减**依次放置。
     #   规则：第 k 条只能落在「窗口内、且 ≥ 上一条所在天」的日子；优先最早可放天（first-fit，
@@ -315,21 +341,21 @@ def distribute_daily(plan: dict) -> list:
     #   若某条在 ≥ prev 的日子里都放不下，则退而取负载最低的一天（保序优先，极端兜底）。
     raid_acc = [[] for _ in range(n)]
     _prev = -1
-    for u in ordered:
+    for u in ordered_units:
         cands = [i for i in u["idxs"] if i >= _prev] or list(u["idxs"])
-        under = [i for i in cands if load[i] + u["cost"] <= day_cap]
+        under = [i for i in cands if load[i] + u["cost"] <= hard_cap]
         pick = min(under) if under else min(cands, key=lambda k: (load[k], k))
         if u["kind"] == "raid":
             raid_acc[pick].append(u["stage"])
         else:
-            acc[pick][u["stage"]] = acc[pick].get(u["stage"], 0) + 1
+            acc[pick][u["stage"]] = acc[pick].get(u["stage"], 0) + u["n"]
         load[pick] += u["cost"]
         _prev = pick
 
-    wide_sorted = sorted(wide, key=lambda j: -(j["cost"] or 0))
+    wide_units = sorted(_expand(wide), key=lambda u: -(u["cost"] or 0))
 
     def _pack_wide(L0, A0):
-        """给定已排 load/acc，把宽窗关填进去（不超 day_cap），返回 (已放理智, load, acc)。
+        """给定已排 load/acc，把宽窗关的**批次**填进去（不超 day_cap），返回 (已放理智, load, acc)。
 
         两种摆法各试一次、取「放得更多」的那种：
           · 平衡（往最空的天摊）— 平时用，天数摊得匀；
@@ -337,29 +363,27 @@ def distribute_daily(plan: dict) -> list:
         """
         def _run(tight):
             L, A, placed = list(L0), [dict(a) for a in A0], 0
-            for j in wide_sorted:
-                for _ in range(j["times"]):
-                    cand = [k for k in j["idxs"] if L[k] + j["cost"] <= day_cap]
-                    if not cand:
-                        continue
-                    i = (min(cand, key=lambda k: (day_cap - L[k], k)) if tight
-                         else max(cand, key=lambda k: (day_cap - L[k], -k)))
-                    A[i][j["stage"]] = A[i].get(j["stage"], 0) + 1
-                    L[i] += j["cost"]
-                    placed += j["cost"]
+            for u in wide_units:
+                cand = [k for k in u["idxs"] if L[k] + u["cost"] <= hard_cap]
+                if not cand:
+                    continue
+                i = (min(cand, key=lambda k: (day_cap - L[k], k)) if tight
+                     else max(cand, key=lambda k: (day_cap - L[k], -k)))
+                A[i][u["stage"]] = A[i].get(u["stage"], 0) + u["n"]
+                L[i] += u["cost"]
+                placed += u["cost"]
             return placed, L, A
         p_w, L_w, A_w = _run(False)
         p_b, L_b, A_b = _run(True)
         return (p_b, L_b, A_b) if p_b > p_w else (p_w, L_w, A_w)
 
-    # 窄窗关（EX/S 首通等，仅开放窗口内可排）：穷举其落天，选「宽窗关放得最多 → 窄窗关
-    # 在窗口内**分摊得最匀** → 单日负载最低」的摆法；**全部不超 day_cap**。
-    # （旧版只按「宽窗放最多 + 单日最低」，会把 8 个 EX 全塞到开放首日。）
-    narrow_units = [j for j in sorted(narrow, key=lambda j: (len(j["idxs"]), -(j["cost"] or 0)))
-                    for _ in range(j["times"])]
+    # 窄窗关（仅开放窗口内可排）：穷举其**批次**落天，选「宽窗关放得最多 → 单日负载最低」的摆法；
+    # **全部不超 day_cap**。
+    narrow_units = sorted(_expand(narrow), key=lambda u: (len(u["idxs"]), -(u["cost"] or 0)))
     space = 1
-    for j in narrow:
-        space *= max(1, len(j["idxs"])) ** j["times"]
+    for u in narrow_units:
+        space *= max(1, len(u["idxs"]))
+    space = min(space, 10 ** 9)
 
     best = {"key": None, "load": None, "acc": None}
     if narrow_units and space <= 30000:
@@ -370,70 +394,67 @@ def distribute_daily(plan: dict) -> list:
                 if best["key"] is None or key > best["key"]:
                     best.update(key=key, load=LL, acc=AA)
                 return
-            j = narrow_units[k]
-            for i in j["idxs"]:
-                if L[i] + j["cost"] > day_cap:
+            u = narrow_units[k]
+            for i in u["idxs"]:
+                if L[i] + u["cost"] > hard_cap:
                     continue
-                A[i][j["stage"]] = A[i].get(j["stage"], 0) + 1
-                L[i] += j["cost"]
+                A[i][u["stage"]] = A[i].get(u["stage"], 0) + u["n"]
+                L[i] += u["cost"]
                 NC[i] += 1
                 _dfs(k + 1, L, A, NC)
-                L[i] -= j["cost"]
+                L[i] -= u["cost"]
                 NC[i] -= 1
-                A[i][j["stage"]] -= 1
-                if A[i][j["stage"]] == 0:
-                    del A[i][j["stage"]]
+                A[i][u["stage"]] -= u["n"]
+                if A[i][u["stage"]] == 0:
+                    del A[i][u["stage"]]
 
         _dfs(0, list(load), [dict(a) for a in acc], [0] * n)
 
     if best["acc"] is not None:
         load, acc = best["load"], best["acc"]
     elif narrow_units:                          # 规模太大/无解 → 贪心分摊窄窗关（不超 day_cap）
-        for j in narrow_units:
-            fits = [i for i in j["idxs"] if load[i] + j["cost"] <= day_cap]
+        for u in narrow_units:
+            fits = [i for i in u["idxs"] if load[i] + u["cost"] <= hard_cap]
             if not fits:
-                unplaced[j["stage"]] = unplaced.get(j["stage"], 0) + 1
+                unplaced[u["stage"]] = unplaced.get(u["stage"], 0) + u["n"]
                 continue
-            i = min(fits, key=lambda k: (acc[k].get(j["stage"], 0), load[k], k))
-            _put(j, i)
+            i = min(fits, key=lambda k: (acc[k].get(u["stage"], 0), load[k], k))
+            _put(u, i)
         _, load, acc = _pack_wide(load, acc)
     else:                                       # 无窄窗关 → 直接填宽窗关
         _, load, acc = _pack_wide(load, acc)
 
-    # 收尾：容量实在不够、个别次数没排下的 → 记入 unplaced（**不硬塞爆表**）。
+    # 收尾：容量实在不够、个别**批次**没排下的 → 记入 unplaced（**不硬塞爆表**）。
     for j in jobs:
-        got = sum(acc[i].get(j["stage"], 0) for i in range(n))
+        if j["kind"] == "raid":
+            got = sum(1 for i in range(n) if j["stage"] in raid_acc[i])
+        else:
+            got = sum(acc[i].get(j["stage"], 0) for i in range(n))
         if got < j["times"]:
             unplaced[j["stage"]] = unplaced.get(j["stage"], 0) + (j["times"] - got)
-    placed = sum(load)
 
-    # 分配对象就是「计划里的 Fight 任务」（plan_week 已自行算好 1-7 filler）；
-    # 这里只在「固源岩下限」不足时才补 1-7，不再额外平白补 filler。
-    # 注意：若已有放不下的次数（容量确实不够，如 day_cap=406 放不下 123 次 YW-6），
-    # 说明本周被容量卡住，此时**不补 filler**——避免「丢了 A 又悄悄换成 B」。
+    # 填充（仅当该关**不在** plan.tasks 里时兜底 —— plan_week 会自行写 1-7）；也按 series 对齐。
     if not unplaced:
         fstage, fcost = _filler(plan, cost)
-        # 计划理智合计 = Fight 任务 + 突袭（Raid 单次）
-        target = (sum(j["times"] * j["cost"] for j in jobs)
-                  + sum(j["cost"] for j in raid_jobs))
-        runs = max(0, (target - placed) // fcost) if fcost else 0
-        req = shard_requirement(plan, cost)
-        if req and fstage == req["stage"]:
-            runs = max(runs, req["runs"])          # 固源岩下限优先
-        # 若填充关已经作为任务出现在 tasks[] 里（plan_week 会写），就别再加一遍
         task_stages = {(t.get("params") or {}).get("stage")
                        for t in plan.get("tasks", []) if t.get("type") == "Fight"}
-        if fstage in task_stages and not plan.get("daily"):
-            runs = 0
-        if fstage and fcost > 0 and runs > 0:
-            for _ in range(runs):
-                fits = [k for k in range(n) if load[k] + fcost <= day_cap]
+        fseries = 1
+        for t in plan.get("tasks", []):
+            if t.get("type") == "Fight" and (t.get("params") or {}).get("stage") == fstage:
+                fseries = max(1, int((t.get("params") or {}).get("series") or 1))
+        if fstage and fcost > 0 and fstage not in task_stages:
+            req = shard_requirement(plan, cost)
+            runs = req["runs"] if (req and fstage == req["stage"]) else 0
+            runs = (runs // fseries) * fseries
+            for _ in range(runs // fseries):
+                fits = [k for k in range(n) if load[k] + fcost * fseries <= hard_cap]
                 if not fits:
                     break
                 i = min(fits, key=lambda k: (load[k], k))
-                acc[i][fstage] = acc[i].get(fstage, 0) + 1
-                load[i] += fcost
+                acc[i][fstage] = acc[i].get(fstage, 0) + fseries
+                load[i] += fcost * fseries
 
+    natural = daily_cap(plan)
     out = []
     for i in range(n):
         d = dates[i] if i < len(dates) else None
@@ -443,6 +464,7 @@ def distribute_daily(plan: dict) -> list:
             "runs": acc[i],
             "raids": raid_acc[i],            # 当天要打的突袭关（按 seq 顺序；MAA 不做 → Copilot/手点）
             "sanity": load[i],
+            "medicine": max(0, load[i] - natural),   # 当天要吃的理智药（自然不够的部分）
             "cap": cap,
             "day_cap": day_cap,
             "over": load[i] > day_cap,

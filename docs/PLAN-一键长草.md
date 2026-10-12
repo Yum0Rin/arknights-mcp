@@ -115,7 +115,7 @@ StartUp(唤醒/启动客户端)
 **B. 硬性下限（必须满足）**
 4. 剿灭打满（1800 玉/周）。
 5. 活动商店**目标集**刷够（家具必满；信物拿黄票；龙门币；寻访凭证；模组块；聚合剂；技巧概要卷3；作战记录；精英材料按缺口）。
-6. 搓玉固源岩库存保底（建议 ≥1000）。
+6. 搓玉固源岩库存保底：**条件 target**——**有活动要打 ≥500**（1-7 让位）/ 无活动 ≥1000。
 7. 森空岛签到 / 基建收菜；**公招**日常 `times=4` 攒许可（6 星不自动）；攒黄票的批量刷**不自动化**，需要时把任务发给 MAA。
 
 **C. 活动侧**
@@ -146,11 +146,13 @@ StartUp(唤醒/启动客户端)
 ### 3.4 判据链（可执行算法）
 
 1. 取数（森空岛 + 仓库 + 活动 `event_<id>.json`）。
-2. 算硬性下限：剿灭次数、活动目标集缺口→代币→次数、搓玉固源岩保底。
-3. 扣掉硬性下限占用的理智。
-4. 余额按 §3.2 边际性价比降序填（活动剩余代币 > CE-6 > 1-7 …）。
-5. 溢出检查：把总量摊到每天，保证不溢出。
-6. 产出 `weekly_plan.json` + 人类可读 `rationale`。
+2. 算硬性下限，**按优先级顺序扣预算**（2026-10-12 改定，活动让 1-7 让位）：
+   ① 剿灭（每天 1，≤5）；② EX/S 首通 + 突袭（必做）；③ **1-7 下限**（target：**有活动→500 / 无活动→1000**）；
+   ④ **活动关吃剩余预算**（上限仍「商店要买总量反推」）；⑤ 培养；⑥ 1-7 填充。
+3. 余额按 §3.2 边际性价比填（活动剩余代币 > CE-6 > 1-7 …）。
+4. **次数按 series 取整**（1-7 下限向上、活动/填充向下；余量回流）；逐日分配按「连战批次」走 → 每天为 series 整倍数。
+5. 溢出检查：把总量摊到每天（`day_cap` 为软目标）；逐日视图带 `medicine`（=当天理智−240）。
+6. 产出 `weekly_plan.json` + 人类可读 `rationale`；自检 `_fit_to_schedule` 回退顺序 = **先填充 1-7、其次活动**。
 
 ## 4. ~~基建换班脚本优化~~（已作废：脚本归档，基建交给 MAA `mode=20000`）
 
@@ -218,20 +220,27 @@ scheduling/data/weekly_plan_log.jsonl # 每周归档（追加）
     {"type": "Raid",  "params": {"stage": "YW-EX-1"}, "name": "YW-EX-1 突袭", "seq": 2},
     {"type": "Fight", "params": {"stage": "YW-EX-2", "times": 1}, "name": "YW-EX-2 首通", "seq": 3},
     {"type": "Raid",  "params": {"stage": "YW-EX-2"}, "name": "YW-EX-2 突袭", "seq": 4},
-    {"type": "Fight", "params": {"stage": "1-7", "times": 417, "series": 6}},
+    {"type": "Fight", "params": {"stage": "YW-6", "times": 100, "series": 10}, "name": "活动刷代币"},
+    {"type": "Fight", "params": {"stage": "1-7", "times": 20, "series": 10}},
     {"type": "Recruit", "params": {"select": [3,4,5], "confirm": [3,4,5], "times": 4}},
     {"type": "Infrast", "params": {"mode": 20000, "facility": ["Mfg","Trade","Power","Control","Reception","Office","Dorm","Processing","Training"]},
      "name": "基建·队列轮换"},
     {"type": "Mall", "params": {"enable": true}},
     {"type": "Award", "params": {"enable": true}}
   ],
+  "medicine_stages": ["1-7", "YW-6"],
+  "series": {"normal": 10, "event": 10},
   "side": [],              // 基建交 MAA 自带队列轮换后不再有附带脚本
   "rationale": {
-    "sanity_alloc": {"annihilation": 125, "EX/S首通": 120, "EX/S突袭": 120, "1-7": 2502, "活动": 0, "培养": 0},
-    "notes": ["预算 = 自然 1680 + 药 920 = 2600（已含周常药，不加 240）", "1-7 补固源岩至保底 1000", "unplaced={1-7:48}（2867>2600，待裁定）"]
+    "sanity_alloc": {"annihilation": 125, "EX/S首通": 120, "EX/S突袭": 120, "1-7": 120, "活动": 2100, "培养": 0},
+    "notes": ["预算 = 自然 1680 + 药 920 = 2600（已含周常药，不加 240）",
+              "固源岩 target=500（有活动要打）；库存 1163 → 下限 0，1-7 仅填充 20",
+              "活动让 1-7 让位：活动吃剩余预算 2100", "unplaced={}"]
   }
 }
 ```
+
+> `daily[].medicine` = `max(0, 当天理智 − 240)`；`maa_week write` 写进 GUI 槽位、`run` 传 `medicine`（只 1-7/活动关）。
 
 > 约定：`seq` 是任务级字段（升序）；带 `seq` 的任务由 `plan_util.distribute_daily` 按序跨天单调不减放置。
 > `daily[].raids` 列出当天要打的突袭关（按 seq 顺序）；`maa_week` 遇 `Raid` 不 append、只提示。

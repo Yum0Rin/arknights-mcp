@@ -1,7 +1,7 @@
 {
   "_schema": "arknights-decision-state-v1",
   "_doc": "机器可读的决策状态（单一事实源）。agent 每次醒来：读它 -> 判触发 -> 执行 -> 回写。循环协议见 docs/STATE.md，判据/公式见 docs/MASTER-PLAN.md。",
-  "updated_at": "2026-10-12 19:49",
+  "updated_at": "2026-10-12 21:05",
   "cycle": {
     "strategy": "搓玉向（合成玉最高优先，长期不停）",
     "last_decision_at": "2026-10-10 演练（森空岛在线取数，未驱动设备）",
@@ -13,7 +13,7 @@
     "annihilation_week_reset": "每周一（周上限 1800 玉）",
     "event_combat_end": "2026-10-23 03:59",
     "event_exchange_end": "2026-10-30",
-    "event_ex_open": "2026-10-16 16:00（活动主页 EX 入口显示『10月16日 16:00:00 后开启』，实机 OCR 2026-10-10）",
+    "event_ex_open": "2026-10-16 16:00（活动主页 EX 入口显示『10月16日 16:00:00 后开启』，实机 OCR 2026-10-10） → 届时由 AI 排一次 MAA GUI：走 scripts/event-copilot/event_copilot.py run act52side --chain ex（再 --chain raid），或先把当天队列写成 EX 首通（MAA Fight 导航不了 EX，需 Copilot/手点）。",
     "daily_decision_floor": "每天至少决策一次（醒来即算，周期兜底）"
   },
   "plan": {
@@ -38,7 +38,8 @@
       "EX 关执行方式（2026-10-16 前必须定）：MAA 当前导航不了 YW-EX-1..8（resource 无关卡定义，见 audit_findings）。选项：①等 MAA 发版含 EX 定义后 maa_update/软件升级 ②走 scripts/event-copilot（Copilot 作业导航）③手点首通。已加预检兜底（跳过+留证），不会打死队列。",
       "搓玉 target=1000 vs 活动优先级（运筹级待裁定）：现规则 R2(1-7 下限) 先于 R3(活动) → 活动商店只能搬 ~2%。是否改为「活动期 R3 优先 / 活动期临时降 target」？",
       "★预算装不下（2026-10-12 预算改 2600 后暴露，升给用户裁定）：1-7 下限 417 次(2502) + 剿灭(125) + EX/S 首通+突袭(240) = 2867 > 预算 2600，逐日 day_cap=372 装不下 → weekly_plan.daily unplaced={1-7:48}（差 288 理智）。自检 _fit_to_schedule 把活动次数回退到 0 仍不够（活动本就 0）。选项：①降 shards.target；②活动期把 R3 提到 R2 前（让 1-7 让位）；③临时多动理智药；④接受 unplaced（少刷 48 次 1-7）。**待用户拍板。**",
-      "★EX/S 首通链需实机验证（2026-10-16 EX 开放后）：event_copilot run act52side --chain ex 需要 ①MAA 资源已有 EX 关卡（否则 --chain ex 在 EX-1 就「无作业/不在资源」链停）②prts.maa.plus 有该 EX 关的可抄作业（E2+ 准入）③突袭作业的 is_raid 行为与落点。链停时按提示手点；进度会自动回写 progress.event_act52side。若某 EX 关无作业 → 链停属预期，不代表故障。"
+      "★EX/S 首通链需实机验证（2026-10-16 EX 开放后）：event_copilot run act52side --chain ex 需要 ①MAA 资源已有 EX 关卡（否则 --chain ex 在 EX-1 就「无作业/不在资源」链停）②prts.maa.plus 有该 EX 关的可抄作业（E2+ 准入）③突袭作业的 is_raid 行为与落点。链停时按提示手点；进度会自动回写 progress.event_act52side。若某 EX 关无作业 → 链停属预期，不代表故障。",
+      "★用药与 EX 执行面（2026-10-12 实跑暴露，待观察）：①逐日 medicine 只配「1-7/活动关」，EX 首通/剿灭不吃药；EX 开放日（10-16）当天理智 265 > 自然 240，缺口 25 需在 Copilot/手点时段自行补药（计划层无法投递）。②本机 DepotData 固源岩读数已从 1128 变 1163（20:02 被更新）→ 1-7 下限 0；若读数回退需重生成。③series=10 使批次粒度=210 理智，day_cap 降为软目标（部分天 over，靠 medicine 覆盖）。"
     ],
     "resolved_2026-10-10": [
       "待养前 N 值 = 4（德克萨斯/乌尔比安/伊芙利特/山）",
@@ -57,14 +58,17 @@
       "监工对账（2026-10-12 夜，脚本硬核）：daily↔tasks 咬合、逐日 ≤ day_cap 406、全周 2837 ≤ 预算 2840、EX 窗口、剿灭周上限、固源岩期末 1002 ≥ 1000 —— 全部自洽；另发现 3 个真问题（见 audit_findings_2026-10-12）与 weekly_plan.json 长期 stale（已重新生成 + W42 镜像对齐）。",
       "预算口径修正（2026-10-12 用户裁定）：「预算理智药已经包含了周药，不可另行考虑周药」→ plan_week 删除 weekly_potion（**永不加 240**），预算 2840→2600（=自然 1680 + 药 920），day_cap 406→372；药存量由「每周日手动跑 scripts/sanity-potion/sanity_potion.py」测出写 scheduling/data/sanity.json（该读数已含周常药）。窗口/自检/文档全部随口径更新。",
       "EX 顺序 + 突袭规则落地（2026-10-12）：①EX/S 首通带 task 级 seq（EX-1→EX-8、S-1），plan_util.distribute_daily 按 seq 升序、跨天单调不减放置；②**只有 EX/S 有突袭**（普通关 YW-1..8 无），每关普通首通后紧跟一条该关 `Raid`（新 task 类型，突袭理智暂按普通同价、待核）；③maa_week 遇 Raid 不 append、只提示走 event-copilot（Copilot is_raid）/手点并计入 run_report（非错误）。W42 重生成 + 镜像 + weekly_plan_log.jsonl 留痕。",
-      "EX/S 首通「解锁依赖链」语义落地（2026-10-12 用户补充「还没打过的关需要依次解锁」）：①plan_week R2.5 改读 progress.event_<活动>，只排未通、从第一个未通起的前缀链（已通不重排，缺失当全未通），突袭依赖「该关普通已通」；②event_copilot 新增 run --chain ex/raid/s/sraid（依次解锁、遇挫即停、跑完回写进度）+ --raid(is_raid)；③maa_week 遇 Raid/EX 跳过时打印可复制命令；④新增 progress 字段 ex_clear_done/s_clear_done/raid_clear_done/last_chain_note。EX 现未开放→进度为空→本周仍排 EX-1..8 普通+8 突袭，预算/day_cap/unplaced 不变。"
+      "EX/S 首通「解锁依赖链」语义落地（2026-10-12 用户补充「还没打过的关需要依次解锁」）：①plan_week R2.5 改读 progress.event_<活动>，只排未通、从第一个未通起的前缀链（已通不重排，缺失当全未通），突袭依赖「该关普通已通」；②event_copilot 新增 run --chain ex/raid/s/sraid（依次解锁、遇挫即停、跑完回写进度）+ --raid(is_raid)；③maa_week 遇 Raid/EX 跳过时打印可复制命令；④新增 progress 字段 ex_clear_done/s_clear_done/raid_clear_done/last_chain_note。EX 现未开放→进度为空→本周仍排 EX-1..8 普通+8 突袭，预算/day_cap/unplaced 不变。",
+      "固源岩下限改条件值 + 预算顺序「活动让 1-7 让位」（2026-10-12 用户裁定）：①target = 有活动要打→500 / 无→1000；②预算顺序 剿灭→EX/S首通+突袭→1-7下限→活动(吃剩余预算，上限仍商店反推)→培养→1-7填充；③_fit_to_schedule 回退改为「先填充 1-7、其次活动」，不再出现「活动被压到 0、1-7 吃光」；④连战上限 series 6→10（本机 resource 无 FightSeries-OldMethodFlag → 新列表分支上限 10）；⑤Fight 次数按 series 取整（1-7 下限向上、活动/填充向下），plan_util 逐日按「连战批次」分配 → 每天为 series 整倍数（消 GUI 余数警告）；⑥逐日视图加 medicine（=max(0,当日理智−自然240)），maa_week write 同步 UseMedicine/MedicineCount/MedicineExpireDays、run 传 medicine（只配 1-7/活动关）。重生成 weekly_plan.json + 镜像 W42。"
     ],
     "audit_findings_2026-10-12": [
       "【已加护栏】EX 关 YW-EX-1..8 在 MAA resource（tasks.json / tasks/Stages/*.json / stages.json）无定义 → 现在导航必失败；remote MaaResource 与本地同日(10-09)且只提供 tasks/hotfix → maa_update.py apply 拿不到关卡定义（关卡定义随 MAA 软件版走）。maa_week.run 已加预检：导航不了的关跳过并留证（--strict 才失败），不再让 append=0 打死整天。",
       "【待用户裁定】搓玉 target=1000 使 1-7 下限 417 次（2508 理智）先占预算 → 活动只剩 4 次（84 理智），而商店非 skip 限购项需 5110 代币（≈244 次）→ 商店只能搬 ~2%。与「活动有时间窗、搓玉无止境」冲突。",
       "【口径待复核】shards.per_run=1.245 / shards.daily_use=92.4（搓玉日耗）/ annihilation.jade_per_run=370（周上限 1800 下第 5 次实际只值 ~320）—— 均沿用自 RULE，未标来源。",
       "【高·已实测】计划含药预算但执行侧从不设 medicine → 只能跑自然理智：2026-10-12 GUI 实跑 1-7 只跑到理智耗尽（205→1，约 34 次）就结束，计划是 57 次，差 23 次≈138 理智（=药没用）。GUI 三个 Fight 槽 UseMedicine 均 False、MedicineCount 0；maa_week 的 write/run 都没同步药量。修：plan 逐日出「当天用药量」，write 同步 UseMedicine/MedicineCount(+ExpireDays)，run 传 medicine。",
-      "【中·GUI 已警告】次数不被 series 整除 → 余数浪费：「战斗次数 (57) 无法被 连战次数 (6) 整除, 余数无法用尽」（57 = 9×6+3）。修：plan_week 产出的次数按该关 series 取整（向下 54 或向上 60），别再出非整倍数。"
+      "【中·GUI 已警告】次数不被 series 整除 → 余数浪费：「战斗次数 (57) 无法被 连战次数 (6) 整除, 余数无法用尽」（57 = 9×6+3）。修：plan_week 产出的次数按该关 series 取整（向下 54 或向上 60），别再出非整倍数。",
+      "【口径错数据·已修】连战上限写死 6 是错的：dev-v2 FightTask.cpp:91-97 的判据是「资源里有 FightSeries-OldMethodFlag 才是旧列表(上限 6)」，本机 resource 无该键 → 新列表上限 10。根因不是抄错一个数：①RULE 把『旧列表上限』当通用值写死；②同一份 RULE 里活动关用 10（已实测跑通）、普通关用 6 —— 两个互斥口径同时存在却没人交叉验证。纪律：外部数字必须绑判据+证据；互斥口径=立即核；能自证的必须交叉验证；上限改为按资源判定不写死。见 FINDINGS §22。",
+      "【基建配置口径】GUI `Infrast.Filename` 指的 `custom_infrast/maa-243-custom.json` 是『龙门币优先』版（制造 BR/PG/BR/PG、贸易 LMD/LMD），不是搓玉版；但已切 `Mode=Rotation` → 该文件不参与运行。真正生效的是游戏内队列 1/2：MAA `ProductOfFacility` 实测(2026-10-12 19:30) = 制造站 1 产源石碎片(OriginStone) + 贸易站 1 卖合成玉(SyntheticJade) + 赤金×2 + 作战记录×1 + 龙门币×1 ⇒ 与仓库 `scheduling/一图流生成器/243-搓玉-合成玉-MAA.json` 一致。MASTER-PLAN §5.6 原文『贸易站 2/制造站 2』已按实测改正。"
     ]
   },
   "progress": {
@@ -579,6 +583,20 @@
       "result": "配置：maa_week write --date 2026-10-12（Fight 只留当天 3 关→实际 2 关：Annihilation×1 / 1-7×57，YW-6 停用；Infrast.Mode=Rotation；空 Plans 的 OperProgress 停用）→ 启动 C:\\MAA\\MAA.exe → UIAutomation InvokePattern.Invoke() 点「Link Start!」。7 条任务链全部完成，20:07:59「所有任务全部完成！」：唤醒 3s / 剿灭 49s（+370 玉，370-1800）/ 1-7 8m31s（**只 34 次，理智 205→1，药未用**）/ 公招 44s / 基建 2m1s（Rotation：会客室→制造站01-04 收菜）/ 信用 1m59s / 领奖 32s。理智 2026-10-13 16:26 回满。",
       "evidence": "C:\\MAA\\debug\\gui.log（19:53:13→20:07:59）；页面/按钮：HwndWrapper[MAA;;…] 主窗 + Button 'Link Start!'",
       "finding": "两个执行断点：①计划含药但执行不设 medicine（1-7 只跑 34/57）②次数 57 不被 series 6 整除（GUI 警告余数无法用尽）"
+    },
+    {
+      "ts": "2026-10-12 20:20",
+      "action": "执行层：固源岩下限条件化 + 预算让位活动 + series 10 + 次数取整 + 计划含药",
+      "result": "改 4 文件：scheduling/tools/plan_week.py、plan_util.py、scripts/maa-week/maa_week.py、docs/state.json（+后续文档）。重生成 weekly_plan.json + 镜像 W42 + weekly_plan_log.jsonl 追加。",
+      "self_test": "py_compile 通过；断言 series 整倍数/活动占 80.8%/1-7 20≥0/药 905≤920 全过；write --dry 显示 YW-6 药=205；run 链路 params 带 medicine。",
+      "no_device": "未跑任何 MAA/设备任务",
+      "no_commit": "未 git commit（按指令）"
+    },
+    {
+      "ts": "2026-10-12 21:05",
+      "action": "盘查两条口径：①基建自定义 JSON 是哪个版本 ②连战上限为何写成 6",
+      "result": "①GUI 的 custom_infrast/maa-243-custom.json = 龙门币优先（非搓玉）；搓玉版在 scheduling/一图流生成器/243-搓玉-合成玉-MAA.json；Rotation 下 Custom 文件不生效；游戏内实测产物 = 243 搓玉（1 制造站源石碎片 + 1 贸易站合成玉）。②连战上限 = 10：FightTask.cpp:95-96 的 is_new_series_list 取决于资源有无 FightSeries-OldMethodFlag，本机无 → 上限 10；RULE 写 6 属把旧列表上限当通用值，且与活动关 10 互斥未核。已修 RULE/文档并立纪律（FINDINGS §22）。",
+      "evidence": "C:\\MAA\\resource\\tasks\\tasks.json 无 FightSeries-OldMethodFlag；asst.log: Unknown task: FightSeries-OldMethodFlag + ProductOfFacility(Mfg1=OriginStone, Trade1=SyntheticJade)；custom_infrast 文件列表与内容"
     }
   ]
 }
