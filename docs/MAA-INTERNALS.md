@@ -1,7 +1,8 @@
 # MAA 内部机制参考（MAA-INTERNALS）
 
 > 依据：**MaaCore 源码（dev-v2）** 本地浅克隆 `C:\Users\39007\AppData\Local\Temp\MaaAssistantArknights` +<br>
-> 资源 `C:\Users\39007\AppData\Local\Temp\MaaResource-main`；本机运行版 **MaaCore v6.18.0**（`C:\MAA`）。<br>
+> 资源 `C:\Users\39007\AppData\Local\Temp\MaaResource-main`；本机运行版 **MaaCore v6.19.0**（`C:\MAA`，上一版 6.18.0 在 `C:\MAA\.old`）。<br>
+> 版本升级差异见 [`MAA-6.19-融合评估.md`](MAA-6.19-融合评估.md)。<br>
 > 本文以**源码为准**，尽量标到文件+行号。凡源码/实测未覆盖的，标 **未确认**。用到时配合<br>
 > [`AGENTS.md`](../AGENTS.md) 的源码路径与 [`FINDINGS.md`](FINDINGS.md) §14/§15 一起看。<br>
 > 目的：说清"**MAA 支持哪些任务、参数是什么、关卡怎么导航、资源怎么组织、`append_task` 为什么返回 0**"。
@@ -271,11 +272,34 @@ Python 绑定：`Asst.load(path=C:\MAA)` 加载 `MaaCore.dll` 与 `resource/`；
 |---|---|---|---|---|
 | `plans` | array\<object\> | — | **是** | 每项 `{role?, name, elite?, skill_level?, skill_mastery?}` |
 
-- 校验：`name` 非空；`elite` ∈ {1,2}；`skill_level` ∈ [2,7]；`skill_mastery` 三项 ∈ [0,3]；`role` 不明且多义 → **false**；装置/召唤物 → false；运行中 → false。
+- 校验：`name` 非空；`elite` ∈ {1,2}（**不能填 0**）；`skill_level` ∈ [2,7]；`skill_mastery` 三项 ∈ [0,3]；key 只允许 `role/name/elite/skill_level/skill_mastery`（多一个 key → **false**）；`role` 不明且多义 → **false**；装置/召唤物 → false；运行中 → false。
+
+> **release 版本界**：`OperProgress` 字符串在 **6.19.0** 的 `MaaCore.dll` 出现 92 次、在 **6.18.0**（`C:\MAA\.old`）出现 **0** 次
+> ⇒ **6.19.0 才真正可用**（dev-v2 源码里早有，但 6.18 release 没有）。`skill_mastery` 是**长度 3 的 int 数组**（1/2/3 技能各自的专精等级）。
+> 结果码：`AlreadySatisfied`/`OperatorNotFound`/`PrerequisiteNotMet`/`RecognitionFailed`/`ResourceInsufficient`/`TrainingRoomBusy`/`ChipNotCraftable`/`FormulaLocked`/`Completed`/`Unsupported`。
+> **不支持 Drone**（装置/召唤物无专精）；**培养目标不含等级 Lv**（无 `level` 字段），等级段仍要自己排。
 
 ### 2.19 Debug（`DebugTask`，仅 `ASST_DEBUG`）
 
 - 编译期开关；release 不含。类型字符串 `"Debug"`。
+
+### 2.20 DepotMaintain 库存保持（**GUI 组装层，不是 Core 任务**）
+
+- **不是** `AsstAppendTask` 的任务类型：`DepotMaintain` 字符串在 6.19.0 `MaaCore.dll` 出现 **0** 次，只在 GUI `MAA.dll` 里。
+- GUI 组装方式（`src/MaaWpfGui/ViewModels/UserControl/TaskQueue/DepotMaintainTaskUserControlModel.cs`）：
+  先跑 `Depot`（仓库识别）→ 对每个 `Plan(stage, drop_id, drop_count)` 生成 `AsstFightTask{stage, drops:{drop_id:drop_count}}`
+  → 靠 **Fight 的 `drops`「任一达标即停」** 收尾（见 §2.3）。
+- 6.19.0 新增：预设「当前活动」（一键导入当期活动关卡掉落为目标）、`SortByProgress`（按库存达成率升序、缺口最大的计划先拿理智）。
+- 其他字段（`DepotMaintainTask.cs`）：`UpdateDepot`、`SkipDuringActivity`、`SkipDuringResourceCollection`、
+  `OnlyFirstInsufficientPlan`（只下发第一个不足且当日可执行的计划）、`UseAutoSeries`（AUTO 倍率）、`UseMedicine`、`UseStone`、
+  `UseExpiringMedicine` + `ExpiringMedicineDays=2`（**临期药固定 2 天阈值**）。
+- ⇒ 我们**不需要**用它：`plan_week` + `Fight.drops` 是同一底层语义且表达力更强（见 `MAA-6.19-融合评估.md` §2.3）。
+
+### 2.21 AutoRaisePotential / event_shop（6.19.0 起可用）
+
+- `AutoRaisePotential`（自动提升潜能）：走 `Custom` 任务，`params.auto_raise_potential.use_normal_token`（见 §2.15）。
+- `params.event_shop.blacklist`（活动商店黑名单，`Custom` + `task_names:["SS@Store@Begin"]`）：
+  `event_shop` 字符串在 **6.19.0** 出现 1 次、**6.18.0** 出现 **0** 次 — 见 [`FINDINGS.md`](FINDINGS.md) §19/§21。
 
 ---
 

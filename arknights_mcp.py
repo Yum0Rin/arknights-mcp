@@ -308,7 +308,7 @@ def ark_list_tasks(keyword: str = "") -> dict:
 
 
 # MaaCore 部分任务的 set_params 要求**特定参数**，缺失时 append_task 静默返回 0（易误判为"任务不可用"）。
-# 按源码（docs/MAA-INTERNALS.md §2，MaaCore v6.18.0）：
+# 按源码（docs/MAA-INTERNALS.md §2，MaaCore v6.19.0）：
 #   StartUp 必填 client_type（非空且合法，如 "Official"）；Infrast 必填 facility（字符串数组）；
 #   Recruit 必填 select/confirm（**整数数组**，不是 tag 名）。enable 由 Core 默认 true，非必填。
 # Infrast 默认 mode=20000（Rotation：Mfg/Trade/Reception 不换班，仅收菜/无人机/会客室），

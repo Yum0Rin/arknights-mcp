@@ -1,7 +1,7 @@
 {
   "_schema": "arknights-decision-state-v1",
   "_doc": "机器可读的决策状态（单一事实源）。agent 每次醒来：读它 -> 判触发 -> 执行 -> 回写。循环协议见 docs/STATE.md，判据/公式见 docs/MASTER-PLAN.md。",
-  "updated_at": "2026-10-12 00:52",
+  "updated_at": "2026-10-12 15:52",
   "cycle": {
     "strategy": "搓玉向（合成玉最高优先，长期不停）",
     "last_decision_at": "2026-10-10 演练（森空岛在线取数，未驱动设备）",
@@ -32,7 +32,9 @@
     "pending_decisions": [
       "EX/突袭各关理智单价（2026-10-12 已改用往期 sidestory 42 期一致口径 EX 10/10/15/15/15/15/20/20、S 15；EX 2026-10-16 开放后仍需实机/官方表复核）",
       "plan_week 调 oper_cost.compute() 未传 from_skland → 技能按 1 算（高估，乌尔比安技能已 7）；待改",
-      "定时执行未配：每天需手动 python scripts/maa-week/maa_week.py run --date <日期>；是否配计划任务/paseo 待定"
+      "培养执行器选型（2026-10-12）：自算缺口+逐关 Fight（现状） vs MAA `OperProgress`（6.19.0 新增，材料即缺即合/芯片/专精自动）？先并行试点对账（MAA 实际消耗 vs 我们预算），再裁定谁主导；注意 OperProgress 不含等级 Lv 目标。详见 docs/MAA-6.19-融合评估.md §2.1",
+      "活动商店自动选择性购买（2026-10-12）：MAA 6.19.0 已支持 params.event_shop.blacklist（旧结论 FINDINGS §19 作废）；需实跑确认日志有 registered EventShop task 后，才把 event_act52side.json 的 skip 口径与 MAA 黑名单同源生成",
+      "定时执行未配：每天需手动 python scripts/maa-week/maa_week.py run --date <日期>；选型待定 —— A 本机计划任务跑 maa_week（推荐）/ B MAA GUI 定时+启动前唤醒计算机 / C paseo schedule（三选一，遵守单客户端驱动铁律）"
     ],
     "resolved_2026-10-10": [
       "待养前 N 值 = 4（德克萨斯/乌尔比安/伊芙利特/山）",
@@ -44,7 +46,8 @@
       "活动商店目标代币口径落地：全店限购项，排除『家具零件』(性价比0.45<1→skip:true)、『诗人的假日』时装默认不换(skip:true)、『旅骨的信物』remaining=1；event_act52side.json 已加 skip 字段，W42 已重跑 (2026-10-11 执行层落地)"
     ],
     "resolved_2026-10-12": [
-      "固源岩 target 口径统一为 1000（运筹层裁定；代码 RULE 残留 500 已改）。"
+      "固源岩 target 口径统一为 1000（运筹层裁定；代码 RULE 残留 500 已改）。",
+      "MAA 软件已升级 MaaCore 6.18.0 → 6.19.0（Release 2026-10-11，旧版在 C:\\MAA\\.old）；资源/软件 check 均最新。更新盘点与融合建议见 docs/MAA-6.19-融合评估.md（新增 OperProgress 培养任务、event_shop 黑名单解禁、库存保持改版、定时唤醒）。"
     ]
   },
   "progress": {

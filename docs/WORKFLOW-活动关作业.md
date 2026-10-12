@@ -19,7 +19,7 @@ MAA **能**自动打活动关，但前提是三件事都做对：
 
 | 项 | 值 |
 |---|---|
-| MaaCore | `C:\MAA`（本机 v6.18.0，Python 绑 `C:\MAA\Python`） |
+| MaaCore | `C:\MAA`（本机 v6.19.0，Python 绑 `C:\MAA\Python`） |
 | 作业站 API | `https://prts.maa.plus`（国内可达；`ota.maa.plus` 本机不可达，资源更新走 GitHub） |
 | 资源源 | `https://raw.githubusercontent.com/MaaAssistantArknights/MaaResource/main/resource` |
 | 干员箱 | `C:\MAA\data\OperBoxData.json`（MAA GUI 识别产出；仅 own/elite/level/potential，**无技能等级**） |

@@ -27,6 +27,17 @@
   `plan_week.py` 组装任务时**显式排出剿灭**（`StartUp → 剿灭 → 活动 → EX/S → 1-7 → 培养 → 日常`）。
 
 ### Added
+- **MaaCore 6.18.0 → 6.19.0 更新扒取与融合评估**（2026-10-12）：新增
+  `docs/MAA-6.19-融合评估.md`；核对方式 = Release 正文 + **本机 DLL 字符串实测**
+  + dev-v2 源码。要点：
+  - 新增 **`OperProgress`（干员培养）** 任务（6.19 `MaaCore.dll` 出现 92 次 / 6.18 为 0）：`{"plans":[{"role"?,"name","elite"?,"skill_level"?,"skill_mastery"?[3]}]}`，
+    材料即缺即合、芯片自动制造、缺催化剂自动补红票商店、专精自动选协助者；**不含等级 Lv 目标**。
+  - **`params.event_shop.blacklist` 现已可用** ⇒ `docs/FINDINGS.md` §19 旧结论**作废**（§21 记录），
+    活动商店选择性兑换可从手点改回自动（**待实跑确认**：日志出现 `registered EventShop task`）。
+  - 库存保持（DepotMaintain）是 **GUI 组装层**（非 Core 任务，核心仍是 `Fight.drops`），新增「当前活动预设」+「按达成率排序」。
+  - 其他：定时启动前唤醒计算机（对应「定时执行未配」待定项）、基建换班周计划、任务链失败自动存图 `debug/interface`、任务日志输出用时、
+    Python 接口截图尺寸修复、MAA 自清理被移除的旧资源文件（⚠ 我们 `maa_update.py` 的 `robocopy /E` 不删旧文件）。
+  - 文档同步：`MAA-INTERNALS.md`（版本 6.19.0 + §2.20 库存保持 + §2.21）、`FINDINGS.md` §21、`docs/README.md` 索引、`AGENTS.md` 版本。
 - **`.opencode/agent/` 子 agent 定义**（2026-10-12）：`ark-data`（取数）/ `ark-exec`（执行）/
   `ark-verify`（复盘对账）/ `ark-orchestrator`（总指挥），配合既有 `arknights-*` skills 分权。
 

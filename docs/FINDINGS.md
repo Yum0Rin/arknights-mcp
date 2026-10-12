@@ -227,7 +227,7 @@
   外部验证：`Get-CimInstance Win32_Process` 看 `opencode.exe serve` 与 `arknights_mcp.py` 是否**成对、同启动时刻**。
 - **教训**：改完 MAA 资源别急着手动 kill MCP；要重载就**整体重启 opencode**，一步到位。
 
-## 19. 活动商店：MaaCore v6.18.0 **不支持** `params.event_shop.blacklist`（2026-10-10 实测踩坑）
+## 19. 活动商店：MaaCore v6.18.0 **不支持** `params.event_shop.blacklist`（2026-10-10 实测踩坑；**6.19.0 已解除 → 见 §21**）
 - **做了什么**：想「只买 6 件家具(310)」，按 dev-v2 源码 `CustomTask::parse_and_register_event_shop` 的读法传
   `ark_run_task("Custom", {"task_names":["SS@Store@Begin"], "params":{"event_shop":{"blacklist":[...]}}})`。
 - **结果**：`CustomTask::set_params` 只跑 1ms、**无 `Parsed and registered EventShop task` 日志**、**无 `EventShop` 插件日志** →
@@ -255,3 +255,26 @@
 - **修复后 W42**：day_cap=406，逐日 406/406/406/406/406/402/405，**全部 ≤ cap**，`unplaced` 空；
   代价：自检触发 5 次（YW-6 39→34 次，释放的理智回流 1-7 填充），total 2837 ≤ 预算 2840。
   ⚠️ 待观察：容量卡满（预算 2840 ≈ 7×406=2842）时自检**优先砍活动**换 1-7 填充，是否该反着来（保活动）需运筹层定。
+
+## 21. MaaCore **6.19.0** 更新盘点：§19 的 `event_shop` 黑名单**已被官方支持**（2026-10-12，旧结论作废）
+
+- **背景**：本机 MAA 已从 **6.18.0 升到 6.19.0**（Release 2026-10-11；上一版留在 `C:\MAA\.old`）。
+  按仓库纪律先扒差异，再定怎么并进流程 → 完整评估见 [`MAA-6.19-融合评估.md`](MAA-6.19-融合评估.md)。
+- **核对方法（三证）**：GitHub Release 正文 + **本机 DLL 字符串实测**（`C:\MAA\MaaCore.dll` vs `C:\MAA\.old\MaaCore.dll`）
+  + dev-v2 源码。**别只信 Release 正文**（正文不写接口）**，也别只信 dev-v2 源码**（可能比 release 新）。
+- **实测关键差分**（`MaaCore.dll` 字符串计数）：
+
+  | 字符串 | 6.18.0（`.old`） | 6.19.0 | 含义 |
+  |---|---|---|---|
+  | `OperProgress` | **0** | **92** | 新增「干员培养」任务真·可用 |
+  | `event_shop` | **0** | **1** | **§19 作废**：`params.event_shop.blacklist` 现在能被解析 |
+  | `AutoRaisePotential` | 18 | 18 | 旧版就有（非新） |
+  | `DepotMaintain`（Core） | 0 | **0** | 库存保持**不是** Core 任务，只在 GUI（组装 `Fight`+`drops`） |
+
+- **§19 的旧结论**：v6.18.0 上传 `Custom(SS@Store@Begin, params.event_shop.blacklist)` **无任何注册日志、被静默忽略**，
+  于是当次改**手动点**买商店。**现状**：6.19.0 的 DLL 里已有
+  `CustomTask::parse_and_register_event_shop` / `SS@Store@Begin` / `registered EventShop task` /
+  `set_params failed, event shop blacklist item is not string` ⇒ **能力已落地**。
+  ⚠️ **但「DLL 有字符串」≠「已跑通」**：仍需实跑一次看日志有没有 `registered EventShop task`（见评估文档 §三 P0）。
+- **教训（复用 §19 的）**：升级后再评估一次是有价值的动作 —— 本次就是升级把一条旧限制解掉了；
+  同时提醒**接口要以运行版 DLL/源码为准**，`params` 用前先看日志有没有对应注册行。

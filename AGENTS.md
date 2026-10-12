@@ -17,7 +17,7 @@
 | 项 | 值 |
 |---|---|
 | Python | `C:\Python314\python.exe` |
-| MAA | `C:\MAA`（MaaCore v6.18.0，绑定 `C:\MAA\Python`） |
+| MAA | `C:\MAA`（MaaCore v6.19.0，绑定 `C:\MAA\Python`；上一版 6.18.0 在 `C:\MAA\.old`） |
 | 模拟器 | 雷电 `C:\leidian\LDPlayer9`（adb 同目录） |
 | 设备 | `127.0.0.1:5555`（=`emulator-5554`，同一台） |
 | 游戏 | `com.hypergryph.arknights`（官服） |
