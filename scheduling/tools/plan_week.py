@@ -88,6 +88,15 @@ DEPOT = pathlib.Path(r"C:\MAA\data\DepotData.json")
 OUT = DATA / "weekly_plan.json"
 
 
+def _series_cap() -> int:
+    """本机连战上限（运行时按资源判定；见 plan_util.series_cap）。失败按新列表 10。"""
+    try:
+        import plan_util
+        return int(plan_util.series_cap())
+    except Exception:  # noqa: BLE001
+        return 10
+
+
 def _week(d: dt.date):
     mon = d - dt.timedelta(days=d.weekday())
     sun = mon + dt.timedelta(days=6)
@@ -428,7 +437,15 @@ def plan(date: dt.date) -> dict:
                 pass
 
     has_activity_work = bool(ev) and (bool(extra_tasks) or need_tok > 0)
-    _series17, _series_ev = int(RULE["normal_series"]), int(RULE.get("event_series", 10))
+    # 连战上限**运行时判定**（资源有 FightSeries-OldMethodFlag → 6；无 → 10），不写死
+    _cap = _series_cap()
+    _series17 = min(int(RULE["normal_series"]), _cap)
+    _series_ev = min(int(RULE.get("event_series", 10)), _cap)
+    notes.append("本机连战上限 = %d（判据：resource %s `FightSeries-OldMethodFlag` → %s列表；"
+                 "期望 series 普通 %d / 活动 %d 取 min 后 = %d / %d）"
+                 % (_cap, "有" if _cap == 6 else "无", "旧" if _cap == 6 else "新",
+                    int(RULE["normal_series"]), int(RULE.get("event_series", 10)),
+                    _series17, _series_ev))
     if stock is None:
         r17, target = 0, int(sh["target_idle"])
         notes.append("未读到固源岩库存（DepotData 缺失）→ 1-7 暂按填充处理")
@@ -511,7 +528,9 @@ def plan(date: dt.date) -> dict:
                    "per_run": sh["per_run"], "daily_use": sh["daily_use"], "stage": sh["stage"]},
         # 「配上药的关」= 允许吃理智药的关（1-7 / 活动农场关）。剿灭/EX 首通不配药。
         "medicine_stages": [x for x in (sh["stage"], ev_stage) if x],
-        "series": {"normal": _series17, "event": _series_ev},
+        "series": {"normal": _series17, "event": _series_ev, "cap": _cap,
+                   "cap_reason": ("有 FightSeries-OldMethodFlag → 旧列表 6" if _cap == 6
+                                  else "无 FightSeries-OldMethodFlag → 新列表 10")},
         "windows": _build_windows(ev_stage, ev_win, ev),
         "tasks": [],
         # side = 「run 时要额外交给本机脚本的活」。**基建已交还 MAA 自带的队列轮换**（见 tasks 里的 Infrast），

@@ -107,6 +107,9 @@ def cmd_show(args):
     plan = load_plan(args.plan)
     print("本周计划：%s   %s" % (plan.get("week", "?"), plan.get("range", "")))
     print("生成：%s by %s" % (plan.get("generated_at", "?"), plan.get("by", "?")))
+    _cap = _series_cap()
+    print("连战上限：%d（判据：本机 resource %s `FightSeries-OldMethodFlag`）"
+          % (_cap, "有" if _cap == 6 else "无"))
     b = plan.get("budget", {})
     print("理智预算：自然 %s + 周常 %s + 理智药 %s"
           % (b.get("sanity_natural"), b.get("weekly_potion"), b.get("meds_available")))
@@ -160,6 +163,16 @@ def _copilot_cmd(plan, kind: str) -> str:
     """可直接复制的 event-copilot 命令（EX/S 首通/突袭链）。"""
     return ("python scripts/event-copilot/event_copilot.py run %s --chain %s --try"
             % (_event_id(plan), kind))
+
+
+def _series_cap() -> int:
+    """本机连战上限（运行时按资源判定：有 FightSeries-OldMethodFlag → 6，无 → 10）。"""
+    try:
+        sys.path.insert(0, str(REPO / "scheduling" / "tools"))
+        import plan_util
+        return int(plan_util.series_cap())
+    except Exception:  # noqa: BLE001
+        return 10
 
 
 def _clone_fight_slot(queue, slots, insert_at):
@@ -231,7 +244,7 @@ def cmd_write(args):
         slot["IsEnable"] = True
         slot["Name"] = p.get("_name") or stage
         if "series" in p:
-            slot["Series"] = int(p["series"])
+            slot["Series"] = min(int(p["series"]), _series_cap())
         # 用药：把当天药量同步到 GUI 槽位（只配药的关有计划药量；剿灭/EX 为 0）
         med = int(p.get("medicine") or 0)
         slot["UseMedicine"] = bool(med)
@@ -495,7 +508,7 @@ def _today_tasks(plan: dict, date: str = ""):
             break
     if day:
         # 从 plan.tasks 取每关的 series（连战）：**计划里没写 = 单次**（剿灭/EX 首通别乱套连战）；
-        # 计划里没有的关（极少）才回落到 ARK_SERIES（默认 1）。
+        # 计划里没有的关（极少）才回落到 ARK_SERIES（默认 = 本机 series_cap()）。
         series_map, name_map = {}, {}
         for t in plan.get("tasks", []):
             p = t.get("params") or {}
@@ -507,7 +520,7 @@ def _today_tasks(plan: dict, date: str = ""):
         for stage, runs in (day.get("runs") or {}).items():
             if runs > 0:
                 prms = {"stage": stage, "times": int(runs), "_name": name_map.get(stage, stage)}
-                s = series_map.get(stage, int(os.environ.get("ARK_SERIES", "10")))
+                s = series_map.get(stage, int(os.environ.get("ARK_SERIES", str(_series_cap()))))
                 if s > 1:
                     prms["series"] = s
                 # 用药：只给「配上药的关」（1-7/活动关）；剿灭/EX 首通不吃药

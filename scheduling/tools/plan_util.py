@@ -13,6 +13,7 @@ import datetime as dt
 import functools
 import json
 import math
+import os
 import pathlib
 
 DOW = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
@@ -119,6 +120,53 @@ def _in_window(day, win: dict) -> bool:
 
 DEFAULT_FILLER = "1-7"     # 兜底填充关（搓玉固源岩）；预算没花完就填它
 RAID_TYPE = "Raid"         # 突袭任务类型（MAA Fight 做不了活动突袭 → 不 append，交 Copilot/手点）
+
+# ---------------------------------------------------------------------------
+# 连战上限（series cap）—— **运行时按资源判定，别写死**
+#   判据（dev-v2 `src/MaaCore/Task/Interface/FightTask.cpp:91-97`）：
+#     is_new_series_list = Task.get("FightSeries-OldMethodFlag") == nullptr;
+#   资源里**有** FightSeries-OldMethodFlag → 旧列表（上限 6）；**没有** → 新列表（上限 10）。
+# ---------------------------------------------------------------------------
+MAA_DIR = pathlib.Path(os.environ.get("ARK_MAA_PATH", r"C:\MAA"))
+SERIES_CANDIDATE_FILES = [
+    MAA_DIR / "resource" / "tasks" / "tasks.json",
+    MAA_DIR / "resource" / "platform_diff" / "iOS" / "resource" / "tasks.json",
+    MAA_DIR / "resource" / "platform_diff" / "PC" / "resource" / "tasks" / "tasks.json",
+]
+_SERIES_ENV = "ARK_SERIES_CAP"
+
+
+def cap_from_tasks(tasks) -> int:
+    """**纯判据**：给定一份 tasks 字典 → 上限（有 `FightSeries-OldMethodFlag` = 旧列表 6，否则 10）。
+    供测试用伪造 dict 注入（不真改 resource）。"""
+    return 6 if (isinstance(tasks, dict) and "FightSeries-OldMethodFlag" in tasks) else 10
+
+
+def detect_series_cap(tasks=None) -> int:
+    """判定本机连战上限。`tasks` 显式传入则用它（测试/伪造）；否则依次读候选文件，
+    任一文件含 `FightSeries-OldMethodFlag` → 6；都没读到 → 按 10（新列表）。"""
+    if tasks is not None:
+        return cap_from_tasks(tasks)
+    for _p in SERIES_CANDIDATE_FILES:
+        try:
+            d = json.loads(_p.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            continue
+        if isinstance(d, dict) and "FightSeries-OldMethodFlag" in d:
+            return 6
+    return 10
+
+
+@functools.lru_cache(maxsize=1)
+def series_cap() -> int:
+    """本机连战上限（缓存）。可用环境变量 `ARK_SERIES_CAP` 覆盖。"""
+    v = os.environ.get(_SERIES_ENV)
+    if v:
+        try:
+            return int(v)
+        except ValueError:
+            pass
+    return detect_series_cap()
 
 
 def budget_total(plan: dict, n: int) -> int:

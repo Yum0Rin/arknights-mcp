@@ -86,6 +86,15 @@ Python 绑定：`Asst.load(path=C:\MAA)` 加载 `MaaCore.dll` 与 `resource/`；
 
 - `series` 校验（`FightTask.cpp:95-103`）：`<-1` 或 `>10`（新列表）或 `>6`（旧列表，资源含 `FightSeries-OldMethodFlag`）→ **返回 false**。
   **本机口径（2026-10-12 核实）**：`C:\MAA\resource\tasks\tasks.json` **无** `FightSeries-OldMethodFlag`（asst.log 也报 `Unknown task: FightSeries-OldMethodFlag`）⇒ 走**新列表**分支，**上限 10**（GUI 同样是 10）。**旧文档写 6 是旧列表口径，已作废**；`normal_series`/`event_series` 均取 10。
+  **判定法（自己查本机属于哪一支）** —— 源码判据（dev-v2 `src/MaaCore/Task/Interface/FightTask.cpp:91-97`）：
+  ```cpp
+  bool is_new_series_list = Task.get("FightSeries-OldMethodFlag") == nullptr;  // 有该键=旧列表(6)，无=新列表(10)
+  ```
+  本机一条命令查（`tasks.json`；platform_diff 里的同名键同理）：
+  ```bash
+  python -c "import json,pathlib;d=json.load(pathlib.Path(r'C:\MAA\resource\tasks\tasks.json').open(encoding='utf-8'));print('旧列表(6)' if 'FightSeries-OldMethodFlag' in d else '新列表(10)')"
+  ```
+  代码侧已封装：`scheduling/tools/plan_util.series_cap()`（读 `resource/tasks/tasks.json` + `platform_diff/{iOS,PC}` 候选；**有该键→6，无→10**；带 `lru_cache`；可用环境变量 `ARK_SERIES_CAP` 覆盖）。`plan_week`/`maa_week` 所有 series 默认值/校验都走它，**不再硬编码 6**。
 - `expiring_medicine`（旧名）已弃用，传它会映射到 `medicine_expire_days`（`FightTask.cpp:72-80`）。
 
 ### 2.4 Recruit（公招，`RecruitTask.cpp:16-101`）

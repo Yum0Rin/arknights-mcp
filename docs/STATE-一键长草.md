@@ -39,7 +39,7 @@ R7 用药：逐日视图带 `medicine = max(0, 当天理智 − 自然240)`；�
 
 | 项 | 值 |
 |---|---|
-| 连战 series | **活动关 10 / 普通关 10**（本机 resource **无** `FightSeries-OldMethodFlag` → 新列表分支**上限 10**；旧文档写 6 是旧列表口径，作废）。**次数按 series 取整**，逐日也是整倍数。 |
+| 连战 series | **活动关 10 / 普通关 10**。上限**运行时按资源判定**：`plan_util.series_cap()`（resource 有 `FightSeries-OldMethodFlag`→旧列表 6；无→新列表 10，本机=10）；可用 `ARK_SERIES_CAP` 覆盖。`plan_week`/`maa_week` 全走它、**不再硬编码**，`show`/`rationale` 会打印判定行。**次数按 series 取整**，逐日也是整倍数。 |
 | 当前活动 | act52side（昨日海）：YW-6 开放 2026-10-09~10-23，EX 2026-10-16，S 2026-10-23 |
 | 固源岩下限 | **条件**：有活动要打 → **500**（1-7 让位）；无活动 → **1000**。W42 库存 1163 > 500 → 下限 0（仅填充）。 |
 | EX/S 理智 | `event_act52side.json`：EX-1~8 = 10/10/15/15/15/15/20/20、S-1 = 15（往期 sidestory 口径，**待实机核**） |
@@ -98,6 +98,7 @@ python scripts/skland/skland_cli.py status                  # 森空岛续期（
 
 - [ ] EX/S 关代码与理智**实机核对**（现在是往期口径估）
 - [ ] **★ 2026-10-16 16:00 EX 开放后，由总指挥排一次 MAA GUI**：走 `event_copilot.py run act52side --chain ex`（再 `--chain raid`），或先把当天队列写成 EX 首通（MAA `Fight` 导航不了 EX，需 Copilot/手点）。已记进 `state.json.triggers.event_ex_open`。
+  - **照做清单见 [`docs/RUNBOOK-EX开放排GUI.md`](RUNBOOK-EX开放排GUI.md)**（体检 → 选路径 A/B → 顺序/依赖 → 理智账/缺口补法 → 核对留痕 → GUI 点 `Link Start!`）。
 - [x] ~~「升级(1→Lv)」的经验/龙门币未计入~~ **已修（2026-10-12）**：官方 `gamedata_const.json` 有 `characterExpMap`/`characterUpgradeCostMap`/`evolveGoldCost`，`oper_cost.py` 已接入，并按**当前练度**只算剩余段（`--from-skland`，含技能/专精）。
 - [ ] 「常用技能」目前假设技能 1（该 M3 哪个待定）
 - [ ] 本周(W41)只跑到一半（用户中途放弃），下周一(W42)按 `weekly_plan.W42.json` 重跑

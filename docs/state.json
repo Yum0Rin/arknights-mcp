@@ -1,7 +1,7 @@
 {
   "_schema": "arknights-decision-state-v1",
   "_doc": "机器可读的决策状态（单一事实源）。agent 每次醒来：读它 -> 判触发 -> 执行 -> 回写。循环协议见 docs/STATE.md，判据/公式见 docs/MASTER-PLAN.md。",
-  "updated_at": "2026-10-12 21:05",
+  "updated_at": "2026-10-12 20:28",
   "cycle": {
     "strategy": "搓玉向（合成玉最高优先，长期不停）",
     "last_decision_at": "2026-10-10 演练（森空岛在线取数，未驱动设备）",
@@ -597,6 +597,23 @@
       "action": "盘查两条口径：①基建自定义 JSON 是哪个版本 ②连战上限为何写成 6",
       "result": "①GUI 的 custom_infrast/maa-243-custom.json = 龙门币优先（非搓玉）；搓玉版在 scheduling/一图流生成器/243-搓玉-合成玉-MAA.json；Rotation 下 Custom 文件不生效；游戏内实测产物 = 243 搓玉（1 制造站源石碎片 + 1 贸易站合成玉）。②连战上限 = 10：FightTask.cpp:95-96 的 is_new_series_list 取决于资源有无 FightSeries-OldMethodFlag，本机无 → 上限 10；RULE 写 6 属把旧列表上限当通用值，且与活动关 10 互斥未核。已修 RULE/文档并立纪律（FINDINGS §22）。",
       "evidence": "C:\\MAA\\resource\\tasks\\tasks.json 无 FightSeries-OldMethodFlag；asst.log: Unknown task: FightSeries-OldMethodFlag + ProductOfFacility(Mfg1=OriginStone, Trade1=SyntheticJade)；custom_infrast 文件列表与内容"
+    },
+    {
+      "ts": "2026-10-12 20:28",
+      "action": "执行层：连战上限改运行时判定（series_cap）+ 写 EX 开放 runbook",
+      "result": "①plan_util.series_cap()（判据 dev-v2 FightTask.cpp:91-97：resource 有 FightSeries-OldMethodFlag→6，无→10；读 tasks.json + platform_diff 候选，lru_cache，ARK_SERIES_CAP 可覆盖）；plan_week/maa_week 全走它、不再硬编码 6，rationale/show 打印判定行；②新增 docs/RUNBOOK-EX开放排GUI.md（体检/两路径/顺序依赖/理智账/核对留痕/GUI Link Start!），STATE-一键长草.md 待办指过去；③MAA-INTERNALS.md 补「判定法」。",
+      "self_test": "series_cap()==10；cap_from_tasks(伪造有旧键)==6；detect_series_cap(tasks=伪造)==6；ARK_SERIES_CAP=6 → 6；计划 series 整倍数/活动 2100/1-7 20≥0/药 905≤920 全过。",
+      "changed_files": [
+        "scheduling/tools/plan_util.py",
+        "scheduling/tools/plan_week.py",
+        "scripts/maa-week/maa_week.py",
+        "docs/MAA-INTERNALS.md",
+        "docs/RUNBOOK-EX开放排GUI.md",
+        "docs/STATE-一键长草.md",
+        "docs/state.json"
+      ],
+      "no_device": "未跑任何 MAA/设备任务",
+      "no_commit": "未 git commit（按指令）"
     }
   ]
 }
