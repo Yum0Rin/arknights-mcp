@@ -90,14 +90,54 @@ def _due(trigger_key: str) -> bool:
 def load_plan(path=None) -> dict:
     p = pathlib.Path(path) if path else PLAN_FILE
     if not p.exists():
-        raise SystemExit("找不到计划文件: %s（先由意图层生成）" % p)
-    return json.loads(p.read_text(encoding="utf-8"))
+        raise SystemExit("找不到计划文件: %s\n  修复：python scheduling/tools/plan_week.py   （生成本周计划）" % p)
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:  # 读不了 / JSON 损坏 → 给可操作提示，别甩 traceback
+        raise SystemExit("计划文件读取/解析失败: %s（%r）\n  修复：python scheduling/tools/plan_week.py   （重新生成）"
+                         % (p, e))
 
 
 def merged_params(task: dict) -> dict:
     p = dict(TASK_DEFAULTS.get(task["type"], {}))
     p.update(task.get("params") or {})
     return p
+
+
+# ---------------------------------------------------------------------------
+# 防御：把「周计划」定位到「今天」，识别「今天不在计划里」
+#   计划过期 / 该日无分配时，**不能静默**跑成「只做了日常杂活」或悄悄停用所有 Fight 槽位。
+#   判定逻辑统一放在 plan_util.plan_day（与 GUI 长草页共用一份口径，避免两处漂移）。
+# ---------------------------------------------------------------------------
+def _plan_day(plan, today: str):
+    """定位 today 在计划里的分配。返回 (day | None, status)。
+
+    委托 plan_util.plan_day（**与 GUI 长草页同一份口径**）。status 见该函数文档：
+    ok / out_of_range / no_entry / no_daily。
+    """
+    sys.path.insert(0, str(REPO / "scheduling" / "tools"))
+    from plan_util import plan_day
+    return plan_day(plan, today)
+
+
+def _plan_day_error(status: str, today: str, plan) -> str:
+    """把 status 翻成人话。"""
+    rng = (plan or {}).get("range") or "?"
+    if status == "out_of_range":
+        return ("今天 %s 不在计划区间 [%s] 内 —— 计划已过期或未生成到本周。"
+                % (today, rng))
+    if status == "no_daily":
+        return ("计划没有 daily 逐日表，且现算失败 —— 计划文件可能损坏（range=%s）。" % rng)
+    return "计划区间 [%s] 内缺 %s 这一天的分配 —— 计划不完整。" % (rng, today)
+
+
+def _plan_day_fail(status: str, today: str, plan, force: bool, action: str) -> None:
+    """今天不在计划里时的统一处理：报因 + 给修复命令；默认 SystemExit，--force 才继续。"""
+    log("!! " + _plan_day_error(status, today, plan))
+    log("   修复：python scheduling/tools/plan_week.py   （重新生成本周计划）")
+    if not force:
+        raise SystemExit(2)
+    log("   --force：继续，但**今天不会刷关**（%s 只处理日常：StartUp/公招/基建/信用/领奖）。" % action)
 
 
 # ---------------------------------------------------------------------------
@@ -122,9 +162,9 @@ def cmd_show(args):
     for s in plan.get("side", []):
         print("  +  附带脚本 %s  [%s]" % (s.get("script"), s.get("when")))
     # 逐日表：队列「按天编辑」就看这一张
+    today = getattr(args, "date", "") or dt.date.today().isoformat()
     daily = plan.get("daily") or []
     if daily:
-        today = getattr(args, "date", "") or dt.date.today().isoformat()
         print("\n逐日分配（%s ← 今天；write/run 默认只下这一天）：" % today)
         for d in daily:
             runs = "、".join("%s×%d" % kv for kv in (d.get("runs") or {}).items()) or "无"
@@ -134,7 +174,12 @@ def cmd_show(args):
             print("  %s %s(%s)  理智 %-5s / 软上限 %-5s 药 %-4s %s%s"
                   % (mark, d.get("date"), d.get("dow", ""), d.get("sanity", 0),
                      d.get("day_cap", d.get("cap", "")), d.get("medicine", 0), runs,
-                     "  ⚠未排下:%s" % d["unplaced"] if d.get("unplaced") else ""))
+                     "  !!未排下:%s" % d["unplaced"] if d.get("unplaced") else ""))
+    # 防御：今天不在计划里就醒目提示（write/run 会因此拒绝执行）
+    _day, _status = _plan_day(plan, today)
+    if _status != "ok":
+        print("\n  !! 今天不在计划里：%s" % _plan_day_error(_status, today, plan))
+        print("    修复：python scheduling/tools/plan_week.py   （重新生成本周计划）")
     r = plan.get("rationale", {})
     if r.get("sanity_alloc"):
         print("\n理智分配：%s" % r["sanity_alloc"])
@@ -193,7 +238,11 @@ def cmd_write(args):
     cur = cfg.get("Current", "Default")
     queue = cfg["Configurations"][cur]["TaskQueue"]
 
-    tasks, today, day = _today_tasks(plan, getattr(args, "date", "") or "")
+    tasks, today, day, status = _today_tasks(plan, getattr(args, "date", "") or "")
+    if status != "ok":
+        # 防御：今天不在计划里 → 明确报错（默认停），别静默把 Fight 槽位全停用。
+        _plan_day_fail(status, today, plan, getattr(args, "force", False), "写 MAA 配置")
+        log("   → 继续写：所有 Fight 槽位会被停用（今天无刷关）。")
     fights = [p for (t, p) in tasks if t == "Fight"]
     changed = []
 
@@ -362,6 +411,23 @@ def _wait_device(timeout_s: int) -> bool:
     return bool(_devices())
 
 
+def _ensure_device(wait_s: int = 180) -> list:
+    """确保有在线设备：没有就拉起雷电并等它上线。返回设备列表。
+
+    防御：让 GUI「直驱跑一键长草」从冷启动也能跑 —— 模拟器没开时自动拉起，
+    而不是 connect 失败就整趟退出（用户点一次按钮就该跑起来）。
+    """
+    devs = _devices()
+    if devs:
+        return devs
+    log("未检测到在线设备 → 启动雷电模拟器…")
+    if not _start_emulator():
+        raise SystemExit("启动模拟器失败（找不到 %s）" % EMULATOR)
+    if not _wait_device(wait_s):
+        raise SystemExit("等模拟器上线超时（%ds）—— 首次启动较慢，可加大超时" % wait_s)
+    return _devices()
+
+
 def _get_asst():
     global _asst
     if _asst is not None:
@@ -492,15 +558,10 @@ def _today_tasks(plan: dict, date: str = ""):
 
     逐日分配优先读 `plan["daily"]`（plan_week 已算好，别再重算 → 口径唯一）；
     老计划没有该字段时才现算（兼容旧 weekly_plan.json）。
+    返回 (tasks, today, day, status)；status != "ok" 表示今天不在计划里（调用方须防御）。
     """
-    sys.path.insert(0, str(REPO / "scheduling" / "tools"))
-    import datetime as dt
     today = date or dt.date.today().isoformat()
-    daily = plan.get("daily") or []
-    if not daily:
-        from plan_util import distribute_daily
-        daily = distribute_daily(plan)
-    day = next((d for d in daily if d.get("date") == today), None)
+    day, status = _plan_day(plan, today)
     out = []
     for t in plan.get("tasks", []):
         if t.get("type") == "StartUp":
@@ -534,7 +595,7 @@ def _today_tasks(plan: dict, date: str = ""):
     for t in plan.get("tasks", []):
         if t.get("type") in ("Recruit", "Infrast", "Mall", "Award"):
             out.append((t["type"], merged_params(t)))
-    return out, today, (day or {})
+    return out, today, (day or {}), status
 
 
 def cmd_run(args):
@@ -543,8 +604,13 @@ def cmd_run(args):
         tasks = [(t["type"], merged_params(t)) for t in plan.get("tasks", [])]
         scope = "整周"
     else:
-        tasks, today, day = _today_tasks(plan, getattr(args, "date", "") or "")
+        tasks, today, day, status = _today_tasks(plan, getattr(args, "date", "") or "")
+        if status != "ok":
+            # 防御：今天不在计划里 → 明确报错（默认停），别静默只跑日常却像"跑过了"。
+            _plan_day_fail(status, today, plan, getattr(args, "force", False), "直驱跑一键长草")
         scope = "%s（当天）" % today
+        if not ((day.get("runs") or {}) or (day.get("raids") or [])):
+            log("!! 今天 %s 计划里没有刷关任务（runs 为空）—— 只跑日常：基建/公招/信用/领奖。" % today)
         log("今天分配：%s   理智 %s" % ("、".join("%s×%d" % kv for kv in (day.get("runs") or {}).items())
                                       or "无", day.get("sanity")))
     entry = {"ts": _now(), "week": plan.get("week"), "scope": scope, "tasks": [t for t, _ in tasks]}
@@ -585,6 +651,14 @@ def cmd_run(args):
             log("附带脚本 %s 退出码 %s" % (sp.name, r.returncode))
             _report({**entry, "ok": r.returncode == 0, "stage": "side",
                      "script": str(sp), "rc": r.returncode})
+
+    # 防御：确保有在线设备（没有就自动拉起雷电），否则 connect 必失败 —— 让一键从冷启动也能跑
+    try:
+        _ensure_device()
+    except SystemExit as e:
+        log("!! %s" % e)
+        _report({**entry, "ok": False, "stage": "device", "error": str(e)})
+        raise
 
     try:
         a = _get_asst()
@@ -640,15 +714,7 @@ def cmd_run(args):
 
 def cmd_startup(args):
     """先确保模拟器在线（不在线就拉起雷电），再用 MaaCore 的 StartUp 启动/唤醒游戏。"""
-    devs = _devices()
-    if not devs:
-        log("未检测到在线设备 → 启动雷电模拟器…")
-        if not _start_emulator():
-            raise SystemExit("启动模拟器失败（找不到 %s）" % EMULATOR)
-        if not _wait_device(args.emulator_timeout):
-            raise SystemExit("等模拟器上线超时（%ds）—— 首次启动较慢可加大 --emulator-timeout"
-                             % args.emulator_timeout)
-        devs = _devices()
+    devs = _ensure_device(args.emulator_timeout)
     log("模拟器已在线：%s" % devs)
 
     a = _get_asst()
@@ -666,7 +732,19 @@ def cmd_startup(args):
         log("启动流程结束（%.0fs）" % (time.time() - t0))
 
 
+def _harden_stdio():
+    """防御：Windows 控制台默认 GBK，打印非 GBK 符号（如 ⚠ U+26A0）会 UnicodeEncodeError
+    直接把脚本崩在半途。统一给 stdout/stderr 加 errors=replace（不改编码），
+    任何字符都打得出、最多显示成 `?`，绝不因一个符号打死整趟执行。"""
+    for s in (sys.stdout, sys.stderr):
+        try:
+            s.reconfigure(errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
+
+
 def main():
+    _harden_stdio()
     ap = argparse.ArgumentParser(description="一键长草 · weekly_plan 应用器")
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name, fn in (("show", cmd_show), ("write", cmd_write), ("run", cmd_run)):
@@ -687,6 +765,8 @@ def main():
             p.add_argument("--no-side", action="store_true", help="不跑 plan.side 里的附带脚本")
             p.add_argument("--strict", action="store_true",
                            help="预检发现 MAA 导航不了的关时直接失败（默认是跳过并继续）")
+            p.add_argument("--force", action="store_true",
+                           help="今天不在计划里（过期/未排）也照跑——只跑日常，不刷关")
         p.set_defaults(func=fn)
     sp = sub.add_parser("startup", help="启动/唤醒游戏（含拉起雷电模拟器）")
     sp.add_argument("--client", default="Official", help="Official / Bilibili / txwy / YoStarEN…")

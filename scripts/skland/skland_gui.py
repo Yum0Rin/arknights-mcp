@@ -955,6 +955,24 @@ class App(FluentWindow):
             return
         budget = plan.get("budget") or {}
         sec.add(self._kv("周号 / 区间", f"{plan.get('week', '—')}　{plan.get('range', '—')}"))
+        # 防御：今天不在计划里（过期 / 缺该日）→ 页面醒目提示（与 maa_week 同口径 plan_util.plan_day）
+        try:
+            sys.path.insert(0, str(ROOT / "scheduling" / "tools"))
+            from plan_util import plan_day
+            _today = time.strftime("%Y-%m-%d")
+            _d, _st = plan_day(plan, _today)
+            if _st != "ok":
+                _why = ("计划已过期或未生成到本周" if _st == "out_of_range"
+                        else "计划缺这一天" if _st == "no_entry"
+                        else "计划没有逐日表")
+                warn = qfw.BodyLabel(
+                    f"!! 今天 {_today} 不在计划里（{_why}）—— 点「生成/刷新计划」重新生成；"
+                    f"在此之前「写 MAA 配置」「直驱跑一键长草」会被拒绝。")
+                warn.setWordWrap(True)
+                warn.setTextColor(QColor("#E0685A" if is_dark() else "#C03A2B"))
+                sec.add(warn)
+        except Exception:  # noqa: BLE001
+            pass
         if plan.get("generated_at") or plan.get("by"):
             sec.add(self._kv("生成时间", f"{plan.get('generated_at', '—')}　"
                                          f"（{plan.get('by', '—')}）"))
@@ -1675,10 +1693,13 @@ class App(FluentWindow):
     # ---------------- 外部工具 ----------------
     def _popen_log(self, args, title, done_msg=None, reload_plan=False):
         self.log(f"{title}：启动 {' '.join(str(a) for a in args)}", "head")
+        # 子进程统一按 UTF-8 输出：GUI 是按 utf-8 读的，而 Windows 下 Python 子进程默认用 GBK
+        # 写 stdout → 中文在日志面板全变乱码。用 env 强制子进程走 UTF-8（不改本机全局设置）。
+        env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
         try:
             proc = subprocess.Popen(
                 args, cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                text=True, encoding="utf-8", errors="replace")
+                text=True, encoding="utf-8", errors="replace", env=env)
         except Exception as e:  # noqa: BLE001
             self.log(f"{title} 启动失败：{e!r}", "err")
             return None
