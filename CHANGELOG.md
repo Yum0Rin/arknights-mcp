@@ -15,9 +15,25 @@
     （不再提「每 12h 上线、花到 ≤85」）；`shard_requirement()` 的 days 改从 `range` 取（不再硬编码 7）；
     `daily_cap()`/`budget_total()` 兜底 240 → 205。
   - `build_site.py`「上线建议」文案同步。
-  - 快照：`历史版本/剩余X天规划+自然205-2026-10-14/`。W42 已重生成（`range 2026-10-14..10-18`、预算 1945、逐日 445/445/325/295/420）。
+  - 快照：`历史版本/剩余X天规划+自然205-2026-10-14/`。W42 已重生成（`range 2026-10-14..10-18`、预算 1745、逐日 445/265/265/325/444）。
+- **理智药「整瓶对齐 + 1-7 补零」**（2026-10-14）：
+  - 药是**整瓶 60**，只能整瓶吃 → `RULE.medicine_bottle = 60`；预算里新增 `meds_usable`（=存量对齐到 60 的整数倍，
+    读数 760 → 整瓶 720），不再把「凑不满一瓶的余数」算进可支配理智，避免**计划吃 839 但实际只有 760** 的超发。
+  - `plan_util.distribute_daily()` 末尾加**补零**：每天目标对齐到 `205 + 60k`（k=当天该吃几瓶），
+    差的那点余数用**填充关 1-7**（6 理智/次）抹平 → 每天跑完剩 ≈0，不再剩 60/35 这种尾巴。
+    药不够时按瓶数回收（`_trim` 逐次砍 1-7 次数）保证**总用药 = 整瓶可用量**。
+  - 效果：W42 五天 = 12 瓶（720），逐日剩 ≈0/0/0/0/1。
 
 ### Added
+- **每周刷新计划（Windows 计划任务「方舟·每周刷新计划」）**（2026-10-14）：
+  - 新增 `scripts/weekly-refresh/weekly_refresh.py`：重新生成本周计划（`plan_week.plan(today)` → `weekly_plan.json`，
+    窗口=今天..本周日）+ 检查理智药读数是否过期（默认 >7 天）+ **弹 Windows 原生提示**（`MessageBoxTimeoutW`，超时自动关）
+    报告窗口/预算/逐日 + 是否要重测药；结果写 `scheduling/data/weekly_refresh.json` + 追加 `%TEMP%\arknights-mcp.log`。
+    **不自动测药**（测药要求游戏停在主界面且只有 MAA 一个客户端驱动 → 定时任务无法保证游戏状态，误点有风险）。
+    选项：`--no-popup` / `--dry` / `--stale-days N`。
+  - 新增 `scripts/weekly-refresh/install_task.ps1`：注册/注销计划任务（默认**每周一 09:00**，`-StartWhenAvailable`
+    → 周一没开机则开机后补跑；`-Uninstall` 注销；`-Day`/`-At` 可改）。已注册并实跑验证（NextRunTime 2026-10-19 09:00）。
+  - GBK 控制台编码：`main()` 给 stdout/stderr 加 `errors=replace`（同 `maa_week` 口径）。
 - **一键长草执行链防御：今天不在计划里 → 报错停，不静默跑**（2026-10-13）：
   新增 `plan_util.plan_day(plan, today)` 统一判定（`maa_week` 执行器与 GUI 长草页**共用一份口径**），
   status = `ok` / `out_of_range`（计划过期或未覆盖本周）/ `no_entry`（区间内缺这一天）/ `no_daily`（老/损坏计划）。

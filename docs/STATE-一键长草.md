@@ -1,7 +1,8 @@
 # 一键长草 · 现状速查（on-call 先读这份）
 
 > 更新：2026-10-14（**规划支持「剩余 X 天」**（今天..本周日，非固定 7 天）+ **自然理智按上限 205/天**（1 次/天玩法）；
-> 剿灭按**已完成合成玉扣减**；`session_advice` 改「1 次/天、花到 ~0」；W42 已重生成 `range 2026-10-14..10-18`、预算 1945、逐日 445/445/325/295/420）
+> 剿灭按**已完成合成玉扣减**；`session_advice` 改「1 次/天、花到 ~0」；**理智药整瓶 60 对齐 + 1-7 补零**（每天花到 ~0）；
+> 药读数重测 760（原 920）→ 整瓶 720；W42 已重生成 `range 2026-10-14..10-18`、预算 1745、逐日 445/265/265/325/444）
 > 前一版：2026-10-13 夜（执行链防御：今天不在计划里→报错停；GUI 子进程日志编码修 UTF-8；`run` 冷启动自动拉起模拟器；实跑验证 10-13 直驱跑通，925s）
 > **单一事实源：`scheduling/data/weekly_plan.json`**（含 `daily` 逐日视图；`weekly_plan.W42.json` 只是镜像）
 
@@ -38,7 +39,8 @@ R5 每日分配：活动只在窗口内；带 seq 的首通**按序跨天单调�
       **按「连战批次」分配 → 每天次数为该关 series 的整倍数**（消 GUI「余数无法用尽」警告）
 R6 次数取整：Fight 次数按该关 series 取整（**下限向上**、活动/填充**向下**）；余数回流预算
 R7 用药：逐日视图带 `medicine = max(0, 当天理智 − 205)`（205 = 上限 = 1 次/天可用自然量）；只**配上药的关**（1-7/活动关），
-      剿灭/EX 首通不吃药。`maa_week` write 同步 `UseMedicine/MedicineCount/MedicineExpireDays`、run 传 `medicine`
+      剿灭/EX 首通不吃药。药是**整瓶 60**（`RULE.medicine_bottle`）→ 预算只算 `(存量//60)*60`；每天目标对齐到 `205+60k`，
+      余数用 1-7 补零抹平（花到 ~0）。`maa_week` write 同步 `UseMedicine/MedicineCount/MedicineExpireDays`、run 传 `medicine`
 ```
 
 ## 关键参数
@@ -51,8 +53,9 @@ R7 用药：逐日视图带 `medicine = max(0, 当天理智 − 205)`（205 = �
 | EX/S 理智 | `event_act52side.json`：EX-1~8 = 10/10/15/15/15/15/20/20、S-1 = 15（往期 sidestory 口径，**待实机核**） |
 | EX/S 突袭 | **只有 EX/S 有突袭**（普通关 YW-1..8 无）；突袭依赖「该关普通已通」，按关顺序排在普通之后。突袭理智**暂按普通关同价**计（待数据层核实）。MAA `Fight` 做不了 → 走 `event-copilot`（Copilot `is_raid`）或手点，`maa_week` 遇 `Raid` 只提示不 append。 |
 | EX/S 解锁链 | EX-i 未通打不了 EX-(i+1)（**依次解锁**）。执行：`python scripts/event-copilot/event_copilot.py run act52side --chain ex --try`（EX 普通）/ `--chain raid --try`（EX 突袭）/ `--chain s|sraid`（S）。**遇挫即停**（某关无作业/失败 → 不打后面的），跑完回写 `progress.event_act52side`。 |
-| 预算/药 | 预算 = 自然 **205/天 × 剩余天数** + 药存量（W42 剩余 5 天 → 1025+920 = **1945**）。**药读数每周日手动测**：`python scripts/sanity-potion/sanity_potion.py`（写 `scheduling/data/sanity.json`）——该读数**已含周常药**，故不加 240。 |
-| 用药（R7） | `daily[].medicine = max(0, 当天理智−205)`；只配 1-7/活动关（`plan.medicine_stages`）。W42 剩余 5 天逐日药 240/240/120/90/215=905≤920。理智药**整瓶 60** → 当天总量越接近 `205+60k` 越能花到 ~0。 |
+| 预算/药 | 预算 = 自然 **205/天 × 剩余天数** + 药**整瓶可用量**（W42 剩余 5 天 → 1025 + **720** = **1745**）。**药读数每周日手动测**：`python scripts/sanity-potion/sanity_potion.py`（写 `scheduling/data/sanity.json`）——该读数**已含周常药**，故不加 240。药**整瓶 60** → 预算只算 `(存量//60)*60`（读数 760 → 整瓶 720，余数 40 不计，避免超发）。 |
+| 用药（R7） | `daily[].medicine = max(0, 当天理智−205)`；只配 1-7/活动关（`plan.medicine_stages`）。W42 剩余 5 天逐日药 240/60/60/120/239=719≤720。**补零**：`distribute_daily` 末尾把每天目标对齐到 `205+60k`，余数用 1-7（6 理智/次）抹平 → 每天跑完剩 ≈0；药不够按瓶数回收 1-7 次数。 |
+| 补零（1-7） | 见上：目的不是刷固源岩，而是**把「整瓶药的余数」花光**（如某天 205+60=265，活动只吃 255 → 补 1-7 把 10 花掉）。保证**每天剩 ≈0**，不再留 60/35 尾巴。 |
 | ⚠️ day_cap 口径 | `day_cap = ceil(周预算/剩余天数)` 是**软目标**（`over` 标记用）；连战批次粒度 210 理智，硬按 day_cap 会放不下第 2 批 → 硬上限 = day_cap+210，部分天会 `over`（靠药覆盖）。 |
 | 基建分工 | **全部交给 MAA 自带的「队列轮换」**：`Infrast` `mode=20000`、`facility` = Mfg/Trade/Power/Control/Reception/Office/Dorm/Processing/Training。MAA 进基建 → 当前班有人心情 0 → 点游戏内「一键轮换」→ 各设施收菜（Rotation 下不换干员）。**自研 `infrast_rotation.py` 已归档**（`历史版本/基建改MAA轮换+队列按天-2026-10-12/`）。 |
 | ⚠️ 队列口径 | **一天一天编辑**：`write`/`run` 默认只处理当天（读 `weekly_plan.daily`），非当天的 Fight 槽位在 GUI 里被**停用**；要整周才加 `--whole-week`。 |
@@ -60,9 +63,11 @@ R7 用药：逐日视图带 `medicine = max(0, 当天理智 − 205)`（205 = �
 ## 命令
 
 ```bash
-python scripts/sanity-potion/sanity_potion.py               # ★每周日手动测理智药存量（写 scheduling/data/sanity.json，已含周常药）
+python scripts/sanity-potion/sanity_potion.py               # ★每周手动测理智药存量（写 scheduling/data/sanity.json，已含周常药）
 python scheduling/tools/plan_week.py                        # 生成计划（默认 今天..本周日 = 剩余 X 天，含 daily）
 python scheduling/tools/plan_week.py --from 2026-10-16      # 指定第一天（仍排到本周日）
+python scripts/weekly-refresh/weekly_refresh.py             # ★每周刷新：重生成计划 + 弹窗提醒重测药（定时任务调它）
+powershell -ExecutionPolicy Bypass -File scripts/weekly-refresh/install_task.ps1   # 注册/重设每周计划任务（-Uninstall 注销）
 python scripts/maa-week/maa_week.py show  --date 2026-10-13  # 看当天分到多少
 python scripts/maa-week/maa_week.py write --date 2026-10-13  # 写 MAA GUI（只写当天，需关 MAA）
 python scripts/maa-week/maa_week.py run   --date 2026-10-13  # 直驱当天（Raid/EX 自动跳过并提示可复制命令）
@@ -73,7 +78,9 @@ python scheduling/tools/site_server.py                     # 起后端（公招�
 python scripts/skland/skland_cli.py status                  # 森空岛续期（401 时）
 ```
 
-> **流程**：①手动跑 `sanity_potion.py` 测药存量 → ②`plan_week.py` 生成计划（**默认 今天..本周日**；预算 = **205/天 × 剩余天数** + 药读数，**不加 240**）→ ③`maa_week.py write/run`。周中重生成只排剩余天数。
+> **流程**：①手动跑 `sanity_potion.py` 测药存量 → ②`plan_week.py` 生成计划（**默认 今天..本周日**；预算 = **205/天 × 剩余天数** + 药**整瓶可用量**，**不加 240**）→ ③`maa_week.py write/run`。周中重生成只排剩余天数。
+> **每周定时任务**「方舟·每周刷新计划」= 每周一 09:00（错过开机补跑）自动跑 `weekly_refresh.py`：重生成计划 + 弹窗提醒「药读数 N 天前，该重测了」。
+> **它不自动测药**（测药要游戏在主界面 + 只有 MAA 一个客户端，定时任务保证不了游戏状态）→ 只提醒，测药仍由你手跑。
 
 ## 已修的坑（都踩过）
 
@@ -111,6 +118,7 @@ python scripts/skland/skland_cli.py status                  # 森空岛续期（
   - **照做清单见 [`docs/RUNBOOK-EX开放排GUI.md`](RUNBOOK-EX开放排GUI.md)**（体检 → 选路径 A/B → 顺序/依赖 → 理智账/缺口补法 → 核对留痕 → GUI 点 `Link Start!`）。
 - [x] ~~「升级(1→Lv)」的经验/龙门币未计入~~ **已修（2026-10-12）**：官方 `gamedata_const.json` 有 `characterExpMap`/`characterUpgradeCostMap`/`evolveGoldCost`，`oper_cost.py` 已接入，并按**当前练度**只算剩余段（`--from-skland`，含技能/专精）。
 - [ ] 「常用技能」目前假设技能 1（该 M3 哪个待定）
+- [ ] **`plan_week.py` R3.5 培养里 `train_budget` 未定义**（潜在 `NameError`）：当前场景 `rows` 为空（材料缺口仅 6 理智，几乎全是龙门币）→ 循环体不执行 → 侥幸没炸；一旦有可刷材料行就会 `NameError` → 被 `except` 吞成「培养估值失败」→ 培养恒为 0。**修之前先定 `train_budget` 的语义**（占预算的多少？），别乱给值改变现有计划。
 - [ ] 本周(W41)只跑到一半（用户中途放弃），下周一(W42)按 `weekly_plan.W42.json` 重跑
 - [ ] 商店兑换/代币记录（需进游戏内商店 OCR）
 

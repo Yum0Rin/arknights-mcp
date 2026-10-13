@@ -1,16 +1,20 @@
 {
-  "ts": "2026-10-11 21:16:02",
-  "current_sanity": 205,
-  "theoretical_total": 1125,
-  "potion_sanity": 920,
+  "ts": "2026-10-14 03:13:19",
+  "current_sanity": 94,
+  "theoretical_total": 854,
+  "potion_sanity": 760,
   "cards": [
     {
-      "x": 1147,
-      "y": 591
+      "x": 1146,
+      "y": 590
     },
     {
-      "x": 1346,
-      "y": 606
+      "x": 1350,
+      "y": 604
+    },
+    {
+      "x": 1578,
+      "y": 618
     }
   ]
 }

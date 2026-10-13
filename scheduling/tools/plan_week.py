@@ -55,6 +55,8 @@ RULE = {
     # 每天实际只能用 205，多出的 35/天**溢出丢掉**。故预算里的自然量按 205/天。
     "natural_per_day": 205,
     "cap": 205,                      # 理智上限
+    # 理智药**整瓶 60**：只有整瓶能喝，余数本周用不掉（留到下周）→ 预算里的药按整瓶计
+    "medicine_bottle": 60,
     # ⚠ 已删除 weekly_potion：周常浓缩液**不再单独计入预算**——理智药存量（sanity.json，
     #   每周日手动跑 scripts/sanity-potion/sanity_potion.py 测出）**已包含周常药**，
     #   重复计入会把预算虚高（2026-10-12 用户裁定：「预算理智药已经包含了周药，不可另行考虑周药」）。
@@ -321,13 +323,18 @@ def plan(date: dt.date, start: dt.date | None = None) -> dict:
     stock = read_shard_stock()
     med = read_meds()
     meds = med["sanity"]
-    # 预算 = 自然(205/天 × 剩余天数) + 理智药存量（**药存量已含周常药 → 不再另加 240**，2026-10-12 用户裁定）
+    # 预算 = 自然(205/天 × 剩余天数) + 理智药（**整瓶 60 计**：余数本周用不掉）
+    #   药存量已含周常药 → 不再另加 240（2026-10-12 用户裁定）；整瓶口径 2026-10-14 定。
+    _bottle = int(RULE.get("medicine_bottle", 60))
+    meds_usable = (meds // _bottle) * _bottle
     notes = ["计划窗口 %s ~ %s（**剩余 %d 天**，非固定 7 天）"
              % (start.isoformat(), sun.isoformat(), n_days),
-             "预算 = 自然 %d/天 × %d 天 = %d + 理智药存量 %d = %d（药读数 %s；**已含周常药，不加 240**）"
-             % (RULE["natural_per_day"], n_days, RULE["natural_per_day"] * n_days, meds,
-                RULE["natural_per_day"] * n_days + meds, med["ts"] or "无")]
-    budget = RULE["natural_per_day"] * n_days + meds
+             "预算 = 自然 %d/天 × %d 天 = %d + 理智药 %d（读数 %d，**整瓶 %d 可用 %d**，余 %d 留到下周）"
+             " = %d（药读数 %s；**已含周常药，不加 240**）"
+             % (RULE["natural_per_day"], n_days, RULE["natural_per_day"] * n_days,
+                meds_usable, meds, _bottle, meds_usable, meds - meds_usable,
+                RULE["natural_per_day"] * n_days + meds_usable, med["ts"] or "无")]
+    budget = RULE["natural_per_day"] * n_days + meds_usable
 
     # --- R1 剿灭 ---
     a = RULE["annihilation"]
@@ -546,6 +553,7 @@ def plan(date: dt.date, start: dt.date | None = None) -> dict:
                    # weekly_potion 恒 0（已废弃）：药存量已含周常药，不再另加（2026-10-12 裁定）
                    "weekly_potion": 0,
                    "meds_available": meds,
+                   "meds_usable": meds_usable,     # 整瓶 60 可用量（budget_total 用这个）
                    "meds_week": med["week"],
                    "meds_source": "scheduling/data/sanity.json（每周日手动跑 sanity_potion.py）",
                    "daily_natural": RULE["natural_per_day"]},

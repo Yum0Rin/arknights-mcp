@@ -1,7 +1,7 @@
 {
   "_schema": "arknights-decision-state-v1",
   "_doc": "机器可读的决策状态（单一事实源）。agent 每次醒来：读它 -> 判触发 -> 执行 -> 回写。循环协议见 docs/STATE.md，判据/公式见 docs/MASTER-PLAN.md。",
-  "updated_at": "2026-10-14 03:00",
+  "updated_at": "2026-10-14 03:25",
   "cycle": {
     "strategy": "搓玉向（合成玉最高优先，长期不停）",
     "last_decision_at": "2026-10-10 演练（森空岛在线取数，未驱动设备）",
@@ -34,7 +34,7 @@
       "plan_week 调 oper_cost.compute() 未传 from_skland → 技能按 1 算（高估，乌尔比安技能已 7）；待改",
       "培养执行器选型（2026-10-12）：自算缺口+逐关 Fight（现状） vs MAA `OperProgress`（6.19.0 新增，材料即缺即合/芯片/专精自动）？先并行试点对账（MAA 实际消耗 vs 我们预算），再裁定谁主导；注意 OperProgress 不含等级 Lv 目标。详见 docs/MAA-6.19-融合评估.md §2.1",
       "活动商店自动选择性购买（2026-10-12）：MAA 6.19.0 已支持 params.event_shop.blacklist（旧结论 FINDINGS §19 作废）；需实跑确认日志有 registered EventShop task 后，才把 event_act52side.json 的 skip 口径与 MAA 黑名单同源生成",
-      "定时执行未配：每天需手动 python scripts/maa-week/maa_week.py run --date <日期>；选型待定 —— A 本机计划任务跑 maa_week（推荐）/ B MAA GUI 定时+启动前唤醒计算机 / C paseo schedule（三选一，遵守单客户端驱动铁律）",
+      "定时执行：**每周刷新已配**（2026-10-14，计划任务「方舟·每周刷新计划」每周一 09:00 跑 scripts/weekly-refresh/weekly_refresh.py：重生成 weekly_plan.json + 弹窗提醒重测药；**不自动测药**——测药要游戏在主界面 + 单客户端，定时任务保证不了）；**每日执行仍手动**（用户玩法 1 次/天，点 GUI「直驱跑一键长草」或 maa_week run --date <日期>）——若以后要全自动每日，选型 A 本机计划任务跑 maa_week（推荐）/ B MAA GUI 定时+唤醒 / C paseo schedule（遵守单客户端驱动铁律）",
       "EX 关执行方式（2026-10-16 前必须定）：MAA 当前导航不了 YW-EX-1..8（resource 无关卡定义，见 audit_findings）。选项：①等 MAA 发版含 EX 定义后 maa_update/软件升级 ②走 scripts/event-copilot（Copilot 作业导航）③手点首通。已加预检兜底（跳过+留证），不会打死队列。",
       "搓玉 target=1000 vs 活动优先级（运筹级待裁定）：现规则 R2(1-7 下限) 先于 R3(活动) → 活动商店只能搬 ~2%。是否改为「活动期 R3 优先 / 活动期临时降 target」？",
       "★预算装不下（2026-10-12 预算改 2600 后暴露，升给用户裁定）：1-7 下限 417 次(2502) + 剿灭(125) + EX/S 首通+突袭(240) = 2867 > 预算 2600，逐日 day_cap=372 装不下 → weekly_plan.daily unplaced={1-7:48}（差 288 理智）。自检 _fit_to_schedule 把活动次数回退到 0 仍不够（活动本就 0）。选项：①降 shards.target；②活动期把 R3 提到 R2 前（让 1-7 让位）；③临时多动理智药；④接受 unplaced（少刷 48 次 1-7）。**待用户拍板。**",
@@ -633,6 +633,25 @@
       "self_test": "py_compile OK；plan_week --dry：--date 2026-10-14 → range 10-14..10-18(5天)/budget 1945/剿灭 4 次；--date 2026-10-12 → 7 天；--date 2026-10-18 → 1 天；--from 2026-10-16 → 3 天。maa_week show / run --dry 读新计划正常（今天 10-14 = 剿灭×1 + YW-6×20，理智 445）。",
       "snapshot": "历史版本/剩余X天规划+自然205-2026-10-14/（plan_week.py + plan_util.py + build_site.py + weekly_plan.json 旧版 + README）",
       "no_device": "未跑任何 MAA/设备任务"
+    },
+    {
+      "ts": "2026-10-14 03:25",
+      "action": "整瓶药对齐 + 1-7 补零（每天花到 ~0）+ 每周刷新计划任务",
+      "result": "①药是整瓶 60 → plan_week RULE.medicine_bottle=60、预算加 meds_usable=(存量//60)*60（读数 760→整瓶 720，余 40 不计，防超发）；②plan_util.distribute_daily 末尾补零：每天目标对齐 205+60k、余数用 1-7（6理智/次）抹平，药不够按瓶数回收 → 每天剩≈0；③重测药（sanity_potion.py，游戏在主界面）760（原 920），重生成 W42：range 2026-10-14..10-18、预算 1745、逐日 445/265/265/325/444、剩≈0/0/0/0/1；④新增 scripts/weekly-refresh/weekly_refresh.py + install_task.ps1，注册计划任务「方舟·每周刷新计划」（每周一 09:00，-StartWhenAvailable 错过补跑；实跑验证 NextRunTime 2026-10-19 09:00）。",
+      "changed_files": [
+        "scheduling/tools/plan_week.py",
+        "scheduling/tools/plan_util.py",
+        "scheduling/data/weekly_plan.json",
+        "scheduling/data/sanity.json",
+        "scripts/weekly-refresh/weekly_refresh.py",
+        "scripts/weekly-refresh/install_task.ps1",
+        "CHANGELOG.md",
+        "docs/STATE-一键长草.md",
+        "docs/state.json"
+      ],
+      "self_test": "weekly_refresh.py --dry OK；真跑写 weekly_plan.json + weekly_refresh.json（marker）；Start-ScheduledTask 实跑 State=Running + marker ts 更新；GBK 控制台 ✔ 崩溃 → main() errors=replace 修复。",
+      "device": "仅跑 sanity_potion.py 读药（tap + / 点满卡 / ✕ 关闭，不用药）；未跑 MAA 任务。",
+      "known_issue": "plan_week R3.5 培养里 train_budget 未定义（潜在 NameError；当前 rows 为空侥幸不炸）→ 已记 STATE-一键长草.md 待办，修前先定语义。"
     }
   ]
 }

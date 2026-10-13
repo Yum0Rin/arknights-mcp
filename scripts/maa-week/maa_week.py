@@ -151,8 +151,11 @@ def cmd_show(args):
     print("连战上限：%d（判据：本机 resource %s `FightSeries-OldMethodFlag`）"
           % (_cap, "有" if _cap == 6 else "无"))
     b = plan.get("budget", {})
-    print("理智预算：自然 %s + 周常 %s + 理智药 %s"
-          % (b.get("sanity_natural"), b.get("weekly_potion"), b.get("meds_available")))
+    _mu = b.get("meds_usable")
+    if _mu is None:                       # 老计划没有 meds_usable → 退回读数
+        _mu = b.get("meds_available")
+    print("理智预算：自然 %s + 周常 %s + 理智药 %s（读数 %s，整瓶可用）"
+          % (b.get("sanity_natural"), b.get("weekly_potion"), _mu, b.get("meds_available")))
     print("\n任务序列：")
     for i, t in enumerate(plan.get("tasks", []), 1):
         pr = merged_params(t)

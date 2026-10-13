@@ -212,15 +212,19 @@ def series_cap() -> int:
 
 
 def budget_total(plan: dict, n: int) -> int:
-    """本周可花理智 = 自然 + 理智药存量。
+    """本周可花理智 = 自然 + 理智药（**按整瓶 60 计**：余数本周用不掉）。
 
     注：`weekly_potion` 恒 0（已废弃）——理智药存量**已含周常药**，不再另加
     （2026-10-12 用户裁定）。保留 `b.get("weekly_potion") or 0` 只为兼容旧 plan。
+    药优先用 plan 里的 `meds_usable`（plan_week 已按整瓶算好）；没有就现按整瓶折。
     """
     b = plan.get("budget") or {}
-    return ((b.get("sanity_natural") or DAILY_NATURAL * n)
-            + (b.get("weekly_potion") or 0)
-            + (b.get("meds_available") or 0))
+    meds = b.get("meds_usable")
+    if meds is None:
+        meds = (b.get("meds_available") or 0) // MEDICINE_BOTTLE * MEDICINE_BOTTLE
+    return (int(b.get("sanity_natural") or DAILY_NATURAL * n)
+            + int(b.get("weekly_potion") or 0)
+            + int(meds))
 
 
 def _filler(plan: dict, cost: dict):
@@ -550,6 +554,52 @@ def distribute_daily(plan: dict) -> list:
                 load[i] += fcost * fseries
 
     natural = daily_cap(plan)
+    # --- 「补零」：每天总量对齐 205+60k（整瓶理智药）---
+    #   MAA 用药是**整瓶 60**：当天总量 s 超上限时，它一定喝 ceil((s−205)/60) 瓶 → 手上会有
+    #   205+60k 点，花完 s 会剩 (205+60k−s)。用填充关（1-7，6 理智/次）把这段**本该被整瓶药
+    #   浪费掉的余量**收干净 → 当天能花到 ~0。**不多喝药**：这瓶药 MAA 无论如何都会喝。
+    #   受**整瓶预算**约束：整瓶总数不得超可用瓶数（否则会超药存量）。
+    mop_stage, mop_cost = _filler(plan, cost)
+    mop_added = {}
+    if mop_cost > 0:
+        b = plan.get("budget") or {}
+        mu = b.get("meds_usable")
+        if mu is None:
+            mu = (b.get("meds_available") or 0) // MEDICINE_BOTTLE * MEDICINE_BOTTLE
+        avail_k = int(mu) // MEDICINE_BOTTLE
+        # 每天要吃几瓶（= 该天总量超上限的部分向上取整到整瓶）
+        ks = [0 if load[i] <= SANITY_CAP
+              else math.ceil((load[i] - SANITY_CAP) / MEDICINE_BOTTLE) for i in range(n)]
+
+        def _trim(i, target):
+            """把第 i 天压到 target：只撤填充关（1-7）。返回是否成功。"""
+            take = min(acc[i].get(mop_stage, 0), (load[i] - target) // mop_cost)
+            if take <= 0:
+                return False
+            acc[i][mop_stage] -= take
+            if acc[i][mop_stage] <= 0:
+                del acc[i][mop_stage]
+            load[i] -= take * mop_cost
+            return True
+
+        # 整瓶总数超可用 → 优先压「有填充关可撤、且当前量最小」的天各减一瓶
+        while sum(ks) > avail_k:
+            cand = [i for i in range(n) if ks[i] > 1 and acc[i].get(mop_stage, 0) > 0]
+            if not cand:
+                break
+            i = min(cand, key=lambda j: load[j])
+            if not _trim(i, SANITY_CAP + (ks[i] - 1) * MEDICINE_BOTTLE):
+                break
+            ks[i] -= 1
+        # 按 ks 把每天对齐到 205+60k：不足的用填充关补上
+        for i in range(n):
+            if ks[i] <= 0:
+                continue
+            add = (SANITY_CAP + ks[i] * MEDICINE_BOTTLE - load[i]) // mop_cost
+            if add > 0:
+                acc[i][mop_stage] = acc[i].get(mop_stage, 0) + add
+                load[i] += add * mop_cost
+                mop_added[mop_stage] = mop_added.get(mop_stage, 0) + add
     out = []
     for i in range(n):
         d = dates[i] if i < len(dates) else None
