@@ -50,7 +50,10 @@ sys.path.insert(0, str(TOOLS))
 
 # ------------------------- 规则参数（写死） -------------------------
 RULE = {
-    "natural_per_day": 240,          # 自然回复 10/h
+    # 「自然/天」= **上限 205**，不是 240（2026-10-14 用户裁定）。
+    # 本机玩法是「**1 次/天**、来时理智满、跑完下线」：24h 自然回 240 被上限 205 卡住，
+    # 每天实际只能用 205，多出的 35/天**溢出丢掉**。故预算里的自然量按 205/天。
+    "natural_per_day": 205,
     "cap": 205,                      # 理智上限
     # ⚠ 已删除 weekly_potion：周常浓缩液**不再单独计入预算**——理智药存量（sanity.json，
     #   每周日手动跑 scripts/sanity-potion/sanity_potion.py 测出）**已包含周常药**，
@@ -300,29 +303,52 @@ def _fit_to_schedule(plan, *, ev_stage, ev_runs, ev_san, extra_tasks, train_task
     return plan, ev_runs, int(r17 + fill_runs), fill_runs, trace
 
 
-def plan(date: dt.date) -> dict:
+def plan(date: dt.date, start: dt.date | None = None) -> dict:
+    """生成计划。
+
+    `start` = 计划的**第一天**（默认 = 今天）→ 只排 `start..本周日`，即「**剩余 X 天**」，
+    而非固定整周 7 天（2026-10-14 用户需求：按现状算本周剩余 X 天）。
+    """
     mon, sun, wk = _week(date)
     plan_week_id = "%d-%s" % (mon.year, wk)
+    # 「剩余 X 天」：默认从今天排到本周日；start 越界（早于周一/晚于周日）时夹紧到本周内
+    start = start or date
+    if start < mon:
+        start = mon
+    if start > sun:
+        start = sun
+    n_days = (sun - start).days + 1
     stock = read_shard_stock()
     med = read_meds()
     meds = med["sanity"]
-    # 预算 = 自然 + 理智药存量（**药存量已含周常药 → 不再另加 240**，2026-10-12 用户裁定）
-    notes = ["预算 = 自然 %d + 理智药存量 %d = %d（药读数 %s；**已含周常药，不加 240**）"
-             % (RULE["natural_per_day"] * 7, meds, RULE["natural_per_day"] * 7 + meds,
-                med["ts"] or "无")]
-    budget = RULE["natural_per_day"] * 7 + meds
+    # 预算 = 自然(205/天 × 剩余天数) + 理智药存量（**药存量已含周常药 → 不再另加 240**，2026-10-12 用户裁定）
+    notes = ["计划窗口 %s ~ %s（**剩余 %d 天**，非固定 7 天）"
+             % (start.isoformat(), sun.isoformat(), n_days),
+             "预算 = 自然 %d/天 × %d 天 = %d + 理智药存量 %d = %d（药读数 %s；**已含周常药，不加 240**）"
+             % (RULE["natural_per_day"], n_days, RULE["natural_per_day"] * n_days, meds,
+                RULE["natural_per_day"] * n_days + meds, med["ts"] or "无")]
+    budget = RULE["natural_per_day"] * n_days + meds
 
     # --- R1 剿灭 ---
     a = RULE["annihilation"]
     ann_runs = math.ceil(a["weekly_jade_cap"] / a["jade_per_run"])
-    # 本周若已打满（state.json.progress.annihilation）→ 跳过，别白花理智
+    # 按「本周已完成合成玉」扣减（state.json.progress.annihilation）→ 别重复刷、别超周上限白花理智
+    #   （2026-10-14：剩余 X 天规划要「按现状」——已打的剿灭不再排）
     try:
         stj = json.loads((ROOT / "docs" / "state.json").read_text(encoding="utf-8"))
         pa = ((stj.get("progress") or {}).get("annihilation") or {})
-        if pa.get("done") and str(pa.get("week") or "") == plan_week_id:
-            ann_runs = 0
-            notes.append("本周剿灭已打满（%s %s/%s）→ 本周不再排剿灭"
-                         % (pa.get("week"), pa.get("jade"), pa.get("cap")))
+        if str(pa.get("week") or "") == plan_week_id:
+            _done_jade = int(pa.get("jade") or 0)
+            _cap = int(pa.get("cap") or a["weekly_jade_cap"])
+            if pa.get("done") or _done_jade >= _cap:
+                ann_runs = 0
+                notes.append("本周剿灭已打满（%s %s/%s）→ 不再排剿灭"
+                             % (pa.get("week"), _done_jade, _cap))
+            elif _done_jade > 0:
+                _max_runs = math.ceil(a["weekly_jade_cap"] / a["jade_per_run"])
+                ann_runs = min(ann_runs, max(0, math.ceil((_cap - _done_jade) / a["jade_per_run"])))
+                notes.append("本周剿灭已 %s/%s（%s）→ 按现状只排 %d 次（满额 %d 次）"
+                             % (_done_jade, _cap, pa.get("week"), ann_runs, _max_runs))
     except Exception:  # noqa: BLE001
         pass
     ann_san = ann_runs * a["sanity"]
@@ -509,12 +535,14 @@ def plan(date: dt.date) -> dict:
     # --- 组装 plan（tasks 先留空，交由 _fit_to_schedule 填 + 自检）---
     plan = {
         "week": "%d-%s" % (mon.year, wk),
-        "range": "%s..%s" % (mon.isoformat(), sun.isoformat()),
+        # range = 剩余天数窗口（start..本周日），不是整周 —— daily/write/run 都按它走
+        "range": "%s..%s" % (start.isoformat(), sun.isoformat()),
         "generated_at": dt.datetime.now().strftime("%Y-%m-%dT%H:%M"),
         "by": "plan_week.py",
         # 当期活动 id（供 maa_week 拼 event-copilot 命令；EX/S 首通链走 event-copilot 跑）
         "event": (ev.get("event_id") if ev else None),
-        "budget": {"sanity_natural": RULE["natural_per_day"] * 7,
+        "budget": {"sanity_natural": RULE["natural_per_day"] * n_days,
+                   "n_days": n_days,
                    # weekly_potion 恒 0（已废弃）：药存量已含周常药，不再另加（2026-10-12 裁定）
                    "weekly_potion": 0,
                    "meds_available": meds,
@@ -593,13 +621,16 @@ def plan(date: dt.date) -> dict:
 
 
 def main():
-    ap = argparse.ArgumentParser(description="每周规划器（规则写死）")
+    ap = argparse.ArgumentParser(description="周规划器（规则写死；支持「剩余 X 天」）")
     ap.add_argument("--date", default="", help="以哪天为准算所属周（默认今天）")
+    ap.add_argument("--from", dest="start", default="",
+                    help="计划第一天（默认=今天）→ 只排 start..本周日，即剩余 X 天")
     ap.add_argument("--out", default=str(OUT))
     ap.add_argument("--dry", action="store_true")
     args = ap.parse_args()
     d = dt.date.fromisoformat(args.date) if args.date else dt.date.today()
-    p = plan(d)
+    s = dt.date.fromisoformat(args.start) if args.start else None
+    p = plan(d, start=s)
     print(json.dumps(p, ensure_ascii=False, indent=2))
     if not args.dry:
         pathlib.Path(args.out).write_text(json.dumps(p, ensure_ascii=False, indent=2),

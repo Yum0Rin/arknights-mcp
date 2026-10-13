@@ -29,8 +29,11 @@ STAGE_TABLES = [
 # 本机关卡表缺、但计划会出现的非活动关 → 显式兜底（来源：MAA resource stages.json apCost）
 EXPLICIT_COST = {"MN-4": 12}
 SANITY_CAP = 205        # 理智上限
-REGEN_PER_12H = 120     # 每 12h 回 120（10/h）
-KEEP_AFTER = SANITY_CAP - REGEN_PER_12H   # 85：花到 ≤85，12h 后刚好回满不溢出
+# 本机玩法：**1 次/天**、来时理智满(=上限 205)、跑完花到 ~0 再下线（2026-10-14 用户裁定）。
+# 24h 自然回 240 被上限 205 卡住 → 每天实际只能用 205，多出的 35/天**溢出丢掉**。
+# 旧的「每 12h 回 120、花到 ≤85 不溢出」口径**作废**（那是 12h 上线才成立，用户 1 次/天）。
+DAILY_NATURAL = SANITY_CAP   # 每天可用的自然理智 = 上限（不是 240）
+MEDICINE_BOTTLE = 60         # 理智药整瓶 60 → 当天总量凑 205+60k 才能花到 ~0
 
 
 def _load_stage_apcost() -> dict:
@@ -118,6 +121,45 @@ def _in_window(day, win: dict) -> bool:
     return True
 
 
+def plan_range(plan) -> tuple | None:
+    """解析 plan['range']（'2026-10-12..2026-10-18'）→ (start_date, end_date)；解析不了 → None。"""
+    rng = str((plan or {}).get("range") or "")
+    if ".." not in rng:
+        return None
+    a, b = rng.split("..", 1)
+    try:
+        return dt.date.fromisoformat(a.strip()), dt.date.fromisoformat(b.strip())
+    except ValueError:
+        return None
+
+
+def plan_day(plan, today: str):
+    """把「周计划」定位到 today。返回 (day_dict | None, status)。
+
+    供 maa_week（执行器）与 GUI（长草页提示）**共用同一份口径**，避免两处判定漂移。
+    status:
+      ok           —— 今天在 daily 且有条目
+      out_of_range —— 今天在 plan['range'] 区间外（计划过期 / 未生成到本周）
+      no_entry     —— 在区间内，但 daily 没有这一天（计划不完整）
+      no_daily     —— 计划无 daily 字段，且现算也拿不到（老/损坏计划）
+    """
+    daily = distribute_daily(plan) or []
+    day = next((d for d in daily if d.get("date") == today), None)
+    if day is not None:
+        return day, "ok"
+    rng = plan_range(plan)
+    if rng:
+        try:
+            t = dt.date.fromisoformat(str(today)[:10])
+        except ValueError:
+            return None, "no_entry"
+        if not (rng[0] <= t <= rng[1]):
+            return None, "out_of_range"
+    if not plan.get("daily"):
+        return None, "no_daily"
+    return None, "no_entry"
+
+
 DEFAULT_FILLER = "1-7"     # 兜底填充关（搓玉固源岩）；预算没花完就填它
 RAID_TYPE = "Raid"         # 突袭任务类型（MAA Fight 做不了活动突袭 → 不 append，交 Copilot/手点）
 
@@ -176,7 +218,7 @@ def budget_total(plan: dict, n: int) -> int:
     （2026-10-12 用户裁定）。保留 `b.get("weekly_potion") or 0` 只为兼容旧 plan。
     """
     b = plan.get("budget") or {}
-    return ((b.get("sanity_natural") or 240 * n)
+    return ((b.get("sanity_natural") or DAILY_NATURAL * n)
             + (b.get("weekly_potion") or 0)
             + (b.get("meds_available") or 0))
 
@@ -193,10 +235,10 @@ def _filler(plan: dict, cost: dict):
 
 
 def session_advice(plan: dict, daily: list) -> list:
-    """上线建议：不浪费自动回复的节奏。
+    """上线建议：本机按 **1 次/天** 玩（来时理智满 = 上限 205）。
 
-    原则：理智上限 205、每 12h 回 120 → 花到 ≤85，12h 后刚好回满，不溢出。
-    所以**常规每 12h 上线一次**；某天要花 > 12h 回复量时提醒多上线 / 吃理智药。
+    每天就是 **1 次上线、花到 ~0 再下线**；超出上限的部分靠**理智药**补。
+    理智药是**整瓶 60** → 当天总量越接近 `205 + 60k`，越能花到 ~0（否则会剩 0~59）。
     """
     rows = []
     for d in daily:
@@ -205,14 +247,18 @@ def session_advice(plan: dict, daily: list) -> list:
             rows.append({"date": d.get("date"), "dow": d.get("dow"), "sanity": s,
                          "sessions": 0, "note": "本日无需上线"})
             continue
-        n = max(1, math.ceil(s / REGEN_PER_12H))
+        med = max(0, s - SANITY_CAP)
         note = []
-        if s > 240:
-            note.append("超单日自然回复 240 → 需理智药 ≈%d" % (s - 240))
-        if n >= 3:
-            note.append("建议分 %d 次上线（每次≤%d）" % (n, SANITY_CAP))
+        if med:
+            note.append("超上限 %d → 需理智药 ≈%d（≈%d 瓶×%d）"
+                        % (s - SANITY_CAP, med, math.ceil(med / MEDICINE_BOTTLE),
+                           MEDICINE_BOTTLE))
+        # 凑不齐整瓶药时当天会剩一点 → 提示
+        _rem = (SANITY_CAP + math.ceil(med / MEDICINE_BOTTLE) * MEDICINE_BOTTLE - s) if med else 0
+        if _rem:
+            note.append("（当天预计剩 ~%d 理智，可加 1-7 补零）" % _rem)
         rows.append({"date": d.get("date"), "dow": d.get("dow"), "sanity": s,
-                     "sessions": n, "note": "；".join(note)})
+                     "sessions": 1, "note": "；".join(note) or "花到 ~0"})
     return rows
 
 
@@ -230,7 +276,8 @@ def shard_requirement(plan: dict, cost: dict) -> dict | None:
     per_run = s.get("per_run", 1.245)
     daily_use = s.get("daily_use", 92.4)
     stage = s.get("stage", DEFAULT_FILLER)
-    days = len(plan.get("daily") or []) or 7
+    # 「剩余 X 天」：优先按 range 算天数（plan["daily"] 在排期时还是空的 → 不能拿它当准）
+    days = len(_dates(plan.get("range", ""))) or len(plan.get("daily") or []) or 7
     need = target + daily_use * days - stock
     runs = max(0, math.ceil(need / per_run)) if per_run else 0
     return {"stage": stage, "runs": runs, "sanity": runs * cost.get(stage, 6),
@@ -257,7 +304,7 @@ def daily_cap(plan: dict) -> int:
     """每天自然回复的理智（默认 240 = 10/h×24）。"""
     b = plan.get("budget") or {}
     try:
-        return int(b.get("daily_natural") or 240)
+        return int(b.get("daily_natural") or DAILY_NATURAL)
     except Exception:  # noqa: BLE001
         return 240
 

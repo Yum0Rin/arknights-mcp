@@ -4,6 +4,40 @@
 版本号遵循 [语义化版本 SemVer](https://semver.org/lang/zh-CN/)。
 
 ## [Unreleased]
+### Changed
+- **规划支持「剩余 X 天」+ 自然理智按上限 205/天**（2026-10-14，用户裁定）：
+  - `plan_week.plan(date, start=None)` 新增 `start`（默认=今天）→ **只排 `start..本周日`**（按现状算剩余 X 天），
+    不再固定整周 7 天；CLI 加 `--from`。周一跑=7 天、周三跑=5 天、周日跑=1 天。
+  - `RULE.natural_per_day` **240 → 205**：本机玩法是「**1 次/天**、来时理智满、跑完下线」，24h 回 240 被上限 205
+    卡住，每天实际只能用 205，多出的 **35/天溢出** → 预算不再按 240/天虚高（每天 `medicine` 也少算 35）。
+  - 剿灭按**已完成合成玉**扣减（`state.json.progress.annihilation.jade`）：W42 已 370 → 只排 **4 次**（原固定 5）。
+  - `plan_util`：删死代码 `KEEP_AFTER`（定义了没人用）；`session_advice()` 重写为「1 次/天、花到 ~0」口径
+    （不再提「每 12h 上线、花到 ≤85」）；`shard_requirement()` 的 days 改从 `range` 取（不再硬编码 7）；
+    `daily_cap()`/`budget_total()` 兜底 240 → 205。
+  - `build_site.py`「上线建议」文案同步。
+  - 快照：`历史版本/剩余X天规划+自然205-2026-10-14/`。W42 已重生成（`range 2026-10-14..10-18`、预算 1945、逐日 445/445/325/295/420）。
+
+### Added
+- **一键长草执行链防御：今天不在计划里 → 报错停，不静默跑**（2026-10-13）：
+  新增 `plan_util.plan_day(plan, today)` 统一判定（`maa_week` 执行器与 GUI 长草页**共用一份口径**），
+  status = `ok` / `out_of_range`（计划过期或未覆盖本周）/ `no_entry`（区间内缺这一天）/ `no_daily`（老/损坏计划）。
+  - `maa_week.py run` / `write`：今天不在计划里时打印**原因 + 修复命令**（`plan_week.py`）并 **SystemExit(2)**，
+    **不再**静默只跑日常杂活 / 悄悄停用所有 Fight 槽位；`run` 新增 `--force` 才越过后只跑非理智任务。
+  - `maa_week.py show`：今天不在计划里时醒目提示。
+  - `load_plan`：计划缺失 / JSON 损坏给出可操作提示（不再甩 traceback）。
+  - GUI 长草页：今天不在计划里时页面顶部红字提示「点『生成/刷新计划』重新生成」。
+  - **修 `⚠`(U+26A0) 在 GBK 控制台 UnicodeEncodeError 崩脚本**：`main()` 给 stdout/stderr 加 `errors=replace`。
+  - **`run` 冷启动自动拉起模拟器**：`cmd_run` 连接前先 `_ensure_device()`（设备不在线就 `ldconsole launch` 并等上线），
+    使 GUI「直驱跑一键长草」从"模拟器没开"状态也能一键跑通（原来 connect 必失败直接退出）；`cmd_startup` 同源复用。
+  - **GUI 子进程输出乱码**：`_popen_log` 以 utf-8 读子进程，但 Windows 下 Python 子进程默认按 GBK 写 stdout →
+    中文全变替换符。现给子进程注入 `PYTHONIOENCODING=utf-8` / `PYTHONUTF8=1`（只影响子进程，不改全局）。
+
+### Verified
+- **2026-10-13 直驱 `maa_week run` 实跑跑通当天**（GUI「直驱跑一键长草」按钮同一条命令）：
+  StartUp + 剿灭×1（+370 玉，1480/1800）+ YW-6×20（420 代币，理智 205→60）+ 公招 + 基建(Rotation) + 信用商店 + 领奖，
+  MaaCore `AllTasksCompleted`（finished_tasks [1..7]），用时 925s，`run_report.jsonl` ok=true。
+  注：本机 tool 会话对 >2min 的子进程会杀（实测 120s 定点），故执行以 **detached** 方式启动（等价于 GUI 按钮的 spawn）。
+
 ### Fixed
 - **预算口径修正：理智药存量已含周常药，不再另加 240**（2026-10-12，用户裁定）：`plan_week.RULE.weekly_potion`
   整段删除（不是「条件加」而是**永不加**）。理由：药存量由**每周日手动跑** `scripts/sanity-potion/sanity_potion.py`

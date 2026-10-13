@@ -1,16 +1,17 @@
 {
   "week": "2026-W42",
-  "range": "2026-10-12..2026-10-18",
-  "generated_at": "2026-10-12T20:27",
+  "range": "2026-10-14..2026-10-18",
+  "generated_at": "2026-10-14T02:59",
   "by": "plan_week.py",
   "event": "act52side",
   "budget": {
-    "sanity_natural": 1680,
+    "sanity_natural": 1025,
+    "n_days": 5,
     "weekly_potion": 0,
     "meds_available": 920,
     "meds_week": "2026-W41",
     "meds_source": "scheduling/data/sanity.json（每周日手动跑 sanity_potion.py）",
-    "daily_natural": 240
+    "daily_natural": 205
   },
   "inventory": {
     "固源岩": 1163
@@ -90,7 +91,7 @@
       "type": "Fight",
       "params": {
         "stage": "Annihilation",
-        "times": 5
+        "times": 4
       },
       "name": "剿灭"
     },
@@ -98,7 +99,7 @@
       "type": "Fight",
       "params": {
         "stage": "YW-6",
-        "times": 100,
+        "times": 70,
         "series": 10
       },
       "name": "活动刷代币"
@@ -298,24 +299,26 @@
   "side": [],
   "rationale": {
     "notes": [
-      "预算 = 自然 1680 + 理智药存量 920 = 2600（药读数 2026-10-11；**已含周常药，不加 240**）",
+      "计划窗口 2026-10-14 ~ 2026-10-18（**剩余 5 天**，非固定 7 天）",
+      "预算 = 自然 205/天 × 5 天 = 1025 + 理智药存量 920 = 1945（药读数 2026-10-11；**已含周常药，不加 240**）",
+      "本周剿灭已 370/1800（2026-W42）→ 按现状只排 4 次（满额 5 次）",
       "★ EX 首通链：已通 0/8 关，本周排 YW-EX-1..YW-EX-8（共 8 关普通；另排突袭 8 关（按关顺序、紧跟其普通；理智按普通计，口径待核））—— 依次解锁，前面未通则后面排不了",
       "S 关 2026-10-23 开放（不在本周，或本周前已结束），本周不排（已通 0/1，突袭 0）",
       "本机连战上限 = 10（判据：resource 无 `FightSeries-OldMethodFlag` → 新列表；期望 series 普通 10 / 活动 10 取 min 后 = 10 / 10）",
       "固源岩 1163 → 期末需 ≥500（有活动要打→target=500）→ 1-7 下限 0 次（原始 0 向上对齐 series=10；周耗 647，单次产 1.245）",
-      "活动 YW-6：开放 2026-10-09~2026-10-23，每局 21 理智；商店要买 5110 代币 → 需 244 次；预算剩 2235 → 活动排 100 次（原始 106 向下对齐 series=10）",
+      "活动 YW-6：开放 2026-10-09~2026-10-23，每局 21 理智；商店要买 5110 代币 → 需 244 次；预算剩 1605 → 活动排 70 次（原始 76 向下对齐 series=10）",
       "活动商店可白拿 5 种材料（已从培养需求里抵扣）",
       "培养：总缺口 2541 理智（材料 6 + 龙门币 2535）；本周投 0 理智刷 无",
-      "预算 2600；剿灭 125 + EX/S首通 120 + EX/S突袭 120 + 1-7 120(下限 0+填充 20) + 活动 2100 + 培养 0 = 2585",
-      "活动 YW-6：本周实排 100 次（每局 21 理智，共 2100 理智）",
+      "预算 1945；剿灭 100 + EX/S首通 120 + EX/S突袭 120 + 1-7 120(下限 0+填充 20) + 活动 1470 + 培养 0 = 1930",
+      "活动 YW-6：本周实排 70 次（每局 21 理智，共 1470 理智）",
       "1-7：本周实排 20 次（下限 0 + 填充 20），共 120 理智"
     ],
     "sanity_alloc": {
-      "annihilation": 125,
+      "annihilation": 100,
       "EX/S首通": 120,
       "EX/S突袭": 120,
       "1-7": 120,
-      "活动": 2100,
+      "活动": 1470,
       "培养": 0
     }
   },
@@ -348,51 +351,18 @@
   },
   "daily": [
     {
-      "date": "2026-10-12",
-      "dow": "周一",
-      "runs": {
-        "Annihilation": 1,
-        "YW-6": 20
-      },
-      "raids": [],
-      "sanity": 445,
-      "medicine": 205,
-      "cap": 240,
-      "day_cap": 372,
-      "over": true,
-      "opens": [],
-      "unplaced": {}
-    },
-    {
-      "date": "2026-10-13",
-      "dow": "周二",
-      "runs": {
-        "Annihilation": 1,
-        "YW-6": 20
-      },
-      "raids": [],
-      "sanity": 445,
-      "medicine": 205,
-      "cap": 240,
-      "day_cap": 372,
-      "over": true,
-      "opens": [],
-      "unplaced": {}
-    },
-    {
       "date": "2026-10-14",
       "dow": "周三",
       "runs": {
         "Annihilation": 1,
-        "YW-6": 10,
-        "1-7": 10
+        "YW-6": 20
       },
       "raids": [],
-      "sanity": 295,
-      "medicine": 55,
-      "cap": 240,
-      "day_cap": 372,
-      "over": false,
+      "sanity": 445,
+      "medicine": 240,
+      "cap": 205,
+      "day_cap": 389,
+      "over": true,
       "opens": [],
       "unplaced": {}
     },
@@ -401,15 +371,14 @@
       "dow": "周四",
       "runs": {
         "Annihilation": 1,
-        "YW-6": 10,
-        "1-7": 10
+        "YW-6": 20
       },
       "raids": [],
-      "sanity": 295,
-      "medicine": 55,
-      "cap": 240,
-      "day_cap": 372,
-      "over": false,
+      "sanity": 445,
+      "medicine": 240,
+      "cap": 205,
+      "day_cap": 389,
+      "over": true,
       "opens": [],
       "unplaced": {}
     },
@@ -425,7 +394,8 @@
         "YW-EX-5": 1,
         "YW-EX-6": 1,
         "YW-EX-7": 1,
-        "YW-EX-8": 1
+        "YW-EX-8": 1,
+        "1-7": 10
       },
       "raids": [
         "YW-EX-1",
@@ -437,10 +407,10 @@
         "YW-EX-7",
         "YW-EX-8"
       ],
-      "sanity": 265,
-      "medicine": 25,
-      "cap": 240,
-      "day_cap": 372,
+      "sanity": 325,
+      "medicine": 120,
+      "cap": 205,
+      "day_cap": 389,
       "over": false,
       "opens": [
         "YW-EX-1",
@@ -466,14 +436,16 @@
       "date": "2026-10-17",
       "dow": "周六",
       "runs": {
-        "YW-6": 20
+        "Annihilation": 1,
+        "YW-6": 10,
+        "1-7": 10
       },
       "raids": [],
-      "sanity": 420,
-      "medicine": 180,
-      "cap": 240,
-      "day_cap": 372,
-      "over": true,
+      "sanity": 295,
+      "medicine": 90,
+      "cap": 205,
+      "day_cap": 389,
+      "over": false,
       "opens": [],
       "unplaced": {}
     },
@@ -485,9 +457,9 @@
       },
       "raids": [],
       "sanity": 420,
-      "medicine": 180,
-      "cap": 240,
-      "day_cap": 372,
+      "medicine": 215,
+      "cap": 205,
+      "day_cap": 389,
       "over": true,
       "opens": [],
       "unplaced": {}

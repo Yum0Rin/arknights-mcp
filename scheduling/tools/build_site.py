@@ -193,9 +193,10 @@ def weekly_section(plan, sanity) -> str:
             srows += ("<tr><td>%s %s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
                       % (e(s.get("date", "")), e(s.get("dow", "")), e(s.get("sanity", 0)),
                          e(s.get("sessions", 0)), e(s.get("note", ""))))
-        line += ('<h4>上线建议（不浪费自动回复）</h4>'
-                 '<p class="muted">上限 205、每 12h 回 120 → 常规 <strong>每 12h 上线一次</strong>，'
-                 '每次花到 ≤85（12h 后刚好回满、不溢出）。</p>'
+        line += ('<h4>上线建议</h4>'
+                 '<p class="muted">本机玩法 <strong>1 次/天</strong>（来时理智满 = 上限 205）：'
+                 '每天 1 次上线、<strong>花到 ~0 再下线</strong>；超上限的部分靠理智药补'
+                 '（整瓶 60 → 当天总量凑 205+60k 最省）。</p>'
                  '<div class="tbl-wrap"><table><thead><tr><th>日期</th><th>当天理智</th>'
                  '<th>建议上线次数</th><th>备注</th></tr></thead><tbody>'
                  + srows + '</tbody></table></div>')

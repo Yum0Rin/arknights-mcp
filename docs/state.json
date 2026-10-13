@@ -1,11 +1,11 @@
 {
   "_schema": "arknights-decision-state-v1",
   "_doc": "机器可读的决策状态（单一事实源）。agent 每次醒来：读它 -> 判触发 -> 执行 -> 回写。循环协议见 docs/STATE.md，判据/公式见 docs/MASTER-PLAN.md。",
-  "updated_at": "2026-10-12 20:28",
+  "updated_at": "2026-10-14 03:00",
   "cycle": {
     "strategy": "搓玉向（合成玉最高优先，长期不停）",
     "last_decision_at": "2026-10-10 演练（森空岛在线取数，未驱动设备）",
-    "last_execution_at": "2026-10-12 20:08（MAA GUI 点开始跑完当天；理智 205→1）"
+    "last_execution_at": "2026-10-13 23:39（直驱 maa_week run 跑完当天：StartUp + 剿灭×1(+370玉, 1480/1800) + YW-6×20 + 公招 + 基建 + 信用 + 领奖，用时 925s，run_report ok=true）"
   },
   "triggers": {
     "infrast_next_swap_at": "不适用（基建由 MAA mode=20000 自己按心情 0 触发）",
@@ -614,6 +614,25 @@
       ],
       "no_device": "未跑任何 MAA/设备任务",
       "no_commit": "未 git commit（按指令）"
+    },
+    {
+      "ts": "2026-10-14 03:00",
+      "action": "规划支持「剩余 X 天」+ 自然理智按上限 205/天（2026-10-14 用户裁定）",
+      "result": "plan_week.plan(date,start) 新增 start（默认=今天）→ 只排 今天..本周日（剩余 X 天），CLI 加 --from；RULE.natural_per_day 240→205（1 次/天玩法：24h 回 240 被上限 205 卡住 → 多出的 35/天溢出）；剿灭按 progress.annihilation.jade 扣减（W42 已 370 → 只排 4 次）；plan_util 删死代码 KEEP_AFTER、session_advice 重写为「1 次/天、花到 ~0」、shard_requirement days 从 range 取、daily_cap/budget_total 兜底 240→205；build_site 文案同步。W42 重生成 range 2026-10-14..10-18、预算 1945、逐日 445/445/325/295/420。",
+      "changed_files": [
+        "scheduling/tools/plan_week.py",
+        "scheduling/tools/plan_util.py",
+        "scheduling/tools/build_site.py",
+        "scheduling/data/weekly_plan.json",
+        "scheduling/data/weekly_plan.W42.json",
+        "scheduling/data/weekly_plan_log.jsonl",
+        "CHANGELOG.md",
+        "docs/STATE-一键长草.md",
+        "docs/state.json"
+      ],
+      "self_test": "py_compile OK；plan_week --dry：--date 2026-10-14 → range 10-14..10-18(5天)/budget 1945/剿灭 4 次；--date 2026-10-12 → 7 天；--date 2026-10-18 → 1 天；--from 2026-10-16 → 3 天。maa_week show / run --dry 读新计划正常（今天 10-14 = 剿灭×1 + YW-6×20，理智 445）。",
+      "snapshot": "历史版本/剩余X天规划+自然205-2026-10-14/（plan_week.py + plan_util.py + build_site.py + weekly_plan.json 旧版 + README）",
+      "no_device": "未跑任何 MAA/设备任务"
     }
   ]
 }
