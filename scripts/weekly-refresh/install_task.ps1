@@ -1,19 +1,21 @@
 ﻿# 注册 / 注销「方舟·每周刷新计划」Windows 计划任务
 #
-#   每周一 09:00 跑 scripts/weekly-refresh/weekly_refresh.py：
-#     · 重新生成本周计划（plan_week.py → scheduling/data/weekly_plan.json）
+#   每周日 20:00 跑 scripts/weekly-refresh/weekly_refresh.py：
+#     · 重新生成**下周**计划（plan_week.py → scheduling/data/weekly_plan.json）
+#       —— 周日跑时用「明天(下周一)」算所属周 → range = 下周一..下周日（满 7 天），
+#          与原先「周一早上跑」等价；代价是**今天(周日)不在本计划内**（周日日常先跑完再刷新）。
 #     · 弹提示：计划窗口/预算/逐日 + 理智药读数是否过期（过期就提醒开游戏重测）
-#   「错过的启动」= 开机后尽快补跑（-StartWhenAvailable）：周一没开电脑，开机后自动补。
+#   「错过的启动」= 开机后尽快补跑（-StartWhenAvailable）：周日没开电脑，开机后自动补。
 #
 # 用法（普通 PowerShell 即可，无需管理员——写仓库 + 弹自己会话的窗）：
 #   powershell -ExecutionPolicy Bypass -File scripts\weekly-refresh\install_task.ps1
 #   powershell -ExecutionPolicy Bypass -File scripts\weekly-refresh\install_task.ps1 -Uninstall
-#   powershell -ExecutionPolicy Bypass -File scripts\weekly-refresh\install_task.ps1 -Day Monday -At 09:00
+#   powershell -ExecutionPolicy Bypass -File scripts\weekly-refresh\install_task.ps1 -Day Sunday -At 20:00
 param(
     [switch]$Uninstall,
     [ValidateSet('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')]
-    [string]$Day = 'Monday',
-    [string]$At = '09:00'
+    [string]$Day = 'Sunday',
+    [string]$At = '20:00'
 )
 
 $ErrorActionPreference = 'Stop'

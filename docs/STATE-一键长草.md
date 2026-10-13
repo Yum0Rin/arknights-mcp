@@ -79,7 +79,8 @@ python scripts/skland/skland_cli.py status                  # 森空岛续期（
 ```
 
 > **流程**：①手动跑 `sanity_potion.py` 测药存量 → ②`plan_week.py` 生成计划（**默认 今天..本周日**；预算 = **205/天 × 剩余天数** + 药**整瓶可用量**，**不加 240**）→ ③`maa_week.py write/run`。周中重生成只排剩余天数。
-> **每周定时任务**「方舟·每周刷新计划」= 每周一 09:00（错过开机补跑）自动跑 `weekly_refresh.py`：重生成计划 + 弹窗提醒「药读数 N 天前，该重测了」。
+> **每周定时任务**「方舟·每周刷新计划」= **每周日 20:00**（错过开机补跑）自动跑 `weekly_refresh.py`：重生成计划 + 弹窗提醒「药读数 N 天前，该重测了」。
+> 周日跑时今天属于旧的一周 → 生成的是**下周**计划（`range` = 下周一..下周日，满 7 天，与原先「周一早上跑」等价）；**代价**：今天(周日)本身不在该计划内，周日日常先跑完再刷新，或手动 `plan_week.py` 补一份。
 > **它不自动测药**（测药要游戏在主界面 + 只有 MAA 一个客户端，定时任务保证不了游戏状态）→ 只提醒，测药仍由你手跑。
 
 ## 已修的坑（都踩过）
@@ -118,7 +119,7 @@ python scripts/skland/skland_cli.py status                  # 森空岛续期（
   - **照做清单见 [`docs/RUNBOOK-EX开放排GUI.md`](RUNBOOK-EX开放排GUI.md)**（体检 → 选路径 A/B → 顺序/依赖 → 理智账/缺口补法 → 核对留痕 → GUI 点 `Link Start!`）。
 - [x] ~~「升级(1→Lv)」的经验/龙门币未计入~~ **已修（2026-10-12）**：官方 `gamedata_const.json` 有 `characterExpMap`/`characterUpgradeCostMap`/`evolveGoldCost`，`oper_cost.py` 已接入，并按**当前练度**只算剩余段（`--from-skland`，含技能/专精）。
 - [ ] 「常用技能」目前假设技能 1（该 M3 哪个待定）
-- [ ] **`plan_week.py` R3.5 培养里 `train_budget` 未定义**（潜在 `NameError`）：当前场景 `rows` 为空（材料缺口仅 6 理智，几乎全是龙门币）→ 循环体不执行 → 侥幸没炸；一旦有可刷材料行就会 `NameError` → 被 `except` 吞成「培养估值失败」→ 培养恒为 0。**修之前先定 `train_budget` 的语义**（占预算的多少？），别乱给值改变现有计划。
+- [x] ~~**`plan_week.py` R3.5 培养里 `train_budget` 未定义**（潜在 `NameError`）~~ **已修（2026-10-14）**：按 RULE 顺序显式给值 `train_budget = max(0, budget − ann_san − extra_san − san17 − ev_runs·ev_san)`（活动吃完的剩余给培养）。此前该名从未定义 → 一有可刷材料行就 `NameError` → 被 `except` 吞成「培养估值失败」→ 培养恒为 0。`--dry` 验证：不再报错，计划输出不变（当前材料缺口仅 6 理智，培养仍 0）。
 - [ ] 本周(W41)只跑到一半（用户中途放弃），下周一(W42)按 `weekly_plan.W42.json` 重跑
 - [ ] 商店兑换/代币记录（需进游戏内商店 OCR）
 

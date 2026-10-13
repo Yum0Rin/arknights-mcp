@@ -508,6 +508,11 @@ def plan(date: dt.date, start: dt.date | None = None) -> dict:
 
 
     # --- R3.5 培养：按缺口"刷材料"关卡分配，产出额外 Fight 任务 ---
+    # 培养预算 = 「**活动没吃完的剩余**」。RULE 顺序是 R3 活动 → R3.5 培养 → R4 1-7填充：
+    #   活动先吃剩余（受商店 cap_runs 限制），活动吃不完的才轮到培养；培养吃完剩下的给 1-7 填充。
+    #   ⚠ 修（2026-10-14）：此前 `train_budget` 从未定义 —— 潜在 `NameError`，被下面的 except 吞成
+    #   「培养估值失败」→ 培养**恒为 0**（当前场景 rows 恰为空才没炸）。现按 RULE 顺序显式给值。
+    train_budget = max(0, budget - ann_san - extra_san - san17 - ev_runs * ev_san)
     train_tasks, train_spent, train_info = {}, 0, None
     try:
         sys.path.insert(0, str(TOOLS))

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""每周刷新计划 —— 供 Windows 定时任务（每周一）调用。
+"""每周刷新计划 —— 供 Windows 定时任务（**每周日 20:00**）调用。
 
 做三件事：
-  1. **重新生成本周计划**：`plan_week.plan(today)` → 写 `scheduling/data/weekly_plan.json`
-     （窗口 = 今天..本周日，即「剩余 X 天」；周一跑 = 满 7 天）。
+  1. **重新生成计划**：`plan_week.plan(target)` → 写 `scheduling/data/weekly_plan.json`。
+     周日晚上跑时今天属于**旧的一周** → 用「明天(下周一)」算所属周 → 窗口 = 下周一..下周日（满 7 天），
+     与原先「周一早上跑」等价。**代价**：今天(周日)本身不在该计划内 —— 周日日常先跑完再刷新，
+     或手动 `python scheduling/tools/plan_week.py`（默认今天..本周日）补一份。
   2. **检查理智药读数**（`scheduling/data/sanity.json`）是否过期（默认 > 7 天算过期）。
   3. **弹一个提示**（Windows MessageBox，超时自动关）告诉用户：计划窗口/预算/逐日 + 药读数是否要重测。
      结果同时写 `scheduling/data/weekly_refresh.json`（GUI / 脚本可读）+ 追加 `%TEMP%\\arknights-mcp.log`。
@@ -101,8 +103,13 @@ def main() -> int:
     a = ap.parse_args()
 
     today = dt.date.today()
+    # 周日晚上跑（定时任务 = 每周日 20:00）时，今天属于**旧的一周**：此刻要的是**下周**的计划。
+    #   → 用「明天」（下周一）算所属周 → range = 下周一..下周日（满 7 天），与原先「周一早上跑」等价。
+    #   ⚠ 代价：今天（周日）本身不再被这份计划覆盖 —— 若周日日常还没跑，先跑完再刷新，
+    #     或手动 `python scheduling/tools/plan_week.py`（默认今天..本周日）补一份。
+    target = today + dt.timedelta(days=1) if today.weekday() == 6 else today
     try:
-        plan = plan_week.plan(today)
+        plan = plan_week.plan(target)
     except Exception as e:  # noqa: BLE001
         log("生成计划失败：%r" % e)
         if not a.no_popup:
@@ -123,10 +130,13 @@ def main() -> int:
     age = med["age_days"]
     needs = (age is None) or (age > a.stale_days)
 
-    lines = ["本周计划已生成（窗口 %s，剩余 %s 天）" % (rng, n_days),
+    lines = ["%s计划已生成（窗口 %s，%s 天）" % ("下周" if target != today else "本周", rng, n_days),
              "预算：%d 理智" % budget]
     if daily_line:
         lines.append("逐日：%s" % daily_line)
+    if target != today:
+        lines.append("")
+        lines.append("（今天 %s 不在本计划内 —— 周日日常若还没跑，先跑完再刷新。）" % today.isoformat())
     lines.append("")
     if needs:
         if age is None:
