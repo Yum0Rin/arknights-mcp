@@ -97,6 +97,9 @@ python scripts/skland/skland_cli.py status                  # 森空岛续期（
 10. **今天不在计划里时静默跑** → 修（2026-10-13）：`plan_util.plan_day()` 统一判定（`ok/out_of_range/no_entry/no_daily`），
     `write`/`run` 遇非 `ok` **打印原因 + 修复命令并退出码 2**（`run` 加 `--force` 才越过后只跑日常）；`show`/GUI 长草页醒目提示。
     顺带修 `⚠` 在 GBK 控制台 `UnicodeEncodeError` 崩脚本（`main()` 给 stdout/stderr 加 `errors=replace`）。
+11. **雷电广告浮层盖住游戏**（2026-10-14）→ 修：广告是独立包 `com.android.flysilkworm`（用户应用，`SYSTEM_ALERT_WINDOW`），
+    会在游戏之上弹、干扰 MAA 识别/点击（实测测药拉起游戏时被盖）。**本机已 `--disable` 永久禁用**
+    （`scripts/ldplayer-ad/ldplayer_ad_guard.py --disable`；`--enable` 可恢复）。踩坑见 [`FINDINGS.md`](FINDINGS.md) §23。
 
 ## ⚠️ 未稳定 / 待测试（**别当成熟的用**）
 
