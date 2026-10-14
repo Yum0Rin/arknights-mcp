@@ -1,20 +1,29 @@
 {
-  "ts": "2026-10-14 03:13:19",
-  "current_sanity": 94,
-  "theoretical_total": 854,
-  "potion_sanity": 760,
+  "ts": "2026-10-14 09:55:14",
+  "current_sanity": 160,
+  "theoretical_total": 520,
+  "potion_sanity": 360,
+  "bottom_delta": 360,
+  "consistent": true,
+  "max_days": 7,
   "cards": [
     {
-      "x": 1146,
-      "y": 590
+      "x": 1133,
+      "expiry": 4,
+      "counted": true,
+      "src": "pill"
     },
     {
-      "x": 1350,
-      "y": 604
+      "x": 1336,
+      "expiry": 11,
+      "counted": false,
+      "src": "pill"
     },
     {
-      "x": 1578,
-      "y": 618
+      "x": 1562,
+      "expiry": 11,
+      "counted": false,
+      "src": "pill"
     }
   ]
 }

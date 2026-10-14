@@ -10,6 +10,13 @@
 
 读完点 **✕** 关闭（**绝不点 ✓**——那是确认使用）。
 
+## 只统计「快过期的药」（2026-10-14 用户口径）
+
+每张卡底部有个**彩色到期药丸**「🕐 N天」（实测 4天=黄、11天=绿）。用户要求：
+**只把「到期 ≤ EXPIRY_MAX_DAYS（默认 7）天」的药算进本周预算，>7 天的留着不读、不用。**
+做法：按药丸**颜色**（黄/绿）定位每张卡 → 裁药丸 OCR 读出天数 → **只点 ≤N 天的卡** → 读总量。
+（读不到药丸/天数的卡**一律跳过**——宁可不读，也不误用「>N 天」的药。）
+
 ## 容错设计（2026-10-14 重写，为「自动化」准备）
 
 - **不盲点**：先判「是不是主界面」（OCR 到『理智』/`/205`）→ 不是就**不点 +**，
@@ -20,13 +27,16 @@
   1) 面板大号数字是**白色描边字压在活动 banner 上**，裁剪+放大反而糊掉 → **整张 1920×1080 原图直接 OCR** 才读得准；
   2) 面板把 `当前》总量` **拆成两个 OCR 框**（如 `'101》'` + `'621'`）→ 必须**按 y 分行、行内按 x 拼接**后再匹配；
   3) 数字取「当前》总量」与底部「提升 N 理智」**两路交叉校验**，不一致就重试。
-- **卡片定位**：面板会把多张卡的「X天」徽章**合并成一个框**（`'5购12天'`）→ 不能只靠徽章；
-  改为「卡片行内的数字框按 x 聚类」定位每张卡（实测 3 张卡 → 3 个聚类）。
+- **卡片定位 = 到期药丸**：主路按**颜色**（黄/绿药丸）检测卡片 x + 到期天数；
+  兜底用**固定栅格** `[1146,1350,1578]` 逐槽裁药丸 OCR。
+  ⚠ 别用「整行宽栅格」：点到卡片右侧/间隙会**关掉面板**，之后继续点就误触主界面按钮（实测踩坑）。
 - **收尾**：点 ✕ 关闭（**绝无点 ✓ 的代码路径**）。
 
 前置：游戏停在「主界面」。用法:
   python sanity_potion.py                      # 读一次（不在主界面就报错停）
   python sanity_potion.py --json out.json      # 同时写 JSON
+  python sanity_potion.py --max-days 7         # 只统计 ≤7 天到期的药（默认）
+  python sanity_potion.py --max-days 3         # 只统计 ≤3 天到期的药
   python sanity_potion.py --recover            # 不在主界面时尝试 BACK 回主界面
   python sanity_potion.py --ensure-main        # 先跑 maa_week startup 把游戏带到主界面
   python sanity_potion.py --dry                # 只判状态（不开面板、不点卡）
@@ -68,6 +78,18 @@ CARD_MERGE_PX = 60           # 已知卡中心与识别到的点 合并容差
 CARD_TAPS = 10               # 每张卡点几次（点满；超上限会夹住）
 FALLBACK_CARDS = [1146, 1350, 1578]
 SANITY_CAP = 205
+
+# --- 「只统计 ≤N 天到期的药」（2026-10-14 用户要求）---
+# 每张卡底部有个**彩色到期药丸**「🕐 N天」：实测 4天=黄、11天=绿；药丸中心 x ≈ 卡中心 x。
+# 用户口径：**>EXPIRY_MAX_DAYS 天的药不读、不用**（留着慢慢用）；只把「快过期的」算进本周预算。
+EXPIRY_MAX_DAYS = 7
+PILL_STRIP_Y = (690, 800)                        # 药丸所在的 y 带（整条横扫）
+_PILL_YELLOW = ((20, 90, 140), (40, 255, 255))   # HSV inRange 上下限
+_PILL_GREEN = ((40, 90, 120), (85, 255, 255))
+PILL_MIN_AREA = 800                              # 药丸最小面积（滤掉杂色小块）
+PILL_W = (80, 220)                               # 药丸宽（px）
+PILL_H = (28, 80)                                # 药丸高（px）
+_DAYS_RE = re.compile(r"(\d{1,3})\s*天")
 
 # 退出码（自动化/定时任务据此判成败）
 RC_OK = 0
@@ -225,30 +247,81 @@ def _tap_cancel_dialog(bs) -> bool:
     return False
 
 
-def find_cards(bs):
-    """定位药剂卡点击点：**固定栅格**（覆盖整行，确定性）+ 识别到的卡片数字/「X天」徽章，按 x 合并。
+def _clear_selection(bs) -> bool:
+    """点面板上的『清空选择』按钮（清掉面板**默认预选**的药）。找不到 → False（**不盲点**）。
 
-    面板 OCR 常漏个别卡片数字、或把多张卡的「X天」徽章并成一框（`'5购12天'`）→ 只靠识别会漏点卡。
-    栅格多点是安全的：点空=无操作，点同一卡多次=点满后夹住不回绕。
+    实测：打开面板时默认就预选了药（`156 » 276` = +120）——若默认预选里含「>N 天」的药，
+    会污染「只统计 ≤N 天」的读数。故先清零再只点目标卡。
     """
-    xs = list(CARD_GRID_X)
     for b in bs:
-        t = (b.get("text") or "").strip()
-        cx, cy = int(b.get("cx", 0)), int(b.get("cy", 0))
-        if cx < CARD_X_MIN:
+        if "清空" in (b.get("text") or ""):
+            tap(b["cx"], b["cy"])
+            log("已点『清空选择』（清掉面板默认预选；x=%d y=%d）" % (b["cx"], b["cy"]))
+            time.sleep(1.0)
+            return True
+    log("没找到『清空选择』按钮 → 跳过清零（读数可能含面板默认预选，注意核对）")
+    return False
+
+
+def _read_expiry(pill_img) -> int | None:
+    """对一张药丸小图 OCR → 到期天数 N（「N天」）；读不到 → None。"""
+    if pill_img is None or pill_img.size == 0:
+        return None
+    up = cv2.resize(pill_img, None, fx=3.0, fy=3.0, interpolation=cv2.INTER_CUBIC)
+    bs = boxes(up, "pill.png")
+    ordered = sorted(bs, key=lambda z: int(z.get("cx", 0)))
+    for b in ordered:
+        m = _DAYS_RE.search(b.get("text") or "")
+        if m:
+            return int(m.group(1))
+    m = _DAYS_RE.search("".join(b.get("text") or "" for b in ordered))
+    return int(m.group(1)) if m else None
+
+
+def _detect_pills(img) -> list:
+    """按颜色检测卡片底部的到期药丸（黄/绿）→ [{x, expiry}]（x = 药丸中心，≈ 卡中心）。"""
+    y0, y1 = PILL_STRIP_Y
+    y1 = min(y1, img.shape[0])
+    strip = img[y0:y1, :]
+    if strip.size == 0:
+        return []
+    hsv = cv2.cvtColor(strip, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, *_PILL_YELLOW) | cv2.inRange(hsv, *_PILL_GREEN)
+    cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    out = []
+    for c in cnts:
+        if cv2.contourArea(c) < PILL_MIN_AREA:
             continue
-        if "天" in t or (CARD_ROW_Y[0] <= cy <= CARD_ROW_Y[1] and re.fullmatch(r"\d{1,3}", t)):
-            xs.append(cx)
-    if not xs:
-        return [(x, CARD_TAP_Y) for x in FALLBACK_CARDS]
-    xs.sort()
-    clusters = []
-    for x in xs:
-        if clusters and x - clusters[-1][-1] <= CARD_MERGE_PX:
-            clusters[-1].append(x)
-        else:
-            clusters.append([x])
-    return [(sum(c) // len(c), CARD_TAP_Y) for c in clusters]
+        x, y, w, h = cv2.boundingRect(c)
+        if not (PILL_W[0] <= w <= PILL_W[1] and PILL_H[0] <= h <= PILL_H[1]):
+            continue
+        if not (1.3 <= w / max(1, h) <= 4.5):
+            continue
+        py0, py1 = y0 + max(0, y - 6), y0 + min(strip.shape[0], y + h + 6)
+        px0, px1 = max(0, x - 6), min(img.shape[1], x + w + 6)
+        out.append({"x": x + w // 2, "expiry": _read_expiry(img[py0:py1, px0:px1])})
+    out.sort(key=lambda d: d["x"])
+    return out
+
+
+def find_potion_badges(img) -> list:
+    """定位每张药卡 → [{x, expiry, src}]（x = 点击用的卡中心 x；到期天数 N 或 None）。
+
+    主路：颜色法检测底部到期药丸（黄/绿）；兜底：固定栅格 + 逐槽裁药丸 OCR。
+    读不到药丸 / 到期天数 → 上层**跳过该卡**（宁可不读，也不误用「>N 天」的药）。
+    """
+    pills = _detect_pills(img)
+    if pills:
+        for p in pills:
+            p["src"] = "pill"
+        return pills
+    y0, y1 = PILL_STRIP_Y
+    y1 = min(y1, img.shape[0])
+    out = []
+    for cx in CARD_GRID_X:
+        crop = img[y0:y1, max(0, cx - 115):min(img.shape[1], cx + 130)]
+        out.append({"x": cx, "expiry": _read_expiry(crop), "src": "grid"})
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -340,6 +413,8 @@ def main():
     ap.add_argument("--addr", default="")
     ap.add_argument("--json", default="")
     ap.add_argument("--tries", type=int, default=3, help="开面板/读数的重试次数（默认 3）")
+    ap.add_argument("--max-days", type=int, default=EXPIRY_MAX_DAYS,
+                    help="只统计「到期 ≤N 天」的药（默认 %d；>N 天的不读不用）" % EXPIRY_MAX_DAYS)
     ap.add_argument("--recover", action="store_true", help="不在主界面时尝试 BACK 回主界面")
     ap.add_argument("--ensure-main", action="store_true",
                     help="先跑 maa_week startup（拉起雷电+启动游戏到主界面）再测")
@@ -374,13 +449,43 @@ def main():
     if rc != RC_OK or img is None:
         return rc
 
-    cards = find_cards(bs)
-    log("找到 %d 张药剂卡，点满中…" % len(cards))
-    for (cx, cy) in cards:
+    # 面板默认可能已预选一些药（实测打开面板默认 `156»276` = +120）→ 先点『清空选择』清零，
+    # 保证最终读数**只含我们点的「≤N 天」卡**（否则会把默认预选的 >N 天药也算进去）。
+    if _clear_selection(bs):
+        img = cap("after_clear.png")
+        if img is None:
+            return RC_NO_DEVICE
+        bs = boxes(img, "chk_after_clear.png")
+        if not _panel_open(bs):
+            log("!! 清空选择后面板不见了 → 放弃（不冒险）")
+            return RC_PANEL
+
+    # 检测每张卡的**到期天数**（底部药丸「🕐 N天」）→ 只点「≤ max_days」的卡（>max_days 的药不读、不用）。
+    badges = find_potion_badges(img)
+    if not badges:
+        shot = _save(img, "no_badges.png")
+        log("!! 一张到期药丸都没检测到 → 不点任何卡（留证 %s）" % shot)
+        tap(*CANCEL)
+        time.sleep(0.8)
+        return RC_READ
+    use = [b for b in badges if b["expiry"] is not None and b["expiry"] <= a.max_days]
+    unknown = [b for b in badges if b["expiry"] is None]
+    skipped = [b for b in badges if b["expiry"] is not None and b["expiry"] > a.max_days]
+    log("检测到 %d 张卡：计入 %d（≤%d天）/ 跳过 %d（>%d天）/ 到期未知 %d（也跳过）"
+        % (len(badges), len(use), a.max_days, len(skipped), a.max_days, len(unknown)))
+    for b in badges:
+        log("   卡 x=%d 到期=%s %s" % (
+            b["x"], ("%d天" % b["expiry"]) if b["expiry"] is not None else "未知",
+            "→ 计入" if b in use else "→ 跳过"))
+    if not use:
+        log("!! 没有「≤%d 天」的药可计入 → 本次读数 = 0（面板照常关闭，不用药）" % a.max_days)
+
+    for b in use:
         for _ in range(CARD_TAPS):       # 点满（超上限会夹住，安全）
-            tap(cx, cy)
+            tap(b["x"], CARD_TAP_Y)
             time.sleep(0.3)
 
+    time.sleep(1.5)                  # 等「总量」数字动画稳定再读数（实测动画中 OCR 易读空 → 白重试）
     got = _read_totals(a.tries)
     tap(*CANCEL)                     # 关闭，不用药
     time.sleep(1.0)
@@ -393,10 +498,12 @@ def main():
     out = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
            "current_sanity": cur, "theoretical_total": tot, "potion_sanity": tot - cur,
            "bottom_delta": got.get("delta"), "consistent": got.get("consistent"),
-           "cards": [{"x": cx, "y": cy} for cx, cy in cards]}
+           "max_days": a.max_days,
+           "cards": [{"x": b["x"], "expiry": b["expiry"], "counted": b in use, "src": b.get("src")}
+                     for b in badges]}
     print(json.dumps(out, ensure_ascii=False, indent=2))
-    log("理智药合计 ≈ %d 理智（当前 %d → 全用后 %d%s）"
-        % (out["potion_sanity"], cur, tot,
+    log("理智药合计 ≈ %d 理智（只算 ≤%d 天到期的；当前 %d → 全用后 %d%s）"
+        % (out["potion_sanity"], a.max_days, cur, tot,
            "" if got.get("consistent") else "；仅单路读数，未交叉校验"))
     if a.json:
         pathlib.Path(a.json).write_text(json.dumps(out, ensure_ascii=False, indent=2),

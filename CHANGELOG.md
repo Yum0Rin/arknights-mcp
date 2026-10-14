@@ -33,14 +33,45 @@
     （`[1146,1350,1578]`；⚠ 别用整行宽栅格——点卡片右侧/间隙会**关掉面板**再误触主界面）。
   - 退出码：`0` OK / `2` 无设备 / `3` 不在主界面 / `4` 面板没开 / `5` 读数失败（供定时任务/自动化判成败）。
   - 新增 `--addr` / `--json` / `--ensure-main`（先 `maa_week startup` 带游戏到主界面）等选项；**绝无点 ✓ 的代码路径**。
+- **测药只统计「≤7 天到期」的药**（2026-10-14，用户口径：「>7 天的药不要读」）：
+  - 每张卡底部有**彩色到期药丸**「🕐 N天」（实测 4天=黄、11天=绿）。改为按**颜色**（黄/绿）定位每张卡 →
+    裁药丸 OCR 读「N天」→ **只点「≤ `--max-days`（默认 7）天」的卡**，>7 天的不读、不用（留着慢慢用）。
+  - 读不到药丸/天数的卡**一律跳过**（宁可不读，也不误用「>N 天」的药）；输出 JSON 增 `max_days` + 每卡 `expiry/counted`。
+  - 顺带修掉「卡片聚类多出第 4 个点」（旧法把行内杂数字并进来 → 会点到卡片间隙）——新法以药丸为锚，天然只有真卡。
+- **测药接进每周定时任务**（2026-10-14，用户要求）：`weekly_refresh.py` 默认**先**跑
+  `sanity_potion.py --ensure-main`（拉起模拟器 + StartUp 到主界面 → 测药 → 写 `sanity.json`）**再**生成计划
+  ——**顺序：先测药、后生成**，计划才用得上新鲜读数（否则用的还是旧读数）。测药失败只记录、不崩（`--no-measure` 可关）。
+  ⚠ 单一客户端铁律：测药要驱动设备，跑时别同时用 MAA GUI / 别的客户端驱动同一台；脚本本身**绝不盲点**，最坏是这次没测到。
 
 ### Added
+- **雷电广告守护脚本 `scripts/ldplayer-ad/ldplayer_ad_guard.py`**（2026-10-14，用户要求）：
+  - 定位：雷电的广告是**独立包 `com.android.flysilkworm`**（**用户应用**，装 `/data/app`，非系统应用），
+    拿 `SYSTEM_ALERT_WINDOW` 在**任意界面之上**弹浮层——有时是启动器整屏广告，有时**直接盖在明日方舟上**，
+    干扰 MAA 识别/点击（实测：测药拉起游戏时就被它盖住）。
+  - 三档处理：`--status` 报告（包安装/启用 + 广告是否在屏）/ `--once`（默认，检测到就 `am force-stop`）/
+    `--watch`（守护循环，每 N 秒检测，出现就杀）；**治本** `--disable`（`pm disable-user` 永久禁用，
+    `--enable` 恢复）/ `--uninstall`（可 `pm install-existing` 恢复）。
+  - 检测：`dumpsys window windows` 里存在 **`isVisible=true`** 的该包窗口（实测：在屏→有、杀掉→无）。
+  - 实测：`force-stop` 立即消除（`mCurrentFocus` 从 flysilkworm 回到游戏）；`--disable`/`--enable` 均可逆。
+- **每日自动化（Windows 计划任务「方舟·每日日常」）**（2026-10-14）：
+  - 新增 `scripts/daily-auto/daily_auto.py`：**每天 14:00** 依次跑「森空岛签到（先 `skland_cli.py status`
+    续期 sign_token，再 `checkin`——token 过期会让签到 POST 直接 401，实测踩过）
+    → 直驱 MaaCore 跑当天日常（`maa_week.py run`，内置冷启动自动拉起雷电）→ 关雷电（`ldconsole quit`）」。
+    签到失败（凭证过期等）**只记日志提醒、不中断**，继续跑日常；跑完**成功/失败/超时都关雷电**
+    （唯一例外：MAA GUI 正在运行 → 不关，免得打断手动玩）。防重复：今日已有 `run_report.jsonl`
+    成功记录则跳过（`--force` 覆盖），防「手动跑过 + 补跑」导致理智双花。
+    留痕：`scripts/daily-auto/运行日志.txt`（人读）+ `scheduling/data/daily_run.jsonl`（结构化）。
+    选项：`--date` / `--timeout` / `--no-close` / `--skip-checkin` / `--force` / `--dry`。
+  - 新增 `scripts/daily-auto/install_task.ps1`：注册/注销计划任务（默认**每天 14:00**，`-StartWhenAvailable`
+    → 到点没开机则开机后补跑；`ExecutionTimeLimit` 150 分钟；`-Uninstall` 注销；`-At` 可改）。
+  - 适配 pythonw（计划任务无控制台）：脚本不依赖 `print`、自写日志文件；子进程强制 UTF-8。
 - **每周刷新计划（Windows 计划任务「方舟·每周刷新计划」）**（2026-10-14）：
-  - 新增 `scripts/weekly-refresh/weekly_refresh.py`：重新生成本周计划（`plan_week.plan(today)` → `weekly_plan.json`，
-    窗口=今天..本周日）+ 检查理智药读数是否过期（默认 >7 天）+ **弹 Windows 原生提示**（`MessageBoxTimeoutW`，超时自动关）
-    报告窗口/预算/逐日 + 是否要重测药；结果写 `scheduling/data/weekly_refresh.json` + 追加 `%TEMP%\arknights-mcp.log`。
-    **不自动测药**（测药要求游戏停在主界面且只有 MAA 一个客户端驱动 → 定时任务无法保证游戏状态，误点有风险）。
-    选项：`--no-popup` / `--dry` / `--stale-days N`。
+  - 新增 `scripts/weekly-refresh/weekly_refresh.py`：**先复测理智药**（`sanity_potion.py --ensure-main`：拉起模拟器 + StartUp
+    到主界面 → 测药 → 写 `sanity.json`）**再**重新生成计划（`plan_week.plan(target)` → `weekly_plan.json`；
+    周日跑=下周一..下周日）+ **弹 Windows 原生提示**（`MessageBoxTimeoutW`，超时自动关）报告窗口/预算/逐日 + 复测结果；
+    结果写 `scheduling/data/weekly_refresh.json` + 追加 `%TEMP%\arknights-mcp.log`。
+    选项：`--no-measure`（只生成不测药）/ `--no-popup` / `--dry` / `--stale-days N`。
+    ⚠ 单一客户端铁律：测药要驱动设备（定时任务设在周日 20:00，默认无人在玩）；测药脚本自带容错、**绝不盲点**，失败只记录不崩。
   - 新增 `scripts/weekly-refresh/install_task.ps1`：注册/注销计划任务（默认**每周日 20:00**，`-StartWhenAvailable`
     → 周日没开机则开机后补跑；`-Uninstall` 注销；`-Day`/`-At` 可改）。已注册并实跑验证（NextRunTime 2026-10-18 20:00）。
   - **定时从「周一 09:00」改到「周日 20:00」**（2026-10-14 用户要求）：周日跑时今天属于旧的一周 →

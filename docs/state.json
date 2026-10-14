@@ -1,7 +1,7 @@
 {
   "_schema": "arknights-decision-state-v1",
   "_doc": "机器可读的决策状态（单一事实源）。agent 每次醒来：读它 -> 判触发 -> 执行 -> 回写。循环协议见 docs/STATE.md，判据/公式见 docs/MASTER-PLAN.md。",
-  "updated_at": "2026-10-14 04:20",
+  "updated_at": "2026-10-14 09:50",
   "cycle": {
     "strategy": "搓玉向（合成玉最高优先，长期不停）",
     "last_decision_at": "2026-10-10 演练（森空岛在线取数，未驱动设备）",
@@ -11,6 +11,7 @@
     "infrast_next_swap_at": "不适用（基建由 MAA mode=20000 自己按心情 0 触发）",
     "infrast_next_swap_direction": "不适用（同上；旧 A/B 班轮换字段已废弃）",
     "annihilation_week_reset": "每周一（周上限 1800 玉）",
+    "daily_auto_at": "每天 14:00（Windows 计划任务「方舟·每日日常」→ scripts/daily-auto/daily_auto.py：森空岛签到 → maa_week run 跑当天 → 关雷电；签到失败只记日志不中断；错过启动开机补跑；今日已有成功记录则跳过）",
     "event_combat_end": "2026-10-23 03:59",
     "event_exchange_end": "2026-10-30",
     "event_ex_open": "2026-10-16 16:00（活动主页 EX 入口显示『10月16日 16:00:00 后开启』，实机 OCR 2026-10-10） → 届时由 AI 排一次 MAA GUI：走 scripts/event-copilot/event_copilot.py run act52side --chain ex（再 --chain raid），或先把当天队列写成 EX 首通（MAA Fight 导航不了 EX，需 Copilot/手点）。",
@@ -34,7 +35,7 @@
       "plan_week 调 oper_cost.compute() 未传 from_skland → 技能按 1 算（高估，乌尔比安技能已 7）；待改",
       "培养执行器选型（2026-10-12）：自算缺口+逐关 Fight（现状） vs MAA `OperProgress`（6.19.0 新增，材料即缺即合/芯片/专精自动）？先并行试点对账（MAA 实际消耗 vs 我们预算），再裁定谁主导；注意 OperProgress 不含等级 Lv 目标。详见 docs/MAA-6.19-融合评估.md §2.1",
       "活动商店自动选择性购买（2026-10-12）：MAA 6.19.0 已支持 params.event_shop.blacklist（旧结论 FINDINGS §19 作废）；需实跑确认日志有 registered EventShop task 后，才把 event_act52side.json 的 skip 口径与 MAA 黑名单同源生成",
-      "定时执行：**每周刷新已配**（2026-10-14，计划任务「方舟·每周刷新计划」**每周日 20:00** 跑 scripts/weekly-refresh/weekly_refresh.py：重生成计划 + 弹窗提醒重测药；周日跑→生成**下周**计划，range=下周一..下周日；**不自动测药**——测药要游戏在主界面 + 单客户端，定时任务保证不了）；**每日执行仍手动**（用户玩法 1 次/天，点 GUI「直驱跑一键长草」或 maa_week run --date <日期>）——若以后要全自动每日，选型 A 本机计划任务跑 maa_week（推荐）/ B MAA GUI 定时+唤醒 / C paseo schedule（遵守单客户端驱动铁律）",
+      "定时执行：**每周刷新已配**（2026-10-14，计划任务「方舟·每周刷新计划」**每周日 20:00** 跑 scripts/weekly-refresh/weekly_refresh.py：重生成计划 + 弹窗提醒重测药；周日跑→生成**下周**计划，range=下周一..下周日；**不自动测药**——测药要游戏在主界面 + 单客户端，定时任务保证不了）；**每日执行已自动化**（2026-10-14 落地选型 A，计划任务「方舟·每日日常」**每天 14:00** 跑 scripts/daily-auto/daily_auto.py：森空岛签到 → maa_week run 跑当天 → 关雷电；签到失败只记日志不中断；错过启动开机补跑；防重复：今日已有 run_report ok 记录则跳过，--force 覆盖）",
       "EX 关执行方式（2026-10-16 前必须定）：MAA 当前导航不了 YW-EX-1..8（resource 无关卡定义，见 audit_findings）。选项：①等 MAA 发版含 EX 定义后 maa_update/软件升级 ②走 scripts/event-copilot（Copilot 作业导航）③手点首通。已加预检兜底（跳过+留证），不会打死队列。",
       "搓玉 target=1000 vs 活动优先级（运筹级待裁定）：现规则 R2(1-7 下限) 先于 R3(活动) → 活动商店只能搬 ~2%。是否改为「活动期 R3 优先 / 活动期临时降 target」？",
       "★预算装不下（2026-10-12 预算改 2600 后暴露，升给用户裁定）：1-7 下限 417 次(2502) + 剿灭(125) + EX/S 首通+突袭(240) = 2867 > 预算 2600，逐日 day_cap=372 装不下 → weekly_plan.daily unplaced={1-7:48}（差 288 理智）。自检 _fit_to_schedule 把活动次数回退到 0 仍不够（活动本就 0）。选项：①降 shards.target；②活动期把 R3 提到 R2 前（让 1-7 让位）；③临时多动理智药；④接受 unplaced（少刷 48 次 1-7）。**待用户拍板。**",
@@ -668,6 +669,23 @@
       ],
       "self_test": "py_compile 三个 .py 全过；weekly_refresh --dry 报告窗口/预算/逐日正常；plan(周日)=1天、plan(周一)=7天（周日→下周逻辑成立）；计划任务 NextRunTime/触发器已核。",
       "device": "未跑设备任务；测药重测被「数据同步失败，请重新登录」阻塞（服务端需重登，非脚本问题）→ 待用户重登后复测，sanity.json 暂仍为旧读数 760。",
+      "no_commit": "本轮改动待 git commit"
+    },
+    {
+      "ts": "2026-10-14 09:50",
+      "action": "雷电广告守护 + 测药只算≤7天到期 + 测药接进每周定时任务",
+      "result": "①新增 scripts/ldplayer-ad/ldplayer_ad_guard.py：定位广告=独立包 com.android.flysilkworm（用户应用/SYSTEM_ALERT_WINDOW 浮层，会盖在游戏上）；--status/--once(force-stop)/--watch/--disable(pm disable-user 永久禁用,--enable 恢复)/--uninstall；检测=dumpsys window windows 里有 isVisible=true 的该包窗口。实测 force-stop 立即消除、disable/enable 可逆。②sanity_potion.py 改为**只统计到期 ≤7 天的药**：按卡片底部彩色到期药丸(黄/绿)颜色定位卡→裁药丸 OCR 读 N天→只点 ≤--max-days(默认7) 的卡；并先点『清空选择』清掉面板默认预选（实测默认预选 +120，会污染读数）；实机验证：3 张卡(4天/11天/11天)→只计入 4 天那张，potion_sanity=360、consistent=true。③weekly_refresh.py 默认先跑 sanity_potion --ensure-main 测药、**再**生成计划（顺序：先测药后生成），失败只记录不崩，--no-measure 可关。",
+      "changed_files": [
+        "scripts/ldplayer-ad/ldplayer_ad_guard.py",
+        "scripts/sanity-potion/sanity_potion.py",
+        "scripts/weekly-refresh/weekly_refresh.py",
+        "CHANGELOG.md",
+        "docs/STATE-一键长草.md",
+        "docs/state.json"
+      ],
+      "self_test": "py_compile 三个 .py 全过；离线(保存的面板图)验证药丸颜色检测 3/3 命中；实机跑通测药(--tries 5)得 360；广告包 force-stop/disable/enable 实测可用。",
+      "device": "已实机驱动：开面板→清空选择→只点 4 天那张→读数 360→关面板（未用药）。sanity.json 已更新为 360。",
+      "open_question": "①是否把广告守护接进 MAA startup/每日流程（best-effort force-stop）；②是否直接 --disable 永久禁用广告包。",
       "no_commit": "本轮改动待 git commit"
     }
   ]

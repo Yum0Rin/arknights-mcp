@@ -199,6 +199,10 @@
      `header = {platform,timestamp,dId,vName}`。
   2. **`dId` 用随机值就能过**（服务端不校验真伪）→ 不必引数美 / `cryptography`；本地生成一次持久化即可。
   3. POST 漏 `Content-Type: application/json` → `400 参数错误`（`generate_cred_by_code`、签到都中招）。
+- **签到/取数前先续期 `sign_token`**（2026-10-14 实测）：长期没跑时签名密钥 `token` 会过期，
+  `attendance` POST 同样报 `401 code=10000 请求异常`（**与「缺 sign」表现一模一样，别只往缺 sign 上想**）。
+  修法：**先跑 `skland_cli.py status`**（内部 `refresh_token(cred)` 换新 token 并落盘）**再 `checkin` 即可**。
+  `scripts/daily-auto/daily_auto.py` 的签到步骤已固定「先 status 续期 → 再 checkin」。
 - 数据与 MAA 同源：对拷本人账号 337 干员，elite/level/rarity **全一致**；potential 5/337 不一致
   （MAA 识别误差，**以在线为准**）。Skland 还会多出"本地资源未收录的新干员"。
 - **接口没有**：抽卡记录、仓库 Depot（Depot 仍只能靠 MAA）。

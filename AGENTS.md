@@ -10,7 +10,10 @@
 > 运筹/自治闭环文档也在 `docs/`：总指挥判据 **`docs/MASTER-PLAN.md`**、循环协议 `docs/STATE.md`、
 > 机器状态 `docs/state.json`、操作手册 `docs/ops_manual.json`；文档索引见 **[`docs/README.md`](docs/README.md)**。
 > 本仓库是 **monorepo**：`arknights_mcp.py`=MCP 本体；`scheduling/`=排班/报告/理智规划；
-> `scripts/skland/`=森空岛在线取数；`scripts/maa-autoclose/`=MAA 跑完自动关雷电。
+> `scripts/skland/`=森空岛在线取数；`scripts/maa-autoclose/`=MAA 跑完自动关雷电；
+> `scripts/daily-auto/`=**每日定时**（计划任务「方舟·每日日常」，每天 14:00：森空岛签到 → `maa_week run` 跑当天 → 关雷电）；
+> `scripts/weekly-refresh/`=**每周定时**（计划任务「方舟·每周刷新计划」，每周日 20:00：先测药 `sanity-potion` → 生成下周计划 → 弹窗）；
+> `scripts/sanity-potion/`=测理智药存量（只算「≤7 天到期」的药）；`scripts/ldplayer-ad/`=清雷电广告浮层（`com.android.flysilkworm`）。
 
 ## 环境
 
@@ -40,6 +43,10 @@
 - 识别产物：`C:\MAA\data\OperBoxData.json` / `DepotData.json`（仅 MAA GUI 会写）。
 - 改 MAA 配置：改 `C:\MAA\config\gui.new.json`（活动的连接/设置都在这），**MAA 运行中改会被覆盖**，
   需先退出再改。
+- **每日自动化**：Windows 计划任务「方舟·每日日常」每天 **14:00** 跑 `scripts/daily-auto/daily_auto.py`
+  （森空岛签到 → `maa_week run` 跑当天日常 → 关雷电；签到失败只记日志不中断；错过启动开机补跑）。
+  注册/注销：`scripts/daily-auto/install_task.ps1`（`-At` / `-Uninstall`）。留痕：
+  `scripts/daily-auto/运行日志.txt` + `scheduling/data/daily_run.jsonl`。
 
 ## 抄作业 & 基建：两条用户铁律（2026-10-10 定）
 
