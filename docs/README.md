@@ -53,7 +53,7 @@
 | 文件 | 定位 |
 |---|---|
 | [`DATA-SOURCES.md`](DATA-SOURCES.md) | 数据源与取数方法：企鹅物流 API / PRTS 数值 / 一图流 / MAA / 森空岛 |
-| [`FINDINGS.md`](FINDINGS.md) | 踩坑留痕（§14/§15 活动关、§16 培养推荐、§17 森空岛接口） |
+| [`FINDINGS.md`](FINDINGS.md) | 踩坑留痕（§14/§15 活动关、§16 培养推荐、§17 森空岛接口、§23 雷电广告包 `com.android.flysilkworm`） |
 | [`MAA-INTERNALS.md`](MAA-INTERNALS.md) | MAA 内部机制参考（全部任务参数 / 关卡导航 / 资源结构 / 回调码 / 配方）——以 MaaCore 源码为准 |
 | [`MAA-6.19-融合评估.md`](MAA-6.19-融合评估.md) | **MaaCore 6.18.0→6.19.0 更新扒取与融合建议**（新增 `OperProgress` 培养任务 / `event_shop` 黑名单解禁 / 库存保持 / 定时唤醒；含接口与验证清单） |
 

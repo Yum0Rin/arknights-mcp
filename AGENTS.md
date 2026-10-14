@@ -13,7 +13,7 @@
 > `scripts/skland/`=森空岛在线取数；`scripts/maa-autoclose/`=MAA 跑完自动关雷电；
 > `scripts/daily-auto/`=**每日定时**（计划任务「方舟·每日日常」，每天 14:00：森空岛签到 → `maa_week run` 跑当天 → 关雷电）；
 > `scripts/weekly-refresh/`=**每周定时**（计划任务「方舟·每周刷新计划」，每周日 20:00：先测药 `sanity-potion` → 生成下周计划 → 弹窗）；
-> `scripts/sanity-potion/`=测理智药存量（只算「≤7 天到期」的药）；`scripts/ldplayer-ad/`=清雷电广告浮层（`com.android.flysilkworm`）。
+> `scripts/sanity-potion/`=测理智药存量（只算「≤7 天到期」的药）；`scripts/ldplayer-ad/`=清雷电广告浮层（`com.android.flysilkworm`，**本机已 `--disable` 永久禁用**，模拟器重置后需重跑）。
 
 ## 环境
 

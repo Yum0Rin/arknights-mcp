@@ -310,3 +310,20 @@
 - **修**：`RULE.normal_series` 6 → 10（`maa_week` 的 `ARK_SERIES` 默认同改）；`MAA-INTERNALS.md` 的 series 说明
   补「本机无 OldMethodFlag → 上限 10」；待办：把上限做成**运行时按资源判定**而不是常量。
 
+## 23. 雷电模拟器「有概率出现」的广告 = 独立包 `com.android.flysilkworm`（2026-10-14）
+
+- **现象**：雷电有时在启动器 / **游戏之上**弹全屏广告（如「剑侠世界4 · 预下载」），会盖住明日方舟，
+  干扰 MAA 的识别与点击（实测：`sanity_potion` 拉起游戏时就被它盖住）。它是「有概率出现」的，不是每次都弹。
+- **定位**（`dumpsys window | grep mCurrentFocus`）→ `Window{… com.android.flysilkworm}`。
+  它是**独立包**：`pm path com.android.flysilkworm` → `/data/app/…/base.apk`，**用户应用**（非系统应用，可正常禁用/卸载）；
+  窗口 `appop=SYSTEM_ALERT_WINDOW`（悬浮窗权限）→ 所以能盖在**任意界面**之上（包括游戏）。
+- **检测信号（确定性）**：`dumpsys window windows` 里存在 **`isVisible=true`** 的该包窗口 ——
+  在屏→有该窗口、杀掉→整份 dump 里没有。⚠ 别只 grep `mCurrentFocus`（广告不一定抢焦点）。
+- **处理**：
+  - 治标：`am force-stop com.android.flysilkworm` → **立即消失**（`mCurrentFocus` 从它回到游戏）；但会自启。
+  - **治本**：`pm disable-user --user 0 com.android.flysilkworm`（`new state=disabled-user`）→ 不再出现；
+    `pm enable` 可恢复。**本机已于 2026-10-14 执行 --disable 永久禁用**。
+- **坑**：别靠「点广告上的 ✕」——✕ 位置随广告素材变，盲点会误触主界面按钮；**按包名/窗口处理**确定性高得多。
+- **落地**：`scripts/ldplayer-ad/ldplayer_ad_guard.py`（`--status` / `--once`(默认,force-stop) / `--watch` /
+  `--disable` / `--enable` / `--uninstall`）。注：禁用是 **per-user**，模拟器**重置/重装后需重跑 `--disable`**。
+

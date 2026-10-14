@@ -53,6 +53,8 @@
     `--enable` 恢复）/ `--uninstall`（可 `pm install-existing` 恢复）。
   - 检测：`dumpsys window windows` 里存在 **`isVisible=true`** 的该包窗口（实测：在屏→有、杀掉→无）。
   - 实测：`force-stop` 立即消除（`mCurrentFocus` 从 flysilkworm 回到游戏）；`--disable`/`--enable` 均可逆。
+  - **本机已于 2026-10-14 执行 `--disable` 永久禁用**（用户裁定「禁广告」）→ `pm list packages -d` 含该包、无广告窗口。
+    注：禁用是 per-user，模拟器重置/重装后需重跑 `--disable`。踩坑详见 [`docs/FINDINGS.md`](docs/FINDINGS.md) §23。
 - **每日自动化（Windows 计划任务「方舟·每日日常」）**（2026-10-14）：
   - 新增 `scripts/daily-auto/daily_auto.py`：**每天 14:00** 依次跑「森空岛签到（先 `skland_cli.py status`
     续期 sign_token，再 `checkin`——token 过期会让签到 POST 直接 401，实测踩过）
