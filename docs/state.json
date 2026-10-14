@@ -685,7 +685,7 @@
       ],
       "self_test": "py_compile 三个 .py 全过；离线(保存的面板图)验证药丸颜色检测 3/3 命中；实机跑通测药(--tries 5)得 360；广告包 force-stop/disable/enable 实测可用。",
       "device": "已实机驱动：开面板→清空选择→只点 4 天那张→读数 360→关面板（未用药）。sanity.json 已更新为 360。",
-      "open_question": "①是否把广告守护接进 MAA startup/每日流程（best-effort force-stop）；②是否直接 --disable 永久禁用广告包。",
+      "open_question": "①是否把广告守护接进 MAA startup/每日流程（best-effort force-stop）；②是否直接 --disable 永久禁用广告包。→ **2026-10-14 用户裁定：禁广告** → 已执行 `ldplayer_ad_guard.py --disable`（`com.android.flysilkworm` new state=disabled-user），adb 复核 `pm list packages -d` 含该包、无广告窗口。注：禁用是 per-user，模拟器重置/重装后需重跑 --disable。",
       "no_commit": "本轮改动待 git commit"
     }
   ]
