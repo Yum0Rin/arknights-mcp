@@ -1,0 +1,380 @@
+{
+  "author": "arknights-mcp",
+  "description": "由一图流生成、arknights-mcp 转换（勿手改，重生成覆盖）",
+  "id": 1791995354716,
+  "title": "一图流排班表-20261009-243搓玉两换",
+  "planTimes": "2班",
+  "scheduleType": {
+    "planTimes": 2,
+    "trading": 2,
+    "manufacture": 4,
+    "power": 3,
+    "dormitory": 4
+  },
+  "plans": [
+    {
+      "index": 0,
+      "name": "B班",
+      "description": "",
+      "Fiammetta": {
+        "enable": true,
+        "target": "但书",
+        "order": "pre"
+      },
+      "drones": {
+        "room": "trading",
+        "index": 1,
+        "enable": true,
+        "order": "pre"
+      },
+      "rooms": {
+        "control": [
+          {
+            "skip": false,
+            "operators": [
+              "八幡海铃",
+              "明椒",
+              "麒麟R夜刀",
+              "火龙S黑角",
+              "电弧"
+            ],
+            "sort": true,
+            "autofill": false
+          }
+        ],
+        "trading": [
+          {
+            "skip": false,
+            "operators": [
+              "但书",
+              "雪雉",
+              "缠丸"
+            ],
+            "sort": true,
+            "autofill": false,
+            "product": "LMD"
+          },
+          {
+            "skip": false,
+            "operators": [
+              "德克萨斯",
+              "拉普兰德",
+              "慕斯"
+            ],
+            "sort": true,
+            "autofill": false,
+            "product": "Orundum"
+          }
+        ],
+        "manufacture": [
+          {
+            "skip": false,
+            "operators": [
+              "梅尔",
+              "食铁兽",
+              "铅踝"
+            ],
+            "sort": true,
+            "autofill": false,
+            "product": "Battle Record"
+          },
+          {
+            "skip": false,
+            "operators": [
+              "褐果",
+              "娜斯提",
+              "泡普卡"
+            ],
+            "sort": true,
+            "autofill": false,
+            "product": "Originium Shard"
+          },
+          {
+            "skip": false,
+            "operators": [
+              "香草",
+              "克洛丝",
+              "裁度"
+            ],
+            "sort": true,
+            "autofill": false,
+            "product": "Pure Gold"
+          },
+          {
+            "skip": false,
+            "operators": [
+              "石棉",
+              "杏仁",
+              "钼铅"
+            ],
+            "sort": true,
+            "autofill": false,
+            "product": "Pure Gold"
+          }
+        ],
+        "power": [
+          {
+            "skip": false,
+            "operators": [
+              "阿消"
+            ],
+            "sort": false,
+            "autofill": false
+          },
+          {
+            "skip": false,
+            "operators": [
+              "清流"
+            ],
+            "sort": false,
+            "autofill": false
+          },
+          {
+            "skip": false,
+            "operators": [
+              "布丁"
+            ],
+            "sort": false,
+            "autofill": false
+          }
+        ],
+        "meeting": [
+          {
+            "skip": false,
+            "operators": [
+              "远山",
+              "暗索"
+            ],
+            "sort": false,
+            "autofill": false
+          }
+        ],
+        "hire": [
+          {
+            "skip": false,
+            "operators": [
+              "遥"
+            ],
+            "sort": false,
+            "autofill": false
+          }
+        ],
+        "dormitory": [
+          {
+            "skip": false,
+            "operators": [],
+            "sort": false,
+            "autofill": true
+          },
+          {
+            "skip": false,
+            "operators": [],
+            "sort": false,
+            "autofill": true
+          },
+          {
+            "skip": false,
+            "operators": [],
+            "sort": false,
+            "autofill": true
+          },
+          {
+            "skip": false,
+            "operators": [],
+            "sort": false,
+            "autofill": true
+          }
+        ]
+      },
+      "duration": 720,
+      "period": [
+        [
+          "02:00",
+          "04:00"
+        ]
+      ]
+    },
+    {
+      "index": 1,
+      "name": "A班",
+      "description": "",
+      "Fiammetta": {
+        "enable": true,
+        "target": "但书",
+        "order": "pre"
+      },
+      "drones": {
+        "room": "trading",
+        "index": 1,
+        "enable": true,
+        "order": "pre"
+      },
+      "rooms": {
+        "control": [
+          {
+            "skip": false,
+            "operators": [
+              "焰狐龙梓兰",
+              "阿米娅",
+              "Mon3tr",
+              "霜华",
+              "闪击"
+            ],
+            "sort": true,
+            "autofill": false
+          }
+        ],
+        "trading": [
+          {
+            "skip": false,
+            "operators": [
+              "但书",
+              "蕾缪安",
+              "能天使"
+            ],
+            "sort": true,
+            "autofill": false,
+            "product": "LMD"
+          },
+          {
+            "skip": false,
+            "operators": [
+              "维娜·维多利亚",
+              "芬",
+              "夜刀"
+            ],
+            "sort": true,
+            "autofill": false,
+            "product": "Orundum"
+          }
+        ],
+        "manufacture": [
+          {
+            "skip": false,
+            "operators": [
+              "酒神",
+              "红豆",
+              "机械师"
+            ],
+            "sort": true,
+            "autofill": false,
+            "product": "Battle Record"
+          },
+          {
+            "skip": false,
+            "operators": [
+              "调香师",
+              "杰西卡",
+              "结城理"
+            ],
+            "sort": true,
+            "autofill": false,
+            "product": "Originium Shard"
+          },
+          {
+            "skip": false,
+            "operators": [
+              "引星棘刺",
+              "砾",
+              "斑点"
+            ],
+            "sort": true,
+            "autofill": false,
+            "product": "Pure Gold"
+          },
+          {
+            "skip": false,
+            "operators": [
+              "苍苔",
+              "夜烟",
+              "阿罗玛"
+            ],
+            "sort": true,
+            "autofill": false,
+            "product": "Pure Gold"
+          }
+        ],
+        "power": [
+          {
+            "skip": false,
+            "operators": [
+              "埃癸斯"
+            ],
+            "sort": false,
+            "autofill": false
+          },
+          {
+            "skip": false,
+            "operators": [
+              "承曦格雷伊"
+            ],
+            "sort": false,
+            "autofill": false
+          },
+          {
+            "skip": false,
+            "operators": [
+              "格雷伊"
+            ],
+            "sort": false,
+            "autofill": false
+          }
+        ],
+        "meeting": [
+          {
+            "skip": false,
+            "operators": [
+              "赤刃明霄陈",
+              "见行者"
+            ],
+            "sort": false,
+            "autofill": false
+          }
+        ],
+        "hire": [
+          {
+            "skip": false,
+            "operators": [
+              "淬羽赫默"
+            ],
+            "sort": false,
+            "autofill": false
+          }
+        ],
+        "dormitory": [
+          {
+            "skip": false,
+            "operators": [],
+            "sort": false,
+            "autofill": true
+          },
+          {
+            "skip": false,
+            "operators": [],
+            "sort": false,
+            "autofill": true
+          },
+          {
+            "skip": false,
+            "operators": [],
+            "sort": false,
+            "autofill": true
+          },
+          {
+            "skip": false,
+            "operators": [],
+            "sort": false,
+            "autofill": true
+          }
+        ]
+      },
+      "duration": 720,
+      "period": [
+        [
+          "14:00",
+          "16:00"
+        ]
+      ]
+    }
+  ]
+}

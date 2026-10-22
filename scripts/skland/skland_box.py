@@ -82,6 +82,10 @@ def to_operbox(info: dict) -> dict:
             "skill_lvl": c.get("mainSkillLvl"),
             "spec": [s.get("specializeLevel", 0) for s in (c.get("skills") or [])],
             "favor": c.get("favorPercent"),
+            # 模组（MAA 无）：equip = [{id, level, locked}]；locked=True 表示该模组尚未解锁（当前按 0 级算）
+            "modules": [{"id": e.get("id"), "level": e.get("level", 0),
+                         "locked": bool(e.get("locked"))}
+                        for e in (c.get("equip") or [])],
         })
     return {"done": True, "own_opers": ops, "own_count": len(ops),
             "source": "skland", "syncedAt": info.get("currentTs") or int(time.time())}

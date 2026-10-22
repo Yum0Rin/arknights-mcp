@@ -1,4 +1,10 @@
-"""单页汇总站点生成器（幂等）：把 weekly_plan / 一键长草方案 / 数据源渲染进一个 HTML。
+"""单页汇总站点生成器（幂等）：把 weekly_plan / 收益账本 / 数据源渲染进一个 HTML。
+
+改版（2026-10-14）：从「设计文档 + 数据 dump」改为「今天的决策看板」——
+  * 页签 **今天 / 本周 / 培养·工具 / 账本**（原「概览/本周/一键长草/周报/排班」5 页）；
+  * 删「一键长草」（设计文档不进看板）、「排班」（自研排班已归档，基建交 MAA 队列轮换）；
+  * 概览 4 卡 → 顶部**状态条**；新增「今天要刷什么」；逐日表今天高亮；计划 stale 醒目提示；
+  * 「周报」→「账本」（收益账本，接好数据后由 revenue_ledger 差分产出）。
 
 用法：
   python scheduling/tools/build_site.py
@@ -11,7 +17,6 @@ import argparse
 import datetime as _dt
 import html
 import json
-import os
 import re
 import sys
 from pathlib import Path
@@ -19,14 +24,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 TOOLS = Path(__file__).resolve().parent
 DATA = ROOT / "scheduling" / "data"
-STYLE = TOOLS / "assets" / "pico.min.css"  # Pico v2.1.1（内联，离线）
-PLAN_MD = ROOT / "docs" / "PLAN-一键长草.md"
+STYLE = TOOLS / "assets" / "pico.min.css"  # Pico v2.2（内联，离线）
 REPORT_DIR = ROOT / "scheduling" / "报告"
 DEFAULT_OUT = REPORT_DIR / "汇总.html"
-BASE_REPORT = REPORT_DIR / "index.html"      # 基建排班报告（render_report.py 产出，若rame 内嵌）
 
 sys.path.insert(0, str(TOOLS))
-from plan_util import distribute_daily, weekly_summary, session_advice  # noqa: E402
+from plan_util import (  # noqa: E402
+    budget_total, distribute_daily, load_costs, plan_day, plan_range,
+    session_advice, weekly_summary,
+)
+
+WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
 
 def e(x) -> str:
@@ -64,195 +72,208 @@ def load_jsonl(p: Path) -> list:
     return rows
 
 
-def render_markdown(p: Path) -> str:
-    try:
-        import markdown
-    except ImportError:
-        return f"<p class=\"muted\">未安装 markdown 库，无法渲染 {e(p.name)}。</p>"
-    text = read_text(p)
-    if not text:
-        return f"<p class=\"muted\">{e(str(p.relative_to(ROOT)))} 不存在或为空。</p>"
-    return markdown.markdown(text, extensions=["tables", "fenced_code"])
-
-
 def card(title: str, body: str) -> str:
     return f"<article class=\"card\"><h3>{e(title)}</h3>{body}</article>"
 
 
-RECRUIT_TOOL = """
-<article class="card" style="margin:.8rem 0">
-  <h3>贴词条 → 推荐</h3>
-  <p class="muted">把公招刷出的词条粘进来（空格 / 逗号 / 顿号分隔）——<strong>输入即自动计算</strong>，也可点按钮/回车。
-  需先起后端：<code>python scheduling/tools/site_server.py</code>。</p>
-  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-    <input id="taginput" placeholder="高级资深干员 输出 近战位 新手 生存" style="flex:1;min-width:260px">
-    <button id="tagbtn" type="button">推荐</button>
-  </div>
-  <div id="tagresult" class="muted" style="margin-top:.6rem"></div>
-</article>
-"""
+def today_iso() -> str:
+    return _dt.date.today().isoformat()
 
 
-def overview_section(plan, sanity, combos) -> str:
-    week = plan.get("week", "—") if plan else "—"
-    rng = plan.get("range", "—") if plan else "—"
+def dow_of(iso: str) -> str:
+    try:
+        return WEEKDAYS[_dt.date.fromisoformat(iso).weekday()]
+    except (ValueError, TypeError):
+        return ""
 
-    cur = sanity.get("current_sanity", "—") if sanity else "—"
-    pot = sanity.get("potion_sanity", "—") if sanity else "—"
-    sanity_body = f"<p><strong>{e(cur)}</strong> 当前理智</p><p class=\"muted\">理智药 {e(pot)}</p>"
 
-    annih = "—"
-    event_stage = "—"
-    if plan:
-        for t in plan.get("tasks", []):
-            params = t.get("params", {}) or {}
-            stage = str(params.get("stage", ""))
-            if stage.lower() == "annihilation":
-                annih = f"{params.get('times', '—')} 次"
-            elif stage and "YW" in stage.upper():
-                event_stage = stage + f" ×{params.get('times', '—')}"
-    annih_body = f"<p><strong>{e(annih)}</strong></p>"
+def _norm_counts(v) -> dict:
+    """runs 是 {关卡: 次数}、raids 是 [关卡, ...]（每个元素一次）→ 统一成 {关卡: 次数}。"""
+    if not v:
+        return {}
+    if isinstance(v, dict):
+        return {str(k): int(x) for k, x in v.items()}
+    out: dict = {}
+    for x in v:
+        out[str(x)] = out.get(str(x), 0) + 1
+    return out
 
-    window = plan.get("event_window") if plan else None
-    if not window:
-        window = event_stage if event_stage != "—" else "见本周安排"
-    window_body = f"<p><strong>{e(window)}</strong></p>"
 
-    cards = "".join([
-        card("本周", f"<p><strong>{e(week)}</strong></p><p class=\"muted\">{e(rng)}</p>"),
-        card("理智", sanity_body),
-        card("剿灭", annih_body),
-        card("活动窗口", window_body),
-    ])
-    rec = ("<details style=\"margin-top:1rem\" open>"
-           "<summary>公招推荐（贴词条 → 出未拥有概率最大的组合）</summary>"
-           + RECRUIT_TOOL + recruit_block(combos) + "</details>")
-    return (f"<section id=\"概览\"><h2>概览</h2><div class=\"cards\">{cards}</div>"
-            f"{rec}</section>")
+# ---------------------------------------------------------------- 顶部状态条
+
+def status_bar(plan, sanity) -> str:
+    """常驻状态条：日期/更新/计划范围/理智。计划 stale 时红字提醒。"""
+    now = _dt.datetime.now().strftime("%Y-%m-%d %H:%M")
+    t = today_iso()
+    rng = (plan or {}).get("range", "—")
+    gen = (plan or {}).get("generated_at", "—")
+    cur = (sanity or {}).get("current_sanity", "—")
+    pot = (sanity or {}).get("potion_sanity", "—")
+
+    _day, status = plan_day(plan, t)
+    alert = ""
+    if status == "out_of_range":
+        alert = ("<div class=\"alert\">⚠ 计划范围 <b>%s</b> 未覆盖今天（%s）——已过期或未生成到本周，"
+                 "重生成：<code>python scheduling/tools/plan_week.py</code></div>" % (e(rng), e(t)))
+    elif status == "no_entry":
+        alert = ("<div class=\"alert\">⚠ 计划里没有今天（%s）的条目——计划不完整，"
+                 "重生成：<code>python scheduling/tools/plan_week.py</code></div>" % e(t))
+    elif status == "no_daily":
+        alert = "<div class=\"alert\">⚠ 计划缺「逐日视图」——重生成：<code>python scheduling/tools/plan_week.py</code></div>"
+
+    items = "".join(
+        "<div class=\"sb-item\"><span class=\"k\">%s</span><span class=\"v\">%s</span></div>"
+        % (e(k), e(v))
+        for k, v in (("今天", "%s %s" % (t, dow_of(t))),
+                     ("计划范围", rng),
+                     ("计划生成", gen),
+                     ("当前理智", cur),
+                     ("理智药", pot),
+                     ("页面更新", now)))
+    return f"<div class=\"statusbar\">{items}</div>{alert}"
+
+
+# ---------------------------------------------------------------- ① 今天
+
+def today_section(plan, sanity) -> str:
+    t = today_iso()
+    day, status = plan_day(plan, t)
+    head = f"<h2>今天 · {e(t)} {e(dow_of(t))}</h2>"
+    if not day:
+        msg = {"out_of_range": "今天的计划不在当前周计划范围内（见顶部红字）。",
+               "no_entry": "周计划里没有今天这一天。",
+               "no_daily": "周计划缺逐日视图。"}.get(status, "没有可用的今日安排。")
+        return f"<section id=\"今天\"><div class=\"page-head\">{head}</div><p class=\"muted\">{e(msg)}</p></section>"
+
+    cost = load_costs()
+    runs = _norm_counts(day.get("runs"))
+    raids = _norm_counts(day.get("raids"))
+    rows = ""
+    for stage, cnt in sorted(runs.items(), key=lambda kv: -kv[1]):
+        unit = cost.get(stage, 0)
+        rows += "<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>" % (
+            e(stage), cnt, unit, unit * cnt)
+    for stage, cnt in sorted(raids.items(), key=lambda kv: -kv[1]):
+        unit = cost.get(stage, 0)
+        rows += "<tr><td>%s <span class=\"muted\">突袭</span></td><td>%d</td><td>%d</td><td>%d</td></tr>" % (
+            e(stage), cnt, unit, unit * cnt)
+    if not rows:
+        rows = "<tr><td colspan=\"4\" class=\"muted\">今天没有排刷关（日常/收菜类任务见「本周」明细）</td></tr>"
+    table = ("<div class=\"tbl-wrap\"><table><thead><tr><th>关卡</th><th>次数</th>"
+             "<th>单次理智</th><th>小计</th></tr></thead><tbody>" + rows + "</tbody></table></div>")
+
+    used = day.get("sanity", 0) or 0
+    med = day.get("medicine", 0) or 0
+    tips = ["今天目标理智 <b>%s</b>；其中需吃理智药 <b>%s</b>（整瓶 60，花到 ~0 最省）。" % (e(used), e(med))]
+    if day.get("opens"):
+        tips.append("<span style=\"color:#C03A2B\">★ 本日新开：%s</span>" % e("、".join(day["opens"])))
+    if day.get("over"):
+        tips.append("<span style=\"color:#C03A2B\">当天会超自然回复上限（%s），靠理智药覆盖。</span>" % e(day.get("cap", "—")))
+    ev = plan.get("event")
+    if ev:
+        w = (plan.get("event_window") or {})
+        if isinstance(w, dict) and w.get("close"):
+            try:
+                left = (_dt.date.fromisoformat(str(w["close"])[:10]) - _dt.date.today()).days
+                if left >= 0:
+                    tips.append("活动 <b>%s</b> 剩 <b>%d</b> 天（%s 截止）。" % (e(ev), left, e(w["close"])))
+            except ValueError:
+                pass
+    tip_html = "<ul class=\"tips\">" + "".join("<li>%s</li>" % s for s in tips) + "</ul>"
+    return f"<section id=\"今天\"><div class=\"page-head\">{head}</div>{table}{tip_html}</section>"
+
+
+# ---------------------------------------------------------------- ② 本周
+
+def _progress(used, total) -> str:
+    pct = 0 if not total else max(0, min(100, round(100 * used / total)))
+    return (f"<div class=\"bar\"><div class=\"bar-fill\" style=\"width:{pct}%\"></div>"
+            f"<span class=\"bar-txt\">{used} / {total}（{pct}%）</span></div>")
 
 
 def weekly_section(plan, sanity) -> str:
+    head = "<div class=\"page-head\"><h2>本周安排</h2></div>"
     if not plan or not plan.get("tasks"):
-        return ("<section id=\"本周\"><h2>本周安排</h2>"
+        return (f"<section id=\"本周\">{head}"
                 "<p class=\"muted\">本周计划未生成（缺 scheduling/data/weekly_plan.json）。</p>"
                 + sanity_block(sanity) + "</section>")
-    rows = []
-    for i, t in enumerate(plan.get("tasks", []), 1):
-        typ = t.get("type", "")
-        params = t.get("params", {}) or {}
-        target = params.get("stage") or params.get("mode") or params.get("client_type") or "—"
-        times = params.get("times")
-        if times is None and params.get("enable") is not None:
-            times = "开" if params.get("enable") else "关"
-        if times is None:
-            times = "—"
-        note = t.get("name") or t.get("note") or ""
-        rows.append(
-            f"<tr><td>{i}</td><td>{e(typ)}</td><td>{e(target)}</td>"
-            f"<td>{e(times)}</td><td>{e(note)}</td></tr>"
-        )
-    table = (
-        "<div class=\"tbl-wrap\"><table><thead><tr>"
-        "<th>序号</th><th>类型</th><th>关卡或模式</th><th>次数</th><th>说明</th>"
-        "</tr></thead><tbody>" + "".join(rows) + "</tbody></table></div>"
-    )
-    side = plan.get("side") or []
-    side_html = ""
-    if side:
-        items = "".join(f"<li><code>{e(s.get('script', ''))}</code> — {e(s.get('when', ''))}</li>" for s in side)
-        side_html = f"<h3>附带脚本</h3><ul>{items}</ul>"
-    daily = distribute_daily(plan)
-    daily_html = ""
-    if daily:
-        drows = ""
-        for d in daily:
-            runs = "、".join("%s ×%d" % (k, v) for k, v in (d.get("runs") or {}).items()) or "—"
-            if d.get("opens"):
-                runs += "　<span style=\"color:#C03A2B\">★本日新开：%s</span>" % e("、".join(d["opens"]))
-            sstyle = " style=\"color:#C03A2B;font-weight:700\"" if d.get("over") else ""
-            drows += ("<tr><td>%s</td><td>%s</td><td>%s</td><td%s>%s%s</td></tr>"
-                      % (e(d.get("date", "")), e(d.get("dow", "")), runs, sstyle,
-                         e(d.get("sanity", 0) or 0),
-                         "（超上限 %s）" % e(d.get("cap", 240)) if d.get("over") else ""))
-        sm = weekly_summary(plan, daily)
-        line = ("<p>本周合计 <strong>%d</strong> 理智；自然预算 %s + 周常药 %s"
-                % (sm["total"], sm["natural"], sm["weekly_potion"]))
-        if sm.get("meds"):
-            line += " + 理智药存量 %s" % sm["meds"]
-        line += " = <strong>%s</strong>。" % sm["avail"]
-        if sm["gap"]:
-            line += "　<span style=\"color:#C03A2B\">缺口 %d（需靠理智药）</span>" % sm["gap"]
-        else:
-            line += "　够。"
-        if sm["over_days"]:
-            line += "　标红的日子当天会超自然回复，需吃理智药。"
-        line += "</p>"
-        # 上线建议（不浪费自动回复）
-        srows = ""
-        for s in session_advice(plan, daily):
-            srows += ("<tr><td>%s %s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
-                      % (e(s.get("date", "")), e(s.get("dow", "")), e(s.get("sanity", 0)),
-                         e(s.get("sessions", 0)), e(s.get("note", ""))))
-        line += ('<h4>上线建议</h4>'
-                 '<p class="muted">本机玩法 <strong>1 次/天</strong>（来时理智满 = 上限 205）：'
-                 '每天 1 次上线、<strong>花到 ~0 再下线</strong>；超上限的部分靠理智药补'
-                 '（整瓶 60 → 当天总量凑 205+60k 最省）。</p>'
-                 '<div class="tbl-wrap"><table><thead><tr><th>日期</th><th>当天理智</th>'
-                 '<th>建议上线次数</th><th>备注</th></tr></thead><tbody>'
-                 + srows + '</tbody></table></div>')
-        daily_html = ('<h3>每日安排</h3><div class="tbl-wrap"><table><thead><tr>'
-                      '<th>日期</th><th>星期</th><th>刷关</th><th>理智</th></tr></thead><tbody>'
-                      + drows + '</tbody></table></div>' + line)
-    tr = plan.get("training")
-    train_html = ""
-    if tr:
-        grows = "".join(
-            "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
-            % (e(g.get("name")), e(g.get("qty")), e(g.get("stock", 0)), e(g.get("sanity")))
-            for g in tr.get("top_gaps", []))
-        train_html = (
-            "<h3>培养进度</h3>"
-            "<p>目标：<strong>%s</strong>；总缺口 <strong>%s</strong> 理智"
-            "（材料 %s + 精英化龙门币 %s）；本周投 <strong>%s</strong> 理智%s</p>"
-            '<div class="tbl-wrap"><table><thead><tr><th>缺的材料</th><th>需</th>'
-            '<th>库存已抵</th><th>还需理智</th></tr></thead><tbody>%s</tbody></table></div>'
-            % (e("、".join(tr.get("targets", []))), e(tr.get("total_sanity")),
-               e(tr.get("material_sanity")), e(tr.get("lmd_sanity")), e(tr.get("week_sanity")),
-               ("（还需约 %s 周）" % tr["need_weeks"]) if tr.get("need_weeks") else "",
-               grows))
-    return (f"<section id=\"本周\"><h2>本周安排</h2>{table}{daily_html}"
-            f"{train_html}{side_html}{sanity_block(sanity)}</section>")
+    t = today_iso()
+    daily = distribute_daily(plan) or []
 
+    drows = ""
+    for d in daily:
+        runs = "、".join("%s ×%d" % (k, v) for k, v in _norm_counts(d.get("runs")).items()) or "—"
+        _raids = _norm_counts(d.get("raids"))
+        if _raids:
+            runs += "　突袭 " + "、".join("%s×%d" % (k, v) for k, v in _raids.items())
+        if d.get("opens"):
+            runs += "　<span style=\"color:#C03A2B\">★本日新开：%s</span>" % e("、".join(d["opens"]))
+        cls = " class=\"today\"" if d.get("date") == t else ""
+        sstyle = " style=\"color:#C03A2B;font-weight:700\"" if d.get("over") else ""
+        drows += ("<tr%s><td>%s</td><td>%s</td><td>%s</td><td%s>%s%s</td></tr>"
+                  % (cls, e(d.get("date", "")), e(d.get("dow", "")), runs, sstyle,
+                     e(d.get("sanity", 0) or 0),
+                     "（超上限 %s）" % e(d.get("cap", 240)) if d.get("over") else ""))
+    daily_tbl = ('<div class="tbl-wrap"><table><thead><tr><th>日期</th><th>星期</th>'
+                 '<th>刷关</th><th>理智</th></tr></thead><tbody>' + drows + '</tbody></table></div>')
 
-def recruit_block(combos) -> str:
-    """公招词条参考（不放独立页，作为概览里的折叠块）。"""
-    if not combos or not combos.get("combos"):
-        return ("<p class=\"muted\">公招词条数据待接入（跑 "
-                "<code>python scheduling/tools/recruit_combo.py</code>）。</p>")
+    sm = weekly_summary(plan, daily)
+    n = len(daily) or 7
+    total = budget_total(plan, n)
+    used = sm["total"]
+    line = ("<p>本周合计 <strong>%d</strong> 理智；预算 <strong>%d</strong>"
+            "（自然 %s + 理智药 %s）。%s</p>"
+            % (used, total, sm["natural"], (plan.get("budget") or {}).get("meds_usable", sm.get("meds") or 0),
+               ("<span style=\"color:#C03A2B\">缺口 %d（需靠理智药）</span>" % sm["gap"])
+               if sm["gap"] else "预算够。"))
+    line += _progress(used, total)
 
-    def table(rows):
-        body = "".join(
-            "<tr><td>%s</td><td>%d</td><td>%d</td><td>%s</td><td>★%d~%d</td></tr>"
-            % (e("+".join(r.get("tags", []))), r.get("size", 0), r.get("unowned", 0),
-               ("%.0f%%" % (100 * r.get("p_new", 0))), r.get("rare_min", 0), r.get("rare_max", 0))
-            for r in rows)
-        return ('<div class="tbl-wrap"><table><thead><tr><th>词条组合</th><th>池子</th>'
-                '<th>未拥有</th><th>P(新)</th><th>星级</th></tr></thead><tbody>'
-                + body + '</tbody></table></div>')
+    # 各关合计（本周）
+    agg: dict = {}
+    for d in daily:
+        for k, v in _norm_counts(d.get("runs")).items():
+            agg[k] = agg.get(k, 0) + v
+        for k, v in _norm_counts(d.get("raids")).items():
+            agg[k + "（突袭）"] = agg.get(k + "（突袭）", 0) + v
+    cost = load_costs()
+    if agg:
+        grows = "".join("<tr><td>%s</td><td>%d</td><td>%d</td></tr>"
+                        % (e(k), v, cost.get(k, 0) * v)
+                        for k, v in sorted(agg.items(), key=lambda kv: -kv[1]))
+        agg_html = ('<h3>各关合计</h3><div class="tbl-wrap"><table><thead><tr>'
+                    '<th>关卡</th><th>次数</th><th>理智</th></tr></thead><tbody>'
+                    + grows + '</tbody></table></div>')
+    else:
+        agg_html = ""
 
-    meta = ("<p class=\"muted\">公招池 160 人；owned 来源 <strong>%s</strong>（%d 人）；"
-            "枚举 %d 个组合。判据：P(新)=池中未拥有/池大小，同 P 取高星。"
-            "<br>※ 仅在公招刷出「高级资深干员」等好词条时才需要查这张表。"
-            % (e(combos.get("source", "?")), combos.get("owned_count", 0),
-               combos.get("total_combos", 0)))
-    sp = combos.get("specials") or []
-    rec = combos.get("combos") or []
-    sp_html = ("<h3>特殊词条（必选）</h3>" + table(sp)) if sp else ""
-    return (meta + sp_html + "<h3>推荐组合（按 P(新) 排序）</h3>" + table(rec))
+    # 上线建议
+    srows = "".join("<tr><td>%s %s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+                    % (e(s.get("date", "")), e(s.get("dow", "")), e(s.get("sanity", 0)),
+                       e(s.get("sessions", 0)), e(s.get("note", "")))
+                    for s in session_advice(plan, daily))
+    ses_html = ('<details><summary>上线建议（1 次/天，花到 ~0）</summary>'
+                '<div class="tbl-wrap"><table><thead><tr><th>日期</th><th>当天理智</th>'
+                '<th>建议上线次数</th><th>备注</th></tr></thead><tbody>'
+                + srows + '</tbody></table></div></details>')
+
+    # 任务明细（MAA 队列视角，折叠）
+    trows = "".join(
+        "<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+        % (i, e(t_.get("type", "")),
+           e((t_.get("params") or {}).get("stage") or (t_.get("params") or {}).get("mode")
+             or (t_.get("params") or {}).get("client_type") or "—"),
+           e((t_.get("params") or {}).get("times", "—")))
+        for i, t_ in enumerate(plan.get("tasks", []), 1))
+    tasks_html = ('<details><summary>任务明细（写进 MAA 队列的条目）</summary>'
+                  '<div class="tbl-wrap"><table><thead><tr><th>#</th><th>类型</th>'
+                  '<th>关卡/模式</th><th>次数</th></tr></thead><tbody>'
+                  + trows + '</tbody></table></div></details>')
+
+    return (f"<section id=\"本周\">{head}{daily_tbl}{line}{agg_html}{ses_html}"
+            f"{tasks_html}{sanity_block(sanity)}</section>")
 
 
 def sanity_block(sanity) -> str:
-    """理智药读数（并入「本周」，不单列一页）。"""
     if not sanity:
         return "<p class=\"muted\">理智药：数据待接入（缺 sanity.json）。</p>"
     rows = []
@@ -270,8 +291,80 @@ def sanity_block(sanity) -> str:
     return "<h3>理智药</h3>" + table
 
 
+# ---------------------------------------------------------------- ③ 培养 · 工具
+
+def training_section(plan) -> str:
+    tr = (plan or {}).get("training")
+    if not tr:
+        return "<h3>培养进度</h3><p class=\"muted\">无培养目标 / 本周未排培养。</p>"
+    grows = "".join(
+        "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+        % (e(g.get("name")), e(g.get("qty")), e(g.get("stock", 0)), e(g.get("sanity")))
+        for g in tr.get("top_gaps", []))
+    return (
+        "<h3>培养进度</h3>"
+        "<p>目标：<strong>%s</strong>；总缺口 <strong>%s</strong> 理智"
+        "（材料 %s + 精英化龙门币 %s）；本周投 <strong>%s</strong> 理智%s</p>"
+        '<div class="tbl-wrap"><table><thead><tr><th>缺的材料</th><th>需</th>'
+        '<th>库存已抵</th><th>还需理智</th></tr></thead><tbody>%s</tbody></table></div>'
+        % (e("、".join(tr.get("targets", []))), e(tr.get("total_sanity")),
+           e(tr.get("material_sanity")), e(tr.get("lmd_sanity")), e(tr.get("week_sanity")),
+           ("（还需约 %s 周）" % tr["need_weeks"]) if tr.get("need_weeks") else "",
+           grows))
+
+
+def training_tools_section(plan, combos) -> str:
+    head = "<div class=\"page-head\"><h2>培养 · 工具</h2></div>"
+    return f"<section id=\"培养工具\">{head}{training_section(plan)}{recruit_tool(combos)}</section>"
+
+
+RECRUIT_TOOL = """
+<article class="card" style="margin:.8rem 0">
+  <h3>公招：贴词条 → 推荐（按需）</h3>
+  <p class="muted">把公招刷出的词条粘进来（空格 / 逗号 / 顿号分隔）——<strong>输入即自动计算</strong>。
+  需先起后端：<code>python scheduling/tools/site_server.py</code>，再用 <code>http://127.0.0.1:8787/</code> 打开本页。</p>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    <input id="taginput" placeholder="高级资深干员 输出 近战位 新手 生存" style="flex:1;min-width:260px">
+    <button id="tagbtn" type="button">推荐</button>
+  </div>
+  <div id="tagresult" class="muted" style="margin-top:.6rem"></div>
+</article>
+"""
+
+
+def recruit_tool(combos) -> str:
+    return "<h3>公招推荐</h3>" + RECRUIT_TOOL + recruit_block(combos)
+
+
+def recruit_block(combos) -> str:
+    """公招词条参考（静态兜底表；交互版需 site_server）。"""
+    if not combos or not combos.get("combos"):
+        return ("<p class=\"muted\">公招词条数据待接入（跑 "
+                "<code>python scheduling/tools/recruit_combo.py</code>）。</p>")
+
+    def table(rows):
+        body = "".join(
+            "<tr><td>%s</td><td>%d</td><td>%d</td><td>%s</td><td>★%d~%d</td></tr>"
+            % (e("+".join(r.get("tags", []))), r.get("size", 0), r.get("unowned", 0),
+               ("%.0f%%" % (100 * r.get("p_new", 0))), r.get("rare_min", 0), r.get("rare_max", 0))
+            for r in rows)
+        return ('<div class="tbl-wrap"><table><thead><tr><th>词条组合</th><th>池子</th>'
+                '<th>未拥有</th><th>P(新)</th><th>星级</th></tr></thead><tbody>'
+                + body + '</tbody></table></div>')
+
+    meta = ("<p class=\"muted\">owned 来源 <strong>%s</strong>（%d 人）；枚举 %d 个组合。"
+            "判据：P(新)=池中未拥有/池大小，同 P 取高星。</p>"
+            % (e(combos.get("source", "?")), combos.get("owned_count", 0),
+               combos.get("total_combos", 0)))
+    sp = combos.get("specials") or []
+    rec = combos.get("combos") or []
+    sp_html = ("<h4>特殊词条（必选）</h4>" + table(sp)) if sp else ""
+    return (meta + sp_html + "<h4>推荐组合（按 P(新) 排序）</h4>" + table(rec))
+
+
+# ---------------------------------------------------------------- ④ 账本（收益账本）
+
 def _fmt(v) -> str:
-    """把嵌套 dict/list 压成一行可读文本。"""
     if isinstance(v, dict):
         return "，".join("%s %s" % (k, _fmt(vv)) for k, vv in v.items())
     if isinstance(v, list):
@@ -287,7 +380,6 @@ def _kv_block(d, title: str) -> str:
 
 
 def _field_zh(f: str) -> str:
-    """练度字段内部名 -> 中文（elite/level/skill_N/spec_N/mod_N/new）。"""
     if f.startswith("skill_"):
         return "技能" + f.split("_", 1)[1]
     if f.startswith("spec_"):
@@ -306,10 +398,16 @@ def _val_zh(field: str, v) -> str:
     return str(v)
 
 
-def weekly_report_section(ledger: list) -> str:
+def ledger_section(ledger) -> str:
+    head = "<div class=\"page-head\"><h2>收益账本</h2></div>"
     if not ledger:
-        return ("<section id=\"周报\"><h2>收益周报</h2>"
-                "<p class=\"muted\">数据待接入（缺 scheduling/data/revenue_ledger.jsonl）。</p></section>")
+        return (f"<section id=\"账本\">{head}"
+                "<p class=\"muted\">账本为空。收益账本按 04:00 结算段记「基建收益 / 刷关 / 消耗 / 练度变化」的差额，"
+                "需要每段采集一次快照再差分。接法：</p>"
+                "<pre class=\"muted\">python scheduling/tools/revenue_ledger.py settle --auto   "
+                "# 自动采集（MAA仓库+森空岛干员箱+理智读数+当日计划）并差分入账</pre>"
+                "<p class=\"muted\">首次为基线（无差额）；之后每段产生一行。详见 <code>docs/收益账本与周报.md</code>。</p>"
+                "</section>")
     rows = [r for r in ledger if isinstance(r, dict)]
     n = len(rows)
 
@@ -335,6 +433,8 @@ def weekly_report_section(ledger: list) -> str:
         w = r.get("window", {}) or {}
         parts = [f"<h3>{e(r.get('ts',''))} <span class=\"muted\">"
                  f"{e(w.get('start',''))} .. {e(w.get('end',''))}</span></h3>"]
+        if r.get("first"):
+            parts.append("<p class=\"muted\">（基线段：首个快照，无差额）</p>")
         tri = (_kv_block(r.get("base"), "基建收益")
                + _kv_block(r.get("farm"), "刷关")
                + _kv_block(r.get("spend"), "消耗"))
@@ -367,19 +467,12 @@ def weekly_report_section(ledger: list) -> str:
 
         blocks.append('<article class="card">' + "".join(parts) + '</article>')
 
-    return (f'<section id="周报"><h2>收益周报</h2>'
+    return (f'<section id="账本">{head}'
             f'<div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">{cards}</div>'
             + "".join(blocks) + '</section>')
 
 
-def rotation_section() -> str:
-    if BASE_REPORT.exists():
-        return ("<section id=\"排班\"><h2>基建排班报告</h2>"
-                "<iframe src=\"index.html\" "
-                "style=\"width:100%;height:1400px;border:0\"></iframe></section>")
-    return ("<section id=\"排班\"><h2>基建排班报告</h2>"
-            "<p class=\"muted\">未找到 基建排班报告（scheduling/报告/index.html）。</p></section>")
-
+# ---------------------------------------------------------------- 提示 / 组装
 
 def build_alert(run_report: list) -> str:
     if not run_report:
@@ -402,21 +495,28 @@ CSS = """
   --pico-primary-underline:#C03A2B;
 }
 h1{color:#C03A2B}
-h2{color:#2F4858;border-bottom:2px solid #E8DCC8;padding-bottom:.3rem}
+h2{color:#2F4858;border-bottom:2px solid #E8DCC8;padding-bottom:.3rem;margin-bottom:.6rem}
 h3,h4{color:#2F4858}
 section{scroll-margin-top:5rem;margin-bottom:2rem}
+.page-head h2{margin-top:0}
 nav.tabs{position:sticky;top:0;z-index:30;background:var(--pico-background-color,#fff);
-  border-bottom:1px solid #E8DCC8;padding:.4rem 0;margin-bottom:1rem;}
-nav.tabs ul{flex-wrap:wrap;gap:.2rem}
-nav.tabs a{font-size:.9rem;padding:.2rem .5rem;cursor:pointer}
+  border-bottom:1px solid #E8DCC8;padding:.4rem 0;margin-bottom:.6rem;}
+nav.tabs ul{flex-wrap:wrap;gap:.2rem;margin:0}
+nav.tabs a{font-size:.95rem;padding:.25rem .6rem;cursor:pointer}
 nav.tabs a.active{font-weight:700;color:#C03A2B;border-bottom:2px solid #C03A2B}
+.statusbar{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;align-items:center;
+  background:#F7F4EC;border:1px solid #E8DCC8;border-radius:8px;padding:.5rem .8rem;margin:.4rem 0 .8rem;
+  font-size:.88rem}
+.statusbar .sb-item{display:flex;gap:.35rem;align-items:baseline}
+.statusbar .k{color:#777}
+.statusbar .v{font-weight:600;color:#2F4858}
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
 @media(max-width:720px){.cards{grid-template-columns:repeat(2,1fr)}}
 .card{border:1px solid var(--pico-muted-border-color);border-radius:8px;padding:1rem}
 .card h3{margin-top:0;font-size:1rem;color:#2F4858}
 .card p{margin:0 0 .3rem}
 .alert{background:#F7E7E5;border-left:4px solid #C03A2B;color:#8a2a1f;
-  padding:.7rem 1rem;border-radius:6px;margin:.6rem 0}
+  padding:.7rem 1rem;border-radius:6px;margin:.6rem 0;white-space:normal}
 .tbl-wrap{overflow-x:auto}
 table{font-size:.92rem}
 th{background:#2F4858;color:#fff}
@@ -429,35 +529,41 @@ th,td{padding:.45rem .6rem}
 .kv table{font-size:.85rem;margin:0}
 .kv td:first-child{color:#666;white-space:nowrap}
 article.card>h3{border-bottom:1px dashed #E8DCC8;padding-bottom:.3rem}
+tr.today{background:#F7E7E5;font-weight:700}
+tr.today td{color:#8a2a1f}
+.tips{margin:.4rem 0 0;font-size:.92rem}
+.bar{position:relative;background:#EFE9DC;border-radius:6px;height:1.4rem;margin:.4rem 0;overflow:hidden}
+.bar-fill{background:#C03A2B;height:100%}
+.bar-txt{position:absolute;left:0;right:0;top:0;line-height:1.4rem;text-align:center;
+  font-size:.82rem;color:#2F4858}
+details{margin:.5rem 0}
+summary{cursor:pointer;color:#2F4858;font-weight:600}
+pre{white-space:pre-wrap;word-break:break-all;background:#F7F4EC;padding:.6rem .8rem;border-radius:6px}
 """
 
 
-def build(plan, sanity, ledger, run_report, plan_html, combos) -> str:
+def build(plan, sanity, ledger, run_report, combos) -> str:
     style_css = read_text(STYLE)
-    now = _dt.datetime.now().strftime("%Y-%m-%d %H:%M")
-    plan_ts = (plan.get("generated_at") if plan else None) or "—"
     nav = (
         "<nav class=\"tabs container\">"
         "<ul><li><strong>明日方舟 · 汇总</strong></li></ul>"
         "<ul>"
-        "<li><a href=\"#概览\" data-page=\"概览\">概览</a></li>"
+        "<li><a href=\"#今天\" data-page=\"今天\">今天</a></li>"
         "<li><a href=\"#本周\" data-page=\"本周\">本周</a></li>"
-        "<li><a href=\"#一键长草\" data-page=\"一键长草\">一键长草</a></li>"
-        "<li><a href=\"#周报\" data-page=\"周报\">周报</a></li>"
-        "<li><a href=\"#排班\" data-page=\"排班\">排班</a></li>"
+        "<li><a href=\"#培养工具\" data-page=\"培养工具\">培养 · 工具</a></li>"
+        "<li><a href=\"#账本\" data-page=\"账本\">账本</a></li>"
         "</ul></nav>"
     )
     body = "".join([
         build_alert(run_report),
         nav,
-        f"<p class=\"muted\">计划生成：{e(plan_ts)} · 页面更新：{e(now)}</p>",
-        overview_section(plan, sanity, combos),
+        status_bar(plan, sanity),                # 常驻状态条（不在 .page 里，任何页都可见）
+        today_section(plan, sanity),
         weekly_section(plan, sanity),
-        f"<section id=\"一键长草\"><h2>一键长草思路</h2>{plan_html}</section>",
-        weekly_report_section(ledger),
-        rotation_section(),
+        training_tools_section(plan, combos),
+        ledger_section(ledger),
     ])
-    # 每个区块变成一个「页」（一次只显示一页，靠顶部导航切换）
+    # 每个 <section id=...> 变成一个「页」（一次只显示一页，靠顶部导航切换）
     body = re.sub(r'<section id="([^"]+)">', r'<section id="\1" class="page">', body)
     script = """<script>
 (function(){
@@ -479,7 +585,7 @@ def build(plan, sanity, ledger, run_report, plan_html, combos) -> str:
     });
   });
   var h=location.hash?decodeURIComponent(location.hash.slice(1)):null;
-  show(h||'概览');
+  show(h||'今天');
 
   // --- 公招：贴词条 -> 后端推荐 ---
   var API=(location.protocol==='file:')?'http://127.0.0.1:8787':'';
@@ -508,7 +614,7 @@ def build(plan, sanity, ledger, run_report, plan_html, combos) -> str:
   var _tm=null;
   function _deb(){ if(_tm){clearTimeout(_tm);} _tm=setTimeout(window.__recruit,450); }
   if(_i){
-    _i.addEventListener('input', _deb);   // 边输/边贴，停顿 0.45s 自动算
+    _i.addEventListener('input', _deb);
     _i.addEventListener('paste', function(){ setTimeout(_deb,0); });
     _i.addEventListener('keydown',function(e){
       if(e.key==='Enter'){ if(_tm){clearTimeout(_tm);} window.__recruit(); }
@@ -536,16 +642,14 @@ def main(argv=None) -> int:
     ledger = load_jsonl(DATA / "revenue_ledger.jsonl")
     run_report = load_jsonl(DATA / "run_report.jsonl")
     combos = load_json(DATA / "recruit_combos.json")
-    plan_html = render_markdown(PLAN_MD)
 
-    doc = build(plan, sanity, ledger, run_report, plan_html, combos)
+    doc = build(plan, sanity, ledger, run_report, combos)
 
     out = Path(args.out).resolve()
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(doc, encoding="utf-8")
-    sections = doc.count("<section")
     print(f"wrote {out}")
-    print(f"bytes={len(doc.encode('utf-8'))} sections={sections}")
+    print(f"bytes={len(doc.encode('utf-8'))} sections={doc.count('<section')}")
     return 0
 
 

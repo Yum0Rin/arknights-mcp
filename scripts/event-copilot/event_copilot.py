@@ -92,10 +92,33 @@ def log(*a):
     print(*a, flush=True)
 
 
-def http_json(url: str, timeout: int = 40):
-    req = urllib.request.Request(url, headers={"User-Agent": "arknights-mcp/event-copilot"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode("utf-8"))
+_HTTP_CACHE: dict[str, object] = {}
+
+
+def http_json(url: str, timeout: int = 40, retries: int = 3):
+    """带进程内缓存（作业详情/查询结果在下一次跑之前不会变，省掉重复请求）。"""
+    if url in _HTTP_CACHE:
+        return _HTTP_CACHE[url]
+    data = _http_json_nocache(url, timeout=timeout, retries=retries)
+    if len(_HTTP_CACHE) < 4000:
+        _HTTP_CACHE[url] = data
+    return data
+
+
+def _http_json_nocache(url: str, timeout: int = 40, retries: int = 3):
+    """GET→JSON，**带重试**：prts.maa.plus 是第三方站，偶发 SSL/断流会让整条自动链崩掉
+    （2026-10-18 实测：`ssl.py recv_into` 读到一半断）。重试 3 次、退避 1.5s。"""
+    last = None
+    for i in range(max(1, retries)):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "arknights-mcp/event-copilot"})
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.loads(r.read().decode("utf-8"))
+        except Exception as e:  # noqa: BLE001
+            last = e
+            if i + 1 < retries:
+                time.sleep(1.5 * (i + 1))
+    raise last  # type: ignore[misc]
 
 
 def http_text(url: str, timeout: int = 60):
@@ -298,7 +321,39 @@ def _min_required_ok(c) -> bool:
     return mv <= MAX_CORE
 
 
+def mastery_gap(c, own) -> tuple[int, int]:
+    """作业用的是「哪个技能」→ 和我们的专精比，返回 (总缺口, 缺专三人数)。
+
+    作业 `opers[].skill` 是 1/2/3（用第几个技能）；我们的 `spec` 是 [S1,S2,S3] 的专精等级。
+    该技能专精 <3 就记 3-mastery 的缺口（专0=3、专一=2、专二=1、专三=0）。没有专精数据按 0 算。
+    只做**排序偏好**，不做硬性过滤 —— 用户要求「不符合要求的作业也要试」。
+    """
+    tot = n = 0
+    for o in (c.get("opers") or []):
+        box = own.get(o.get("name") or "")
+        if not box:
+            continue
+        try:
+            sk = int(o.get("skill") or 1)
+        except (TypeError, ValueError):
+            sk = 1
+        spec = box.get("spec") or []
+        try:
+            m = int(spec[sk - 1]) if 0 < sk <= len(spec) else 0
+        except (TypeError, ValueError, IndexError):
+            m = 0
+        g = max(0, 3 - m)
+        if g:
+            n += 1
+            tot += g
+    return tot, n
+
+
 def score(c, own):
+    """(未拥有, 空组, 低练, 低练组, 专精总缺口, 缺专三人数)
+
+    后两位只用于**排序**（专精越足越先试），不参与「可抄」判定 —— 见 copyable()。
+    """
     indiv = c.get("opers", []) or []
     groups = c.get("groups", []) or []
     not_owned = sum(1 for o in indiv if elite(own, o["name"]) < 0)
@@ -312,13 +367,14 @@ def score(c, own):
             glow += 1
         else:
             empty += 1
-    return (not_owned, empty, low, glow)
+    mg_sum, mg_n = mastery_gap(c, own)
+    return (not_owned, empty, low, glow, mg_sum, mg_n)
 
 
 def copyable(sc) -> bool:
-    """用户铁律(2026-10-10)：作业要求的每个干员槽都是精二(E2)+ 才算「可抄」。
-    等价于 未拥有=0 且 空组=0 且 低练=0 且 低练组=0。"""
-    return tuple(sc) == (0, 0, 0, 0)
+    """用户铁律(2026-10-10)：作业要求的每个干员槽都 E2+ 才算「可抄」。
+    等价于 未拥有=0 且 空组=0 且 低练=0 且 低练组=0（后两位专精缺口只用于排序）。"""
+    return tuple(sc)[:4] == (0, 0, 0, 0)
 
 
 def candidates_for(level_id: str, name: str, own, limit: int = 80, strict: bool = False):
@@ -378,20 +434,27 @@ def _make_asst(cb):
 
 
 def run_plan(event_id, plan, try_all=False, per_stage_timeout=360, formation_index=FORMATION_INDEX,
-             loop=1, is_raid=False, stop_on_fail=False):
+             loop=1, is_raid=False, stop_on_fail=False, deadline=None):
     """plan: [(stage_tuple, [(score, content, title, id), ...]), ...]
     逐关执行；try_all=True 时某关失败则自动换下一个候选（失败会退理智，代价低）。
 
     · `is_raid=True`：作业条目带 `is_raid`（**活动突袭只能走 Copilot**，MAA `Fight` 不支持）；
-    · `stop_on_fail=True`（链模式）：某关未过 → **不再打后面的关**（后面本来就没解锁），直接结束；
+    · `stop_on_fail=True`（链模式）：某关未过 → 结束**本关**（后续关是否继续由调用方/解锁规则决定）；
     · 返回 `{stage_code: ok(bool)}`（供调用方回写进度）。
     """
-    state = {"error": False}
+    state = {"error": False, "stars": None}
 
     def cb(msg, detail, arg):
         if msg == 10000:  # AsstMsg::TaskChainError
             state["error"] = True
             log("    [x] TaskChainError")
+        # 2 星时 MAA **不会**报 TaskChainError，只会匹配 StageDrops-Stars-Adverse；
+        # 用户口径：两星也算没过（2026-10-19 实测 EX-3 被误记成 ok）。
+        s = detail if isinstance(detail, str) else str(detail or "")
+        if "StageDrops-Stars-3" in s:
+            state["stars"] = 3
+        elif "StageDrops-Stars-Adverse" in s and state.get("stars") != 3:
+            state["stars"] = 2
 
     a = _make_asst(cb)
     results = {}
@@ -403,40 +466,58 @@ def run_plan(event_id, plan, try_all=False, per_stage_timeout=360, formation_ind
         if not tried:
             log("[!] %s 无可用候选" % code)
         for j, (sc, content, title, cid) in enumerate(tried):
+            if deadline is not None and time.time() > deadline:
+                log("[!] 总预算用完 → 停止本关后续候选（%s）" % code)
+                break
             if not content.get("actions"):
                 continue
             p = save_copilot(event_id, code, content)
             log("[*] %s%s 候选%d id=%s %s -> %s"
                 % (code, "（突袭）" if is_raid else "", j + 1, cid, title, p.name))
             state["error"] = False
+            state["stars"] = None
+            # ⚠ `nav_name_override: None` 会让 MaaCore 直接抛 C++ 异常
+            #   （OSError 0xe06d7363 / WinError -529697949）→ append 直接崩。只有真有值时才带上这个键。
+            # 而且活动 EX 关**必须**给值：作业里的 stage_name 是 level_id（act52side_ex01），
+            # MAA 靠 stages.json 把 level_id 映射成显示名，而 EX 不在 stages.json 里 → 不给就找不到关。
+            _item = {"id": 0, "filename": str(p), "is_raid": bool(is_raid),
+                     "nav_name_override": str(stage[0])}
             tid = a.append_task("Copilot", {
                 "formation": True,
                 "formation_index": formation_index,   # 只用第四编队，不动别的编队
                 "ignore_requirements": True,          # 练度不那么够也能用
                 "loop_times": loop,                   # >1 = 刷关(重复同一关)
-                "copilot_list": [{"id": 0, "filename": str(p),
-                                  "nav_name_override": None,
-                                  "is_raid": bool(is_raid)}],   # 突袭开关（活动突袭必走 Copilot）
+                "copilot_list": [_item],              # 突袭开关 is_raid（活动突袭必走 Copilot）
             })
             if not tid:
                 log("    append 失败，跳过该候选")
                 continue
             a.start()
             t0 = time.time()
+            timed_out = False
             while a.running() and time.time() - t0 < per_stage_timeout:
                 time.sleep(2)
             if a.running():
+                timed_out = True
                 a.stop()
-            if not state["error"]:
-                log("    [v] 成功")
+            if not state["error"] and not timed_out and (is_raid or state.get("stars") == 3):
+                log("    [v] 成功" + ("（3 星）" if state.get("stars") == 3 else
+                                     ("（突袭：只判过/不过）" if is_raid else "")))
                 ok = True
                 break
-            log("    [x] 该候选未过，尝试下一个")
+            if timed_out:
+                log("    [x] 超时（%ds）被停止 → 按未过处理，换下一个候选" % per_stage_timeout)
+            elif state.get("stars") == 2 and not is_raid:
+                log("    [x] 普通只有 2 星（未满 3 星，突袭不解锁）→ 按未过处理，换下一个候选")
+            elif not is_raid and state.get("stars") is None:
+                log("    [x] 没取到 3 星确认（可能点击/识别异常）→ 按未过处理，换下一个候选")
+            else:
+                log("    [x] 该候选未过，尝试下一个")
         results[code] = ok
         if not ok:
             log("[!] %s 所有候选均未成功（可能已 2 星通关，或需更高练度/换作业）" % code)
             if stop_on_fail:
-                log("[!] 链模式：卡在 %s → **链停**，不再打后面的关（后面本来就没解锁）" % code)
+                log("[!] %s 候选已试完，本关结束（后续是否继续由链决定）" % code)
                 break
     log("=== 完成 ===")
     return results
@@ -473,8 +554,9 @@ def cmd_plan(args):
         log("%s %s  候选 %d" % (code, name, len(cands)))
         for i, (sc, negv, cid, content, title) in enumerate(cands[:args.top]):
             mark = "★可抄" if copyable(sc) else "  不可抄"
-            log("  #%d id=%-7d %s 未拥有=%d 空组=%d 低练=%d 低练组=%d  %s" % (
-                i + 1, cid, mark, sc[0], sc[1], sc[2], sc[3], title))
+            log("  #%d id=%-7d %s 未拥有=%d 空组=%d 低练=%d 低练组=%d 专精缺=%d(缺%d人)  %s" % (
+                i + 1, cid, mark, sc[0], sc[1], sc[2], sc[3],
+                (sc[4] if len(sc) > 4 else 0), (sc[5] if len(sc) > 5 else 0), title))
 
 
 def _ov_index(event_id: str) -> dict:

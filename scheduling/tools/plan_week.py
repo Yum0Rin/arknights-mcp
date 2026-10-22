@@ -76,8 +76,20 @@ RULE = {
     "normal_series": 10,
     "event_series": 10,
     "train_targets": ["乌尔比安"],   # 本期只养乌尔比安（用户 2026-10-11 定）
-    # 基建：交给 MAA 自带的「队列轮换」(Infrast mode=20000)，这里只决定**收哪些设施**
-    # （= MAA GUI RoomList 里启用的那批；顺序无所谓）。AssistantChange 不启用。
+    # 基建（2026-10-14 用户裁定「选 2」）：MAA **自定义换班**（`mode=10000` Custom）
+    #   · 只有 Custom/Default 才**逐设施摆干员**并执行**菲亚梅塔置换**；Rotation(20000) 只点一次
+    #     游戏内「队列轮换」且 `skip shift`（不摆干员）。见 docs/FINDINGS.md §24。
+    #   · 方案表 = 一图流「243 两换」两份 plan：index 0 = B班、index 1 = A班。MAA **不看** plan 的
+    #     `period`（那是 GUI「按时间自动」用的）→ 由我们**显式传** `plan_index`。
+    #   · 班次：14:00「每日日常」→ A班(1)；02:00「凌晨基建换班」→ B班(0)，两边各换一次对齐 720min。
+    #   · 方案表 = 一图流「243 搓玉两换」→ `convert_to_maa.py` 转成 MAA custom_infrast 格式，
+    #     落在仓库 `scheduling/MAA基建排班/243_搓玉_定制.json`（**不是** MAA resource 里那份「钱书均衡·龙门币优先」版；
+    #     同口径见 `scripts/maa-week/maa_week.py` 的 `INFRAST_CUSTOM_FILE`，改口径要**两处一起改**）。
+    "infra_mode": 10000,
+    "infra_custom_file": str(ROOT / "scheduling" / "MAA基建排班" / "243_搓玉_定制.json"),
+    "infra_plan_day": 1,     # 14:00 跑的那一班
+    "infra_plan_night": 0,   # 02:00 跑的那一班
+    # 收哪些设施（= MAA GUI RoomList 里启用的那批；**Custom 下顺序 = 执行顺序**）。AssistantChange 不启用。
     "infra_facilities": ["Mfg", "Trade", "Power", "Control", "Reception",
                          "Office", "Dorm", "Processing", "Training"],
     # 突袭（raid）：**只有 EX 关和 S 关有突袭**，普通关（YW-1..8）没有；每关**打完普通首通后**才可打其突袭。
@@ -235,11 +247,13 @@ def _assemble_tasks(ann_runs, ev_stage, ev_runs, extra_tasks, r17_total, train_t
                       "name": "培养刷材料"})
     tasks += [
         {"type": "Recruit", "params": {"select": [3, 4, 5], "confirm": [3, 4, 5], "times": 4}},
-        # 基建：**交给 MAA 自带的「队列轮换」**（mode=20000 → 进基建 → 当前班有人心情为 0 就点游戏内
-        # 「一键轮换」，再各设施收菜；Rotation 下 MAA 不换干员＝skip_shift）。见 docs/STATE-一键长草.md。
-        # 自研换班脚本已归档：历史版本/基建改MAA轮换+队列按天-2026-10-12/
-        {"type": "Infrast", "params": {"mode": 20000, "facility": RULE["infra_facilities"]},
-         "name": "基建·队列轮换"},
+        # 基建：2026-10-14 用户裁定改 **MAA 自定义换班**（mode=10000）——逐设施摆干员 + 菲亚梅塔置换。
+        # ⚠ MAA 不看 plan 的 `period`，也不吃 plan_index=-1 → 显式传：14:00「每日日常」跑 A班(index 1)，
+        #    02:00「凌晨基建换班」跑 B班(index 0)。见 docs/FINDINGS.md §24。
+        {"type": "Infrast",
+         "params": {"mode": RULE["infra_mode"], "filename": RULE["infra_custom_file"],
+                    "plan_index": RULE["infra_plan_day"], "facility": RULE["infra_facilities"]},
+         "name": "基建·自定义换班（A班）"},
         {"type": "Mall", "params": {"enable": True}},
         {"type": "Award", "params": {"enable": True}},
     ]
@@ -621,6 +635,10 @@ def plan(date: dt.date, start: dt.date | None = None) -> dict:
                           "stock": (r.get("det") or {}).get("stock", 0)}
                          for r in sorted((x for x in train_info["rows"] if x.get("sanity")),
                                          key=lambda x: -(x["sanity"] or 0))[:12]],
+            # 缺口按合成关系**递归降级**后的材料（缺的兑成下一级；中间材料已用库存抵扣）
+            "resolved": train_info.get("resolved") or [],
+            "downgrades": train_info.get("downgrades") or [],
+            "craft_gold": train_info.get("craft_gold") or 0,
         }
     # --- 逐日视图：队列**按天编辑**用（maa_week write/run 都读这里，别再各自重算）---
     # 结构：[{date, dow, runs:{stage:次数}, sanity, cap, day_cap, opens, over, unplaced}, ...]

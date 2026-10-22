@@ -1,0 +1,9 @@
+{"ts": "2026-10-14 14:18:28", "date": "2026-10-14", "checkin_rc": 2, "maa_rc": 0, "ok": true, "close": "closed"}
+{"ts": "2026-10-15 15:18:15", "date": "2026-10-15", "checkin_rc": 0, "maa_rc": 0, "depot_rc": 0, "ledger_rc": 0, "ok": true, "close": "closed"}
+{"ts": "2026-10-16 14:21:26", "date": "2026-10-16", "checkin_rc": 0, "maa_rc": 0, "depot_rc": 0, "ledger_rc": 0, "ok": true, "close": "closed"}
+{"ts": "2026-10-17 15:39:09", "date": "2026-10-17", "checkin_rc": 0, "maa_rc": 0, "depot_rc": 0, "ledger_rc": 0, "ok": true, "close": "closed"}
+{"ts": "2026-10-18 14:27:32", "date": "2026-10-18", "checkin_rc": 0, "maa_rc": 0, "depot_rc": 0, "ledger_rc": 0, "ok": true, "close": "closed"}
+{"ts": "2026-10-19 14:56:37", "date": "2026-10-19", "checkin_rc": 0, "checkin_note": "", "maa_rc": 0, "sanity_rc": 3, "depot_rc": 0, "ledger_rc": 4, "ok": true, "close": "closed", "repaired_at": "2026-10-19 16:32", "repaired_note": "sanity 锚点误匹配 + 账本坏基线已修（docs/FINDINGS.md §26）；今天的 rc=3/4 是历史记录，明天 14:00 起按新逻辑"}
+{"ts": "2026-10-20 15:08:06", "date": "2026-10-20", "checkin_rc": 0, "checkin_note": "", "maa_rc": 0, "sanity_rc": -1, "depot_rc": 0, "ledger_rc": 0, "ok": true, "close": "closed"}
+{"ts": "2026-10-21 15:08:38", "date": "2026-10-21", "checkin_rc": 0, "checkin_note": "", "maa_rc": 0, "sanity_rc": 3, "depot_rc": 0, "ledger_rc": 0, "ok": true, "close": "closed"}
+{"ts": "2026-10-22 14:55:24", "date": "2026-10-22", "checkin_rc": 0, "checkin_note": "", "maa_rc": 0, "sanity_rc": 3, "depot_rc": 1, "ledger_rc": 0, "ok": true, "close": "closed"}

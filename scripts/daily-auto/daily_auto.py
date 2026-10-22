@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""每日自动化：森空岛签到 → 直驱跑 MAA 当天日常 → 关雷电。
+"""每日自动化：森空岛签到 → 直驱跑 MAA 当天日常 → 刷仓库 + 收益账本结算 → 关雷电。
 
 供 Windows 计划任务「方舟·每日日常」调用（**每天 14:00**）：
   1. 森空岛签到（skland_cli.py checkin）—— 失败（凭证过期等）只记日志提醒，**不中断**，继续跑日常。
   2. 直驱 MaaCore 跑当天日常（maa_week.py run，内置冷启动会自动拉起雷电）。
+  2.5 收益账本：**刷仓库读数**（maa_week.py depot → `C:\\MAA\\data\\DepotData.json`，仅当天日常跑成功且
+      非 MAA GUI 忙时）→ **结算入账**（revenue_ledger.py settle --auto）。两步只记日志、**不中断**。
   3. 跑完关雷电模拟器（ldconsole quit --index 0）—— 成功/失败/超时都关；
      唯一例外：MAA GUI 正在运行（maa_week 退出码 2 且输出含「MAA GUI」）→ 不关，免得打断你手动玩。
 
@@ -41,6 +43,7 @@ RUN_REPORT = REPO / "scheduling" / "data" / "run_report.jsonl"
 DAILY_JSONL = REPO / "scheduling" / "data" / "daily_run.jsonl"
 SKLAND_CLI = REPO / "scripts" / "skland" / "skland_cli.py"
 MAA_WEEK = REPO / "scripts" / "maa-week" / "maa_week.py"
+REVENUE_LEDGER = REPO / "scheduling" / "tools" / "revenue_ledger.py"
 LDCONSOLE = pathlib.Path(os.environ.get("ARK_EMULATOR", r"C:\leidian\LDPlayer9\ldconsole.exe"))
 EMU_INDEX = int(os.environ.get("ARK_EMU_INDEX", "0"))
 
@@ -48,6 +51,24 @@ CHECKIN_TIMEOUT_S = 120
 
 # 子进程强制 UTF-8，避免 GBK 控制台把中文/符号打崩
 CHILD_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
+
+
+def _run_console(cmd: list, timeout: int = 15):
+    """跑外部控制台命令，返回 (rc, 文本)。
+
+    ⚠ 不能靠 `text=True`：本进程给子进程设了 PYTHONUTF8=1，但 ldconsole/adb 输出是 GBK。
+    这里取 bytes，先 UTF-8、失败再 GBK 兜底。
+    """
+    try:
+        r = subprocess.run(cmd, capture_output=True, timeout=timeout, env=CHILD_ENV)
+    except Exception:  # noqa: BLE001
+        return -1, ""
+    raw = (r.stdout or b"") + (r.stderr or b"")
+    try:
+        txt = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        txt = raw.decode("gbk", errors="replace")
+    return r.returncode, txt
 
 
 def log(msg: str) -> None:
@@ -123,12 +144,8 @@ def _already_ran_today(date: str) -> bool:
 
 def _emu_running():
     """雷电实例是否在运行：True/False，查询失败 None。"""
-    try:
-        r = subprocess.run([str(LDCONSOLE), "list2"], cwd=str(LDCONSOLE.parent),
-                           capture_output=True, text=True, timeout=15, env=CHILD_ENV)
-    except Exception:  # noqa: BLE001
-        return None
-    for row in (r.stdout or "").splitlines():
+    _rc, out = _run_console([str(LDCONSOLE), "list2"], timeout=15)
+    for row in (out or "").splitlines():
         parts = row.split(",")
         if len(parts) >= 5 and parts[0].strip().isdigit() and int(parts[0]) == EMU_INDEX:
             return parts[4].strip() == "1"
@@ -185,6 +202,8 @@ def main() -> int:
         if not a.skip_checkin:
             log("  1) 森空岛签到：%s status（续期 sign_token）→ checkin" % SKLAND_CLI)
         log("  2) 跑当天日常：%s run --date %s --timeout %d" % (MAA_WEEK, date, a.timeout))
+        log("  2.5) 刷仓库读数：%s depot（日常跑成功且非 GUI 忙时）→ 收益账本结算：%s settle --auto"
+            % (MAA_WEEK, REVENUE_LEDGER))
         log("  3) 关雷电：%s quit --index %d（--no-close 可关）" % (LDCONSOLE, EMU_INDEX))
         log("[dry] 未执行。")
         return 0
@@ -196,18 +215,26 @@ def main() -> int:
 
     # 1) 森空岛签到（失败不中断）
     checkin_rc = None
+    checkin_note = ""
     if a.skip_checkin:
         log("已跳过森空岛签到（--skip-checkin）。")
     else:
         # 先 `status` 续期 sign_token：token 过期会让 attendance POST 直接 401（实测踩过）。
         _run_step("森空岛凭证续期", [sys.executable, str(SKLAND_CLI), "status"],
                   timeout=CHECKIN_TIMEOUT_S)
-        checkin_rc, _ = _run_step("森空岛签到",
-                                  [sys.executable, str(SKLAND_CLI), "checkin"],
-                                  timeout=CHECKIN_TIMEOUT_S)
+        checkin_rc, checkin_out = _run_step("森空岛签到",
+                                           [sys.executable, str(SKLAND_CLI), "checkin"],
+                                           timeout=CHECKIN_TIMEOUT_S)
         if checkin_rc != 0:
-            log("!! 签到未成功（rc=%s）—— 凭证可能过期；重登：python scripts/skland/skland_cli.py login" % checkin_rc)
-            log("   → 按约定继续跑 MAA 日常，不中断。")
+            flat = (checkin_out or "").replace(" ", "")
+            # 403 + code 10001「请勿重复签到」= 今天已经签过了，不是凭证问题（2026-10-14 踩过）
+            if "请勿重复签到" in flat or '"code":10001' in flat:
+                checkin_note = "already-checked-in"
+                log("   今日已签到过（服务端 10001「请勿重复签到」）→ 视为正常，不是凭证过期。")
+            else:
+                log("!! 签到未成功（rc=%s）—— 若为 401/凭证失效，重登："
+                    "python scripts/skland/skland_cli.py login" % checkin_rc)
+                log("   → 按约定继续跑 MAA 日常，不中断。")
 
     # 2) 跑当天日常（maa_week 内置冷启动会拉起雷电）
     maa_rc, maa_out = _run_step(
@@ -215,8 +242,33 @@ def main() -> int:
         [sys.executable, str(MAA_WEEK), "run", "--date", date, "--timeout", str(a.timeout)],
         timeout=a.timeout + 600)
 
-    # 3) 关雷电（成功/失败/超时都关；MAA GUI 在跑则不关）
     gui_busy = (maa_rc == 2) and ("MAA GUI" in (maa_out or ""))
+
+    # 2.5) 收益账本：先刷仓库读数（MAA Depot → C:\MAA\data\DepotData.json），再结算入账。
+    #      仓库读数需设备在线（游戏开着）→ 只在当天日常**跑成功且非 GUI 忙**时做（此时停在主界面）。
+    #      两步都**只记日志、不中断**（账本是旁路，不影响日常成败）。
+    depot_rc = ledger_rc = sanity_rc = None
+    if maa_rc == 0 and not gui_busy:
+        # 先读理智（游戏还停在主界面；账本要用真读数，别再拿 10-14 的 160 估）
+        # --tries/--back 给足：EX 链失败会停在结算界面，要按几次 BACK 才回主界面（2026-10-19 踩过）
+        sanity_rc, _ = _run_step("读理智（主界面→药剂面板 OCR，只读不用药）",
+                                 [sys.executable, str(MAA_WEEK), "sanity",
+                                  "--tries", "5", "--back", "4"], timeout=480)
+        if sanity_rc != 0:
+            log("!! 理智读数未成功（rc=%s）—— 账本仍按估算。" % sanity_rc)
+        depot_rc, _ = _run_step("刷仓库读数（MAA Depot）",
+                                [sys.executable, str(MAA_WEEK), "depot"], timeout=420)
+        if depot_rc != 0:
+            log("!! 仓库读数未成功（rc=%s）—— 收益账本改用现有 DepotData.json。" % depot_rc)
+    else:
+        log("跳过读理智/刷仓库（日常未跑成功或 MAA GUI 忙）—— 账本用现有读数。")
+    ledger_rc, _ = _run_step("收益账本结算（settle --auto）",
+                             [sys.executable, str(REVENUE_LEDGER), "settle", "--auto",
+                              "--note", "daily-auto 结算段"], timeout=300)
+    if ledger_rc != 0:
+        log("!! 收益账本结算未成功（rc=%s）—— 不中断。" % ledger_rc)
+
+    # 3) 关雷电（成功/失败/超时都关；MAA GUI 在跑则不关）
     if a.no_close:
         log("按 --no-close 不关雷电。")
         close_result = "no-close-flag"
@@ -227,9 +279,12 @@ def main() -> int:
         close_result = _close_emulator()
 
     ok = (maa_rc == 0)
-    _jsonl({"date": date, "checkin_rc": checkin_rc, "maa_rc": maa_rc,
+    _jsonl({"date": date, "checkin_rc": checkin_rc, "checkin_note": checkin_note,
+            "maa_rc": maa_rc,
+            "sanity_rc": sanity_rc, "depot_rc": depot_rc, "ledger_rc": ledger_rc,
             "ok": ok, "close": close_result})
-    log("===== 每日自动化结束：maa_rc=%s ok=%s 关雷电=%s =====" % (maa_rc, ok, close_result))
+    log("===== 每日自动化结束：maa_rc=%s 理智rc=%s 仓库rc=%s 账本rc=%s ok=%s 关雷电=%s ====="
+        % (maa_rc, sanity_rc, depot_rc, ledger_rc, ok, close_result))
     return 0 if ok else 1
 
 

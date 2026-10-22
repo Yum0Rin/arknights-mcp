@@ -1,12 +1,12 @@
 {
-  "week": "2026-W42",
-  "range": "2026-10-14..2026-10-18",
-  "generated_at": "2026-10-14T09:55",
+  "week": "2026-W43",
+  "range": "2026-10-19..2026-10-25",
+  "generated_at": "2026-10-19T12:41",
   "by": "plan_week.py",
   "event": "act52side",
   "budget": {
-    "sanity_natural": 1025,
-    "n_days": 5,
+    "sanity_natural": 1435,
+    "n_days": 7,
     "weekly_potion": 0,
     "meds_available": 360,
     "meds_usable": 360,
@@ -15,10 +15,10 @@
     "daily_natural": 205
   },
   "inventory": {
-    "固源岩": 1163
+    "固源岩": 1004
   },
   "shards": {
-    "stock": 1163,
+    "stock": 1004,
     "target": 500,
     "target_activity": 500,
     "target_idle": 1000,
@@ -92,7 +92,7 @@
       "type": "Fight",
       "params": {
         "stage": "Annihilation",
-        "times": 4
+        "times": 5
       },
       "name": "剿灭"
     },
@@ -100,19 +100,10 @@
       "type": "Fight",
       "params": {
         "stage": "YW-6",
-        "times": 40,
+        "times": 30,
         "series": 10
       },
       "name": "活动刷代币"
-    },
-    {
-      "type": "Fight",
-      "params": {
-        "stage": "YW-EX-1",
-        "times": 1
-      },
-      "name": "YW-EX-1 首通",
-      "seq": 1
     },
     {
       "type": "Raid",
@@ -120,16 +111,7 @@
         "stage": "YW-EX-1"
       },
       "name": "YW-EX-1 突袭",
-      "seq": 2
-    },
-    {
-      "type": "Fight",
-      "params": {
-        "stage": "YW-EX-2",
-        "times": 1
-      },
-      "name": "YW-EX-2 首通",
-      "seq": 3
+      "seq": 1
     },
     {
       "type": "Raid",
@@ -137,16 +119,7 @@
         "stage": "YW-EX-2"
       },
       "name": "YW-EX-2 突袭",
-      "seq": 4
-    },
-    {
-      "type": "Fight",
-      "params": {
-        "stage": "YW-EX-3",
-        "times": 1
-      },
-      "name": "YW-EX-3 首通",
-      "seq": 5
+      "seq": 2
     },
     {
       "type": "Raid",
@@ -154,16 +127,7 @@
         "stage": "YW-EX-3"
       },
       "name": "YW-EX-3 突袭",
-      "seq": 6
-    },
-    {
-      "type": "Fight",
-      "params": {
-        "stage": "YW-EX-4",
-        "times": 1
-      },
-      "name": "YW-EX-4 首通",
-      "seq": 7
+      "seq": 3
     },
     {
       "type": "Raid",
@@ -171,16 +135,7 @@
         "stage": "YW-EX-4"
       },
       "name": "YW-EX-4 突袭",
-      "seq": 8
-    },
-    {
-      "type": "Fight",
-      "params": {
-        "stage": "YW-EX-5",
-        "times": 1
-      },
-      "name": "YW-EX-5 首通",
-      "seq": 9
+      "seq": 4
     },
     {
       "type": "Raid",
@@ -188,16 +143,7 @@
         "stage": "YW-EX-5"
       },
       "name": "YW-EX-5 突袭",
-      "seq": 10
-    },
-    {
-      "type": "Fight",
-      "params": {
-        "stage": "YW-EX-6",
-        "times": 1
-      },
-      "name": "YW-EX-6 首通",
-      "seq": 11
+      "seq": 5
     },
     {
       "type": "Raid",
@@ -205,16 +151,7 @@
         "stage": "YW-EX-6"
       },
       "name": "YW-EX-6 突袭",
-      "seq": 12
-    },
-    {
-      "type": "Fight",
-      "params": {
-        "stage": "YW-EX-7",
-        "times": 1
-      },
-      "name": "YW-EX-7 首通",
-      "seq": 13
+      "seq": 6
     },
     {
       "type": "Raid",
@@ -222,16 +159,7 @@
         "stage": "YW-EX-7"
       },
       "name": "YW-EX-7 突袭",
-      "seq": 14
-    },
-    {
-      "type": "Fight",
-      "params": {
-        "stage": "YW-EX-8",
-        "times": 1
-      },
-      "name": "YW-EX-8 首通",
-      "seq": 15
+      "seq": 7
     },
     {
       "type": "Raid",
@@ -239,13 +167,30 @@
         "stage": "YW-EX-8"
       },
       "name": "YW-EX-8 突袭",
-      "seq": 16
+      "seq": 8
+    },
+    {
+      "type": "Fight",
+      "params": {
+        "stage": "YW-S-1",
+        "times": 1
+      },
+      "name": "YW-S-1 首通",
+      "seq": 9
+    },
+    {
+      "type": "Raid",
+      "params": {
+        "stage": "YW-S-1"
+      },
+      "name": "YW-S-1 突袭",
+      "seq": 10
     },
     {
       "type": "Fight",
       "params": {
         "stage": "1-7",
-        "times": 30,
+        "times": 140,
         "series": 10
       },
       "name": "搓玉/填充"
@@ -269,7 +214,9 @@
     {
       "type": "Infrast",
       "params": {
-        "mode": 20000,
+        "mode": 10000,
+        "filename": "C:\\Users\\39007\\Desktop\\arknights-mcp\\scheduling\\MAA基建排班\\243_搓玉_定制.json",
+        "plan_index": 1,
         "facility": [
           "Mfg",
           "Trade",
@@ -282,7 +229,7 @@
           "Training"
         ]
       },
-      "name": "基建·队列轮换"
+      "name": "基建·自定义换班（A班）"
     },
     {
       "type": "Mall",
@@ -300,26 +247,25 @@
   "side": [],
   "rationale": {
     "notes": [
-      "计划窗口 2026-10-14 ~ 2026-10-18（**剩余 5 天**，非固定 7 天）",
-      "预算 = 自然 205/天 × 5 天 = 1025 + 理智药 360（读数 360，**整瓶 60 可用 360**，余 0 留到下周） = 1385（药读数 2026-10-14；**已含周常药，不加 240**）",
-      "本周剿灭已 370/1800（2026-W42）→ 按现状只排 4 次（满额 5 次）",
-      "★ EX 首通链：已通 0/8 关，本周排 YW-EX-1..YW-EX-8（共 8 关普通；另排突袭 8 关（按关顺序、紧跟其普通；理智按普通计，口径待核））—— 依次解锁，前面未通则后面排不了",
-      "S 关 2026-10-23 开放（不在本周，或本周前已结束），本周不排（已通 0/1，突袭 0）",
+      "计划窗口 2026-10-19 ~ 2026-10-25（**剩余 7 天**，非固定 7 天）",
+      "预算 = 自然 205/天 × 7 天 = 1435 + 理智药 360（读数 360，**整瓶 60 可用 360**，余 0 留到下周） = 1795（药读数 2026-10-14；**已含周常药，不加 240**）",
+      "EX 首通链：8 关普通**全部已通**，本周不排首通（未通突袭 8 关照排）",
+      "★ S 首通链：已通 0/1 关，本周排 YW-S-1..YW-S-1（共 1 关普通；另排突袭 1 关（按关顺序、紧跟其普通；理智按普通计，口径待核））—— 依次解锁，前面未通则后面排不了",
       "本机连战上限 = 10（判据：resource 无 `FightSeries-OldMethodFlag` → 新列表；期望 series 普通 10 / 活动 10 取 min 后 = 10 / 10）",
-      "固源岩 1163 → 期末需 ≥500（有活动要打→target=500）→ 1-7 下限 0 次（原始 0 向上对齐 series=10；周耗 647，单次产 1.245）",
-      "活动 YW-6：开放 2026-10-09~2026-10-23，每局 21 理智；商店要买 5110 代币 → 需 244 次；预算剩 1045 → 活动排 40 次（原始 49 向下对齐 series=10）",
+      "固源岩 1004 → 期末需 ≥500（有活动要打→target=500）→ 1-7 下限 120 次（原始 115 向上对齐 series=10；周耗 647，单次产 1.245）",
+      "活动 YW-6：开放 2026-10-09~2026-10-23，每局 21 理智；商店要买 5110 代币 → 需 244 次；预算剩 800 → 活动排 30 次（原始 38 向下对齐 series=10）",
       "活动商店可白拿 5 种材料（已从培养需求里抵扣）",
-      "培养：总缺口 2541 理智（材料 6 + 龙门币 2535）；本周投 0 理智刷 无",
-      "预算 1385；剿灭 100 + EX/S首通 120 + EX/S突袭 120 + 1-7 180(下限 0+填充 30) + 活动 840 + 培养 0 = 1360",
-      "活动 YW-6：本周实排 40 次（每局 21 理智，共 840 理智）",
-      "1-7：本周实排 30 次（下限 0 + 填充 30），共 180 理智"
+      "培养：总缺口 4573 理智（材料 8 + 龙门币 2535）；本周投 0 理智刷 无",
+      "预算 1795；剿灭 125 + EX/S首通 15 + EX/S突袭 135 + 1-7 840(下限 120+填充 20) + 活动 630 + 培养 0 = 1745",
+      "活动 YW-6：本周实排 30 次（每局 21 理智，共 630 理智）",
+      "1-7：本周实排 140 次（下限 120 + 填充 20），共 840 理智"
     ],
     "sanity_alloc": {
-      "annihilation": 100,
-      "EX/S首通": 120,
-      "EX/S突袭": 120,
-      "1-7": 180,
-      "活动": 840,
+      "annihilation": 125,
+      "EX/S首通": 15,
+      "EX/S突袭": 135,
+      "1-7": 840,
+      "活动": 630,
       "培养": 0
     }
   },
@@ -327,8 +273,8 @@
     "targets": [
       "乌尔比安"
     ],
-    "total_sanity": 2541.3,
-    "material_sanity": 6.5,
+    "total_sanity": 4572.8,
+    "material_sanity": 7.9,
     "lmd_sanity": 2534.9,
     "week_sanity": 0,
     "week_tasks": {},
@@ -347,57 +293,226 @@
         "qty": 8,
         "sanity": 6.5,
         "stock": 26
+      },
+      {
+        "name": "晶体电子单元",
+        "qty": 4,
+        "sanity": 1.4,
+        "stock": 7
       }
-    ]
+    ],
+    "resolved": [
+      {
+        "id": "30083",
+        "name": "轻锰矿",
+        "need": 14,
+        "have": 120,
+        "gap": 0
+      },
+      {
+        "id": "3301",
+        "name": "技巧概要·卷1",
+        "need": 10,
+        "have": 2724,
+        "gap": 0
+      },
+      {
+        "id": "3222",
+        "name": "近卫芯片组",
+        "need": 8,
+        "have": 8,
+        "gap": 0
+      },
+      {
+        "id": "30073",
+        "name": "扭转醇",
+        "need": 6,
+        "have": 85,
+        "gap": 0
+      },
+      {
+        "id": "30041",
+        "name": "异铁碎片",
+        "need": 5,
+        "have": 407,
+        "gap": 0
+      },
+      {
+        "id": "30093",
+        "name": "研磨石",
+        "need": 5,
+        "have": 75,
+        "gap": 0
+      },
+      {
+        "id": "31023",
+        "name": "炽合金",
+        "need": 5,
+        "have": 123,
+        "gap": 0
+      },
+      {
+        "id": "32001",
+        "name": "芯片助剂",
+        "need": 4,
+        "have": 19,
+        "gap": 0
+      },
+      {
+        "id": "30021",
+        "name": "代糖",
+        "need": 4,
+        "have": 485,
+        "gap": 0
+      },
+      {
+        "id": "31053",
+        "name": "化合切削液",
+        "need": 3,
+        "have": 152,
+        "gap": 0
+      }
+    ],
+    "downgrades": [
+      {
+        "name": "近卫双芯片",
+        "gap": 4,
+        "batches": 4,
+        "out": 1,
+        "gold": 0,
+        "inputs": [
+          {
+            "id": "3222",
+            "name": "近卫芯片组",
+            "count": 8
+          },
+          {
+            "id": "32001",
+            "name": "芯片助剂",
+            "count": 4
+          }
+        ]
+      },
+      {
+        "name": "晶体电子单元",
+        "gap": 1,
+        "batches": 1,
+        "out": 1,
+        "gold": 400,
+        "inputs": [
+          {
+            "id": "31034",
+            "name": "晶体电路",
+            "count": 1
+          },
+          {
+            "id": "31014",
+            "name": "聚合凝胶",
+            "count": 2
+          },
+          {
+            "id": "31024",
+            "name": "炽合金块",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "技巧概要·卷3",
+        "gap": 34,
+        "batches": 34,
+        "out": 1,
+        "gold": 0,
+        "inputs": [
+          {
+            "id": "3302",
+            "name": "技巧概要·卷2",
+            "count": 102
+          }
+        ]
+      },
+      {
+        "name": "三水锰矿",
+        "gap": 6,
+        "batches": 6,
+        "out": 1,
+        "gold": 1800,
+        "inputs": [
+          {
+            "id": "30083",
+            "name": "轻锰矿",
+            "count": 12
+          },
+          {
+            "id": "30033",
+            "name": "聚酸酯组",
+            "count": 6
+          },
+          {
+            "id": "30073",
+            "name": "扭转醇",
+            "count": 6
+          }
+        ]
+      },
+      {
+        "name": "聚合剂",
+        "gap": 5,
+        "batches": 5,
+        "out": 1,
+        "gold": 2000,
+        "inputs": [
+          {
+            "id": "30014",
+            "name": "提纯源岩",
+            "count": 5
+          },
+          {
+            "id": "30044",
+            "name": "异铁块",
+            "count": 5
+          },
+          {
+            "id": "30054",
+            "name": "酮阵列",
+            "count": 5
+          }
+        ]
+      },
+      {
+        "name": "酮阵列",
+        "gap": 2,
+        "batches": 2,
+        "out": 1,
+        "gold": 600,
+        "inputs": [
+          {
+            "id": "30053",
+            "name": "酮凝集组",
+            "count": 4
+          },
+          {
+            "id": "30023",
+            "name": "糖组",
+            "count": 2
+          },
+          {
+            "id": "30083",
+            "name": "轻锰矿",
+            "count": 2
+          }
+        ]
+      }
+    ],
+    "craft_gold": 4800
   },
   "daily": [
     {
-      "date": "2026-10-14",
-      "dow": "周三",
+      "date": "2026-10-19",
+      "dow": "周一",
       "runs": {
         "Annihilation": 1,
-        "YW-6": 10,
-        "1-7": 15
-      },
-      "raids": [],
-      "sanity": 325,
-      "medicine": 120,
-      "cap": 205,
-      "day_cap": 277,
-      "over": true,
-      "opens": [],
-      "unplaced": {}
-    },
-    {
-      "date": "2026-10-15",
-      "dow": "周四",
-      "runs": {
-        "Annihilation": 1,
-        "YW-6": 10,
-        "1-7": 15
-      },
-      "raids": [],
-      "sanity": 325,
-      "medicine": 120,
-      "cap": 205,
-      "day_cap": 277,
-      "over": true,
-      "opens": [],
-      "unplaced": {}
-    },
-    {
-      "date": "2026-10-16",
-      "dow": "周五",
-      "runs": {
-        "Annihilation": 1,
-        "YW-EX-1": 1,
-        "YW-EX-2": 1,
-        "YW-EX-3": 1,
-        "YW-EX-4": 1,
-        "YW-EX-5": 1,
-        "YW-EX-6": 1,
-        "YW-EX-7": 1,
-        "YW-EX-8": 1
+        "1-7": 20
       },
       "raids": [
         "YW-EX-1",
@@ -412,31 +527,35 @@
       "sanity": 265,
       "medicine": 60,
       "cap": 205,
-      "day_cap": 277,
-      "over": false,
-      "opens": [
-        "YW-EX-1",
-        "YW-EX-1",
-        "YW-EX-2",
-        "YW-EX-2",
-        "YW-EX-3",
-        "YW-EX-3",
-        "YW-EX-4",
-        "YW-EX-4",
-        "YW-EX-5",
-        "YW-EX-5",
-        "YW-EX-6",
-        "YW-EX-6",
-        "YW-EX-7",
-        "YW-EX-7",
-        "YW-EX-8",
-        "YW-EX-8"
-      ],
+      "day_cap": 257,
+      "over": true,
+      "opens": [],
       "unplaced": {}
     },
     {
-      "date": "2026-10-17",
-      "dow": "周六",
+      "date": "2026-10-20",
+      "dow": "周二",
+      "runs": {
+        "Annihilation": 1,
+        "YW-6": 10,
+        "1-7": 5
+      },
+      "raids": [
+        "YW-EX-5",
+        "YW-EX-8"
+      ],
+      "sanity": 300,
+      "medicine": 120,
+      "cap": 205,
+      "day_cap": 257,
+      "over": true,
+      "opens": [],
+      "unplaced": {},
+      "note": "2026-10-19 手动补排：EX-5/EX-8 突袭（理智 15+20），多带 60 药覆盖，不挤掉 YW-6"
+    },
+    {
+      "date": "2026-10-21",
+      "dow": "周三",
       "runs": {
         "Annihilation": 1,
         "YW-6": 10,
@@ -446,26 +565,84 @@
       "sanity": 265,
       "medicine": 60,
       "cap": 205,
-      "day_cap": 277,
-      "over": false,
+      "day_cap": 257,
+      "over": true,
       "opens": [],
       "unplaced": {}
     },
     {
-      "date": "2026-10-18",
-      "dow": "周日",
+      "date": "2026-10-22",
+      "dow": "周四",
       "runs": {
-        "YW-6": 10,
-        "1-7": 19
+        "Annihilation": 1,
+        "1-7": 40
       },
       "raids": [],
-      "sanity": 324,
-      "medicine": 119,
+      "sanity": 265,
+      "medicine": 60,
       "cap": 205,
-      "day_cap": 277,
+      "day_cap": 257,
       "over": true,
       "opens": [],
       "unplaced": {}
+    },
+    {
+      "date": "2026-10-23",
+      "dow": "周五",
+      "runs": {
+        "Annihilation": 1,
+        "YW-S-1": 1,
+        "YW-6": 10
+      },
+      "raids": [
+        "YW-S-1"
+      ],
+      "sanity": 265,
+      "medicine": 60,
+      "cap": 205,
+      "day_cap": 257,
+      "over": true,
+      "opens": [
+        "YW-S-1",
+        "YW-S-1"
+      ],
+      "unplaced": {}
+    },
+    {
+      "date": "2026-10-24",
+      "dow": "周六",
+      "runs": {
+        "1-7": 44
+      },
+      "raids": [],
+      "sanity": 264,
+      "medicine": 59,
+      "cap": 205,
+      "day_cap": 257,
+      "over": true,
+      "opens": [],
+      "unplaced": {}
+    },
+    {
+      "date": "2026-10-25",
+      "dow": "周日",
+      "runs": {
+        "1-7": 44
+      },
+      "raids": [],
+      "sanity": 264,
+      "medicine": 59,
+      "cap": 205,
+      "day_cap": 257,
+      "over": true,
+      "opens": [],
+      "unplaced": {}
+    }
+  ],
+  "patches": [
+    {
+      "ts": "2026-10-19 23:27",
+      "note": "10-20 补排 EX-5/EX-8 突袭，medicine 60→120，sanity 265→300"
     }
   ]
 }

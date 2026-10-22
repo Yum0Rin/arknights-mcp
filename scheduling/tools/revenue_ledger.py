@@ -25,11 +25,22 @@ import argparse
 import datetime as dt
 import json
 import os
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 LEDGER = os.path.normpath(os.path.join(HERE, "..", "data", "revenue_ledger.jsonl"))
 SNAP_DIR = os.path.join(os.environ.get("TEMP", os.path.expanduser("~")), "opencode", "ark")
 LAST_SNAP = os.path.join(SNAP_DIR, "bundle-last.json")
+
+# ---- 自动采集（collect）用的本机数据源 ----
+SANITY_JSON = os.path.normpath(os.path.join(HERE, "..", "data", "sanity.json"))
+WEEKLY_PLAN = os.path.normpath(os.path.join(HERE, "..", "data", "weekly_plan.json"))
+MAA = os.environ.get("ARK_MAA_PATH", r"C:\MAA")
+MAA_DEPOT = os.path.join(MAA, "data", "DepotData.json")
+MAA_OPERBOX = os.path.join(MAA, "data", "OperBoxData.json")
+ITEM_INDEX = os.path.join(MAA, "resource", "item_index.json")
+SKLAND_DIR = os.path.join(ROOT, "scripts", "skland")
 
 # 练度字段白名单（bundle.operbox[] 契约字段；缺失按 0 处理）
 TRAIN_FIELDS = ["elite", "level", "skill_1", "skill_2", "skill_3",
@@ -38,6 +49,14 @@ TRAIN_FIELDS = ["elite", "level", "skill_1", "skill_2", "skill_3",
 SANITY_PER = {"应急理智浓缩液": 120, "应急理智加强剂": 60}
 # 视为货币的 depot 项（其余归材料）
 CURRENCY = {"龙门币"}
+# 其它「货币类」条目：不进材料（否则一次扫描的 4001/4003 出现与否会被当成巨额农场/消耗）
+CURRENCY_OTHER = {"至纯源石", "合成玉", "采购凭证", "资质凭证"}
+# itemId → 名字兜底（bundle 里没有 depot_names 时用，逻辑同 item_index.json）
+CURRENCY_ALIASES = {"4001": "龙门币"}
+CURRENCY_OTHER_ALIASES = {"4002": "至纯源石", "4003": "合成玉", "4006": "采购凭证"}
+# 仓库差分的完整性护栏：本次类目数 < 上次 × 该比例 → 判「识别不全」，不结算（2026-10-18 踩过）
+DEPOT_MIN_RATIO = 0.75
+DEPOT_MIN_PREV = 40
 CAP = 205  # 理智上限（99 级）
 
 SCHEMA = 1
@@ -255,17 +274,53 @@ def build_entry(cur, prev, window_start, window_end, ts,
                 predict=None, issues=None, note=""):
     prev = prev or {}
     first = not prev
-    depot_delta = {} if first else diff_numeric(normalize_depot(prev), normalize_depot(cur))
-    token_delta = {} if first else diff_numeric(prev.get("tokens"), cur.get("tokens"))
+    # ---- 仓库完整性护栏：类目数骤降 = 这次 MAA Depot 没扫全（翻页提前结束）----
+    depot_incomplete, guard_msg = False, ""
+    depot_rebase = False       # 上次读数不全、本次是严格超集 → 允许用本次重建基线
+    if not first:
+        n_p, n_c = len(normalize_depot(prev)), len(normalize_depot(cur))
+        if n_p >= DEPOT_MIN_PREV and n_c < max(30, n_p * DEPOT_MIN_RATIO):
+            depot_incomplete = True
+            guard_msg = ("仓库识别不全：本次 %d 类目 / 上次 %d 类目（%.0f%% < %.0f%%）"
+                         "→ 本次差分作废" % (n_c, n_p, 100.0 * n_c / n_p, DEPOT_MIN_RATIO * 100))
+        else:
+            # 反向情形：上次读数不全、这次补全 → 会「凭空多出」几十种材料。一天新出现 ≥8 种物品
+            # 基本不可能（10-18 那次 38 种），同样判读数不可信。
+            p_norm, c_norm = normalize_depot(prev), normalize_depot(cur)
+            new_items = [k for k in c_norm if k not in p_norm and (c_norm.get(k) or 0) > 0]
+            if len(new_items) >= 8:
+                gone = [k for k in p_norm if k not in c_norm and (p_norm.get(k) or 0) > 0]
+                depot_incomplete = True
+                # 关键分岔：**本次是上次的严格超集**（原有物品一个没丢、类目更多）→ 八成是上次
+                # 读数不全（10-19 踩过：78 项里连龙门币/源石/赤金/芯片都没有，今天 90 项全带上，
+                # 旧逻辑既不结算也不推进快照 → 坏基线永远卡住，每天都报「新出现 12 种」）。
+                # 这种情形用本次重建基线（少算一天 > 永远不算），下次就能正常差分。
+                depot_rebase = (not gone) and len(c_norm) > len(p_norm)
+                guard_msg = ("仓库差分异常：一天内新出现 %d 种物品（%s%s）→ %s"
+                             % (len(new_items), "、".join(new_items[:5]),
+                                "…" if len(new_items) > 5 else "",
+                                "上次读数不全，本次重建基线" if depot_rebase
+                                else "上一次或本次读数不全，作废"))
+    depot_delta = {} if (first or depot_incomplete) else diff_numeric(normalize_depot(prev), normalize_depot(cur))
+    token_delta = {} if (first or depot_incomplete) else diff_numeric(prev.get("tokens"), cur.get("tokens"))
 
     farm_mat, spend_mat = {}, {}
+    farm_cur, spend_cur = {}, {}
     farm_lmd = spend_lmd = 0
     for k, d in depot_delta.items():
+        # 兜底：bundle 没给 depot_names 时键还是 itemId，按内置别名归到中文名
+        k = CURRENCY_ALIASES.get(k, k)
+        k = CURRENCY_OTHER_ALIASES.get(k, k)
         if k in CURRENCY:
             if d > 0:
                 farm_lmd += d
             else:
                 spend_lmd += -d
+        elif k in CURRENCY_OTHER:
+            if d > 0:
+                farm_cur[k] = d
+            else:
+                spend_cur[k] = -d
         elif d > 0:
             farm_mat[k] = d
         else:
@@ -314,12 +369,23 @@ def build_entry(cur, prev, window_start, window_end, ts,
         },
         "train": diff_operbox(prev.get("operbox"), cur.get("operbox")),
     }
+    if farm_cur:
+        entry["farm"]["货币"] = farm_cur
+    if spend_cur:
+        entry["spend"]["货币"] = spend_cur
+    if depot_incomplete:
+        entry["depot_incomplete"] = True
+        if depot_rebase:
+            entry["depot_rebased"] = True
+        _iss = list(issues or [])
+        _iss.append(guard_msg)
+        issues = _iss
     if sanity:
         entry["sanity_read"] = sanity
     if first:
         entry["first"] = True
     predict = predict or cur.get("plan")
-    if predict:
+    if predict and not first:   # 基线段没有上期，对比无意义 → 不算 predict/actual/delta
         entry["predict"] = predict
         entry["actual"] = {k: actual.get(k) for k in predict}
         entry["delta"] = {k: (_num((actual.get(k) or 0) - v)) for k, v in predict.items()}
@@ -371,8 +437,124 @@ def _default_window(ts):
     return start.strftime("%Y-%m-%dT%H:%M"), end.strftime("%Y-%m-%dT%H:%M")
 
 
+# ---------------------------------------------------------------- 自动采集
+# 把「设备侧 bundle」用**本机现成数据源**自动拼出来（省去人工采集）：
+#   depot   ← MAA DepotData.json（+ item_index 名称）
+#   operbox ← 森空岛 ark_operbox_online（含技能/专精/模组）；无则退回 MAA OperBoxData.json
+#   sanity  ← scheduling/data/sanity.json 的 current_sanity（实机截图读数）
+#   plan    ← weekly_plan.json 今日 daily.sanity（作为预期理智）
+# 其余（meds/tokens/stage_runs/副手简报）本机暂缺 → 留空（可选字段）。
+
+def _item_names() -> dict:
+    d = load_json(ITEM_INDEX) or {}
+    out = {}
+    for k, v in d.items():
+        out[str(k)] = (v.get("name") if isinstance(v, dict) else v)
+    return out
+
+
+def read_maa_depot():
+    """→ (depot{itemId:qty}, depot_names{itemId:name})；读不到返回 ({}, {})。"""
+    d = load_json(MAA_DEPOT) or {}
+    data = d.get("data") if isinstance(d, dict) else None
+    if not isinstance(data, dict):
+        return {}, {}
+    depot = {str(k): v for k, v in data.items()}
+    names = _item_names()
+    dep_names = {str(k): names[str(k)] for k in data if str(k) in names}
+    return depot, dep_names
+
+
+def _flat_oper(o: dict) -> dict:
+    """干员箱条目 → 账本 TRAIN_FIELDS 的平铺字段（skill_N 三技能共享等级、spec_N 各自专精、mod_N 第 N 个模组）。"""
+    out = {"name": o.get("name"),
+           "elite": int(o.get("elite") or 0),
+           "level": int(o.get("level") or 1)}
+    sk = int(o.get("skill_lvl") or 0)
+    for i in (1, 2, 3):
+        out["skill_%d" % i] = sk
+    spec = list(o.get("spec") or [])
+    for i in (1, 2, 3):
+        out["spec_%d" % i] = int(spec[i - 1]) if i - 1 < len(spec) else 0
+    mods = sorted([m for m in (o.get("modules") or []) if m.get("id")],
+                  key=lambda m: str(m["id"]))
+    for i in (1, 2, 3):
+        if i - 1 < len(mods):
+            m = mods[i - 1]
+            out["mod_%d" % i] = int(m.get("level") or 0) if not m.get("locked") else 0
+        else:
+            out["mod_%d" % i] = 0
+    return out
+
+
+def read_operbox(skland: bool = True):
+    """→ (flat_ops, source)。优先森空岛（含技能/专精/模组），退回 MAA OperBoxData.json。"""
+    if skland:
+        try:
+            if SKLAND_DIR not in sys.path:
+                sys.path.insert(0, SKLAND_DIR)
+            import skland_box  # noqa: PLC0415
+            box = skland_box.fetch_operbox()
+            ops = [o for o in (box.get("own_opers") or []) if o.get("own")]
+            if ops:
+                return [_flat_oper(o) for o in ops], "skland"
+        except Exception:  # noqa: BLE001
+            pass
+    d = load_json(MAA_OPERBOX) or {}
+    ops = d.get("own_opers") or []
+    return [_flat_oper(o) for o in ops], "maa"
+
+
+def collect_bundle(skland: bool = True) -> dict:
+    """从本机数据源拼一个 bundle（可直接喂给 settle 差分）。"""
+    ts = dt.datetime.now().strftime("%Y-%m-%dT%H:%M")
+    ws, we = _default_window(ts)
+    b = {"ts": ts, "window_start": ws, "window_end": we}
+    depot, names = read_maa_depot()
+    if depot:
+        b["depot"] = depot
+        if names:
+            b["depot_names"] = names
+    ops, src = read_operbox(skland)
+    if ops:
+        b["operbox"] = ops
+    san = load_json(SANITY_JSON) or {}
+    if san.get("current_sanity") is not None:
+        b["sanity"] = san["current_sanity"]
+    plan = load_json(WEEKLY_PLAN) or {}
+    today = dt.date.today().isoformat()
+    day = next((d for d in (plan.get("daily") or []) if d.get("date") == today), None)
+    if day and day.get("sanity"):
+        b["plan"] = {"理智": day["sanity"]}
+    b["_src"] = {"operbox": src}
+    return b
+
+
+def cmd_collect(args):
+    b = collect_bundle(skland=not args.no_skland)
+    _ensure(args.out)
+    with open(args.out, "w", encoding="utf-8") as f:
+        json.dump(b, f, ensure_ascii=False, indent=2)
+    print("collected -> %s" % args.out)
+    print("  ts=%s  window=%s..%s" % (b.get("ts"), b.get("window_start"), b.get("window_end")))
+    print("  depot=%d  operbox=%d(%s)  sanity=%s  plan=%s" % (
+        len(b.get("depot") or {}), len(b.get("operbox") or []), (b.get("_src") or {}).get("operbox"),
+        b.get("sanity"), b.get("plan")))
+    problems = validate_bundle(b)
+    if problems:
+        print("  ⚠ 校验未过：", "；".join(problems))
+    return b
+
+
 def cmd_settle(args):
-    cur = load_json(args.bundle)
+    if getattr(args, "auto", False) or not args.bundle:
+        cur = collect_bundle()
+        if args.bundle:
+            _ensure(args.bundle)
+            with open(args.bundle, "w", encoding="utf-8") as f:
+                json.dump(cur, f, ensure_ascii=False, indent=2)
+    else:
+        cur = load_json(args.bundle)
     if cur is None:
         raise SystemExit("读不到 bundle: %s" % args.bundle)
     prev = load_json(LAST_SNAP)
@@ -386,6 +568,19 @@ def cmd_settle(args):
                         predict=json.loads(args.predict) if args.predict else None,
                         issues=issues, note=args.note or "")
     append_entry(args.ledger, entry)
+    if entry.get("depot_incomplete"):
+        if entry.get("depot_rebased") and not args.no_save:
+            # 上次读数不全 → 用本次完整读数重建基线，避免坏基线把每天都卡成 rc=4
+            _ensure(LAST_SNAP)
+            with open(LAST_SNAP, "w", encoding="utf-8") as f:
+                json.dump(cur, f, ensure_ascii=False, indent=2)
+            print("!! 上次仓库读数不全 → 本次差分作废，但已用本次读数重建基线（下次可正常结算）")
+        else:
+            # 本次读数可疑：不推进快照，留着上一份好读数，等下次采到完整仓库再差分
+            print("!! 仓库读数不完整，本次差分作废（farm/spend 已清空，未推进上次快照）")
+        print("   原因：%s" % "；".join(entry.get("issues") or []))
+        print("   处理：确认游戏仓库页正常后重跑 depot，再 settle")
+        raise SystemExit(4)
     if not args.no_save:
         _ensure(LAST_SNAP)
         with open(LAST_SNAP, "w", encoding="utf-8") as f:
@@ -433,8 +628,14 @@ def main():
     ap = argparse.ArgumentParser(description="收益账本 · 日结差分")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
+    p = sub.add_parser("collect", help="自动采集 bundle（MAA仓库+森空岛干员箱+理智读数+当日计划）")
+    p.add_argument("--out", default=os.path.join(SNAP_DIR, "bundle-collect.json"))
+    p.add_argument("--no-skland", action="store_true", help="不用森空岛，退回 MAA OperBoxData.json")
+    p.set_defaults(func=cmd_collect)
+
     p = sub.add_parser("settle", help="读上次快照→算Δ→追加一行")
-    p.add_argument("--bundle", required=True, help="本次采集 bundle.json")
+    p.add_argument("--bundle", default="", help="本次采集 bundle.json（给 --auto 时可省）")
+    p.add_argument("--auto", action="store_true", help="自动采集（本机数据源拼 bundle，忽略 --bundle）")
     p.add_argument("--ledger", default=LEDGER)
     p.add_argument("--window-start", default="")
     p.add_argument("--window-end", default="")

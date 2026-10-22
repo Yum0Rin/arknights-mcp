@@ -62,6 +62,17 @@ def _download(url, dst: pathlib.Path):
     return dst
 
 
+def _decode(raw) -> str:
+    """GBK/UTF-8 双解码（子进程 env 带 PYTHONUTF8=1，`text=True` 会按 UTF-8 解 robocopy 的 GBK 输出 → 读线程崩）。"""
+    raw = raw or b""
+    if isinstance(raw, str):
+        return raw
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("gbk", errors="replace")
+
+
 def local_resource_version() -> str | None:
     try:
         return json.load(open(VER_FILE, encoding="utf-8")).get("last_updated")
@@ -83,8 +94,8 @@ def local_software_version() -> str | None:
         out = subprocess.run(
             ["powershell", "-NoProfile", "-Command",
              "(Get-Item '%s').VersionInfo.FileVersion" % (MAA / "MAA.exe")],
-            capture_output=True, text=True, timeout=30)
-        return (out.stdout or "").strip() or None
+            capture_output=True, timeout=30)
+        return _decode(out.stdout).strip() or None
     except Exception:
         return None
 
@@ -139,7 +150,7 @@ def apply_resource() -> dict:
         shutil.copy2(VER_FILE, bak)
     # robocopy /E 覆盖（不删本地额外文件）
     r = subprocess.run(["robocopy", str(src), str(RES_DIR), "/E", "/NFL", "/NDL", "/NJH", "/NP",
-                        "/R:1", "/W:1"], capture_output=True, text=True)
+                        "/R:1", "/W:1"], capture_output=True)
     ok = r.returncode < 8
     return {"src": str(src), "robocopy_rc": r.returncode, "ok": ok,
             "new_version": local_resource_version()}

@@ -1,0 +1,58 @@
+[2026-10-14 21:49:39] [night-infrast] ===== 凌晨基建换班开始（date=2026-10-14）=====
+[2026-10-14 21:49:39] [night-infrast] [dry] 将依次执行：
+[2026-10-14 21:49:39] [night-infrast]   0) 单客户端检查：MAA.exe 在跑 → 直接跳过（不抢设备）
+[2026-10-14 21:49:39] [night-infrast]   0.5) 防重复：今晚已有成功记录 → 跳过（--force 可强制）
+[2026-10-14 21:49:39] [night-infrast]   1) 确保设备在线：C:\leidian\LDPlayer9\adb.exe（不在线就拉起雷电 index=0，等 420s）
+[2026-10-14 21:49:39] [night-infrast]   2) 连接 MaaCore 并 append：StartUp(client_type=Official, start_game_enabled=True) → Infrast(mode=20000, facility=9 项)
+[2026-10-14 21:49:39] [night-infrast]   3) 关雷电：C:\leidian\LDPlayer9\ldconsole.exe quit --index 0（--no-close 可关）
+[2026-10-14 21:49:39] [night-infrast] [dry] 未执行。
+[2026-10-14 21:51:27] [night-infrast] ===== 凌晨基建换班开始（date=2026-10-14）=====
+[2026-10-14 21:51:27] [night-infrast] [dry] 将依次执行：
+[2026-10-14 21:51:27] [night-infrast]   0) 单客户端检查：MAA.exe 在跑 → 直接跳过（不抢设备）
+[2026-10-14 21:51:27] [night-infrast]   0.5) 防重复：今晚已有成功记录 → 跳过（--force 可强制）
+[2026-10-14 21:51:27] [night-infrast]   1) 确保设备在线：C:\leidian\LDPlayer9\adb.exe（不在线就拉起雷电 index=0，等 420s）
+[2026-10-14 21:51:27] [night-infrast]   2) 连接 MaaCore 并 append：StartUp(client_type=Official, start_game_enabled=True) → Infrast(mode=20000, facility=9 项)
+[2026-10-14 21:51:27] [night-infrast]   3) 关雷电：C:\leidian\LDPlayer9\ldconsole.exe quit --index 0（--no-close 可关）
+[2026-10-14 21:51:27] [night-infrast] [dry] 未执行。
+[2026-10-14 22:01:39] [night-infrast] ===== 凌晨基建换班开始（date=2026-10-14）=====
+[2026-10-14 22:01:39] [night-infrast] [dry] 将依次执行：
+[2026-10-14 22:01:39] [night-infrast]   0) 单客户端检查：MAA.exe 在跑 → 直接跳过（不抢设备）
+[2026-10-14 22:01:39] [night-infrast]   0.5) 防重复：今晚已有成功记录 → 跳过（--force 可强制）
+[2026-10-14 22:01:39] [night-infrast]   0.7) 校验自定义换班方案表：C:\MAA\resource\custom_infrast\maa-243-custom.json（plan_index=0）
+[2026-10-14 22:01:39] [night-infrast]   1) 确保设备在线：C:\leidian\LDPlayer9\adb.exe（不在线就拉起雷电 index=0，等 420s）
+[2026-10-14 22:01:39] [night-infrast]   2) 连接 MaaCore 并 append：StartUp(client_type=Official, start_game_enabled=True) → Infrast(mode=10000 Custom, plan_index=0, facility=9 项)
+[2026-10-14 22:01:39] [night-infrast]   3) 关雷电：C:\leidian\LDPlayer9\ldconsole.exe quit --index 0（--no-close 可关）
+[2026-10-14 22:01:39] [night-infrast] [dry] 未执行。
+[2026-10-15 02:00:01] [night-infrast] ===== 凌晨基建换班开始（date=2026-10-15）=====
+[2026-10-15 02:00:02] [night-infrast] 自定义换班方案表：plan[0]=B班（29 名干员，Fiammetta 开→但书）
+[2026-10-15 02:00:23] [night-infrast] 设备已在线：['emulator-5554']
+[2026-10-15 02:00:33] [night-infrast] Infrast params：mode=10000 plan_index=0（方案表 243_搓玉_定制.json）
+[2026-10-15 02:00:33] [night-infrast] append StartUp   -> id=1
+[2026-10-15 02:00:33] [night-infrast] append Infrast   -> id=2
+[2026-10-15 02:00:33] [night-infrast] 已启动，共 2 任务；轮询中（超时 1500s）…
+[2026-10-15 02:25:36] [night-infrast] !! 超时仍在跑（1501s）→ 不硬杀，留证 C:\Users\39007\AppData\Local\Temp\maa-week\fail_night_timeout_022534.png
+[2026-10-15 02:25:36] [night-infrast] 关闭雷电实例 0…
+[2026-10-15 02:25:39] [night-infrast] 已确认：雷电实例 0 已关闭。
+[2026-10-15 02:25:39] [night-infrast] ===== 凌晨基建换班结束：ok=False 用时=1501s 关雷电=closed =====
+[2026-10-17 02:00:01] [night-infrast] ===== 凌晨基建换班开始（date=2026-10-17）=====
+[2026-10-17 02:00:02] [night-infrast] 自定义换班方案表：plan[0]=B班（29 名干员，Fiammetta 开→但书）
+[2026-10-17 02:00:35] [night-infrast] 设备已在线：['127.0.0.1:5555', 'emulator-5554']
+[2026-10-17 02:00:45] [night-infrast] Infrast params：mode=10000 plan_index=0（方案表 243_搓玉_定制.json）
+[2026-10-17 02:00:45] [night-infrast] append StartUp   -> id=1
+[2026-10-17 02:00:45] [night-infrast] append Infrast   -> id=2
+[2026-10-17 02:00:45] [night-infrast] 已启动，共 2 任务；轮询中（超时 1500s）…
+[2026-10-17 02:25:48] [night-infrast] !! 超时仍在跑（1501s）→ 不硬杀，留证 C:\Users\39007\AppData\Local\Temp\maa-week\fail_night_timeout_022546.png
+[2026-10-17 02:25:48] [night-infrast] 关闭雷电实例 0…
+[2026-10-17 02:25:51] [night-infrast] 已确认：雷电实例 0 已关闭。
+[2026-10-17 02:25:51] [night-infrast] ===== 凌晨基建换班结束：ok=False 用时=1501s 关雷电=closed =====
+[2026-10-18 02:00:01] [night-infrast] ===== 凌晨基建换班开始（date=2026-10-18）=====
+[2026-10-18 02:00:02] [night-infrast] 自定义换班方案表：plan[0]=B班（29 名干员，Fiammetta 开→但书）
+[2026-10-18 02:00:23] [night-infrast] 设备已在线：['127.0.0.1:5555', 'emulator-5554']
+[2026-10-18 02:00:31] [night-infrast] Infrast params：mode=10000 plan_index=0（方案表 243_搓玉_定制.json）
+[2026-10-18 02:00:31] [night-infrast] append StartUp   -> id=1
+[2026-10-18 02:00:31] [night-infrast] append Infrast   -> id=2
+[2026-10-18 02:00:31] [night-infrast] 已启动，共 2 任务；轮询中（超时 1500s）…
+[2026-10-18 02:14:14] [night-infrast] 跑完，用时 822s
+[2026-10-18 02:14:14] [night-infrast] 关闭雷电实例 0…
+[2026-10-18 02:14:16] [night-infrast] 已确认：雷电实例 0 已关闭。
+[2026-10-18 02:14:16] [night-infrast] ===== 凌晨基建换班结束：ok=True 用时=822s 关雷电=closed =====

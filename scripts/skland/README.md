@@ -24,19 +24,31 @@
 
 ## 用法
 
-### 图形界面（推荐）
+### 图形界面（推荐）—— **yuMAArin**
 
 ```powershell
 & C:\Python314\pythonw.exe "%USERPROFILE%\Desktop\arknights-mcp\scripts\skland\skland_gui.py"
 ```
 
-界面是 **PySide6 + PySide6-Fluent-Widgets**（Win11 Fluent：左侧导航 / 明暗跟随系统），
-配色是**方舟风的「深海蓝 + 金」**（底 `#0A121D`、卡片 `#121E2E`、强调金 `#E3BE63`/`#C9973B`）。
+窗口叫 **yuMAArin**（原「明日方舟 · 助手」）。界面是 **PySide6 + PySide6-Fluent-Widgets**
+（Win11 Fluent：左侧导航 / 明暗跟随系统），配色是**方舟风的「深海蓝 + 金」**
+（底 `#0A121D`、卡片 `#121E2E`、强调金 `#E3BE63`/`#C9973B`）。
 
+- **单实例**：`QLockFile` 锁（`%TEMP%\yuMAArin.gui.lock`）。已经在跑时第二次打开会直接提示、不再开第二个界面。
 - 左侧「账号」页：填手机号 → 选「验证码 / 密码」→（验证码的话点「发送验证码」）→ 登录；
 - **打开时自动登录**（默认开）：只要有本机凭证，开界面就直接拉数据，不用再点；
   抽卡也会顺带从火狐更新（留档超过 6 小时才更新）。开关在「账号」页，设置存 `~/.arknights_skland_gui.json`；
-- 登录后自动拉数据；之后「刷新数据」重新拉，「每日签到」签到；
+- **森空岛签到在左侧导航**：底部的「签到」卡片 = 一个按键（`签到` / `今日已签到` 置灰不可点）
+  + 下面一行小字「本月已签到 N 天」；没有独立「签到」页了；
+- 登录后自动拉数据；之后「刷新数据」重新拉；
+- **标题栏 ↻ 刷新**（或快捷键 **F5 / Ctrl+R**）：重读本地 `weekly_plan.json` / `docs/state.json` /
+  运行日志 / 收益账本并重绘**当前页**（「长草」页会同时重算「需要处理」+ EX 进度）；已登录且当前没有
+  取数任务时，顺带重拉一次森空岛。纯刷新，不写任何文件；
+- **「今日日常」的可信口径**：磁贴的 ✅ 只代表 MAA 日常主体跑完；若当天计划里的突袭没清完，
+  会显示 `⚠ 部分完成`，日卡上标「突袭已通 x/n」，并在下面说明「两者都完成才算今天全部跑完」；
+- 「基建」页：设施现状 + **排班校验**（当前进驻 vs `scheduling/MAA基建排班/243_搓玉_定制.json`（《搓玉·合成玉》A/B 两班）的 A/B 班，是否该换班）
+  + **现阶段基建配置**（粘贴排班 JSON → **预览排班表**（含校验提示）→ **确认**才保存 / 应用）；
+- 「长草」页：顶部操作台（生成/写配置/直驱跑 + 快捷工具），下面是计划（预算磁贴 / 逐日表 / 进度条 / 决策依据）；
 - 「抽卡」页：点「拉取 / 更新」或「**从火狐导入**」（浏览器已登录官网时**免密码**），
   拉完自动本地留档；「只看 6★ / 全部记录」切换视图，「打开官网记录页」跳官网；
 - 没有账号想先看界面：点「载入样例数据」（用仓库自带的真实结构样例）。
@@ -68,7 +80,7 @@ python scripts\skland\skland_cli.py gacha --category normal --out d:\gacha.json
 | `skland_client.py` | 核心：登录两法 / cred 换取 / 取数 / 本地凭证存取。**仅标准库**，可当库用 |
 | `gacha_client.py` | **抽卡记录**：鹰角官网用户中心寻访记录（6 步登录链 / 分页 / 本地留档 / 统计 / `self_test`）。**仅标准库** |
 | `skland_box.py` | **适配器**：把森空岛数据转成 MAA `OperBoxData.json` **同构** + 基建状态。给 MCP/既有脚本用 |
-| `skland_gui.py` | 界面：**PySide6 + PySide6-Fluent-Widgets**（Mica 窗口 / 左侧导航 / 明暗跟随系统 / 打开即自动登录） |
+| `skland_gui.py` | 界面 **yuMAArin**：PySide6 + PySide6-Fluent-Widgets（单实例锁 / 左侧导航 / 签到卡 / 基建排班校验 / 明暗跟随系统 / 打开即自动登录） |
 | `ff_session.py` | **免密码取抽卡凭据**：从本机 Firefox 的 sessionstore（会话 cookie，含 HttpOnly）与 localStorage 里读登录态。仅标准库 |
 | `skland_cli.py` | 命令行探针：login / status / dump / checkin / gacha |
 

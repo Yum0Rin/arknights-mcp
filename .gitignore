@@ -19,3 +19,6 @@ scheduling/data/run_report.jsonl
 scheduling/data/recruit_alerts.jsonl
 scheduling/data/weekly_refresh.json
 scheduling/报告/汇总.html
+
+# 一次性工具的运行态（2026-10-18）
+scripts/night-infrast/watch-and-shutdown.state.json

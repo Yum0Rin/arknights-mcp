@@ -10,3 +10,575 @@
 [2026-10-14 09:28:42] [daily-auto]   2) 跑当天日常：C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py run --date 2026-10-14 --timeout 7200
 [2026-10-14 09:28:42] [daily-auto]   3) 关雷电：C:\leidian\LDPlayer9\ldconsole.exe quit --index 0（--no-close 可关）
 [2026-10-14 09:28:42] [daily-auto] [dry] 未执行。
+[2026-10-14 14:00:00] [daily-auto] ===== 每日自动化开始（date=2026-10-14）=====
+[2026-10-14 14:00:00] [daily-auto] → 开始：森空岛凭证续期
+[2026-10-14 14:00:00] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py status
+[2026-10-14 14:00:04] [daily-auto]    | 凭证有效，sign_token 已续期（uid=218193258）。
+[2026-10-14 14:00:04] [daily-auto]    |   uid=218193258  官服  铭叙#5386  Lv?
+[2026-10-14 14:00:04] [daily-auto]    |   uid=762277661  官服    Lv?
+[2026-10-14 14:00:04] [daily-auto] ← 结束：森空岛凭证续期 rc=0（3s）
+[2026-10-14 14:00:04] [daily-auto] → 开始：森空岛签到
+[2026-10-14 14:00:04] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py checkin
+[2026-10-14 14:00:04] [daily-auto]    | 错误：[403] HTTP 403 {"code":10001, "message":"请勿重复签到！", "timestamp":"1791957604"} (https://zonai.skland.com/api/v1/game/attendance)
+[2026-10-14 14:00:04] [daily-auto] ← 结束：森空岛签到 rc=2（0s）
+[2026-10-14 14:00:04] [daily-auto] !! 签到未成功（rc=2）—— 凭证可能过期；重登：python scripts/skland/skland_cli.py login
+[2026-10-14 14:00:04] [daily-auto]    → 按约定继续跑 MAA 日常，不中断。
+[2026-10-14 14:00:04] [daily-auto] → 开始：跑当天日常
+[2026-10-14 14:00:04] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py run --date 2026-10-14 --timeout 7200
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] 今天分配：Annihilation×1、YW-6×10、1-7×15   理智 325
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] 未检测到在线设备 → 启动雷电模拟器…
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] 已请求启动雷电实例 index=0
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] append StartUp   -> id=1
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] append Fight     -> id=2
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] append Fight     -> id=3
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] append Fight     -> id=4
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] append Recruit   -> id=5
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] append Infrast   -> id=6
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] append Mall      -> id=7
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] append Award     -> id=8
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] 已启动，共 8 任务；轮询中（超时 7200s）…
+[2026-10-14 14:18:26] [daily-auto]    | [maa-week] 跑完，用时 1067s
+[2026-10-14 14:18:26] [daily-auto]    | Exception in thread Thread-1 (_readerthread):
+[2026-10-14 14:18:26] [daily-auto]    | Traceback (most recent call last):
+[2026-10-14 14:18:26] [daily-auto]    |   File "C:\Python314\Lib\threading.py", line 1082, in _bootstrap_inner
+[2026-10-14 14:18:26] [daily-auto]    |     self._context.run(self.run)
+[2026-10-14 14:18:26] [daily-auto]    |     ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+[2026-10-14 14:18:26] [daily-auto]    |   File "C:\Python314\Lib\threading.py", line 1024, in run
+[2026-10-14 14:18:26] [daily-auto]    |     self._target(*self._args, **self._kwargs)
+[2026-10-14 14:18:26] [daily-auto]    |     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-10-14 14:18:26] [daily-auto]    |   File "C:\Python314\Lib\subprocess.py", line 1614, in _readerthread
+[2026-10-14 14:18:26] [daily-auto]    |     buffer.append(fh.read())
+[2026-10-14 14:18:26] [daily-auto]    |                   ~~~~~~~^^
+[2026-10-14 14:18:26] [daily-auto]    |   File "<frozen codecs>", line 325, in decode
+[2026-10-14 14:18:26] [daily-auto]    | UnicodeDecodeError: 'utf-8' codec can't decode byte 0xd0 in position 0: invalid continuation byte
+[2026-10-14 14:18:26] [daily-auto] ← 结束：跑当天日常 rc=0（1102s）
+[2026-10-14 14:18:26] [daily-auto] 关闭雷电实例 0…
+[2026-10-14 14:18:28] [daily-auto] 已确认：雷电实例 0 已关闭。
+[2026-10-14 14:18:28] [daily-auto] ===== 每日自动化结束：maa_rc=0 ok=True 关雷电=closed =====
+[2026-10-14 20:49:00] [daily-auto] ===== 每日自动化开始（date=2026-10-14）=====
+[2026-10-14 20:49:00] [daily-auto] [dry] 将依次执行：
+[2026-10-14 20:49:00] [daily-auto]   1) 森空岛签到：C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py status（续期 sign_token）→ checkin
+[2026-10-14 20:49:00] [daily-auto]   2) 跑当天日常：C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py run --date 2026-10-14 --timeout 7200
+[2026-10-14 20:49:00] [daily-auto]   2.5) 刷仓库读数：C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py depot（日常跑成功且非 GUI 忙时）→ 收益账本结算：C:\Users\39007\Desktop\arknights-mcp\scheduling\tools\revenue_ledger.py settle --auto
+[2026-10-14 20:49:00] [daily-auto]   3) 关雷电：C:\leidian\LDPlayer9\ldconsole.exe quit --index 0（--no-close 可关）
+[2026-10-14 20:49:00] [daily-auto] [dry] 未执行。
+[2026-10-15 14:00:01] [daily-auto] ===== 每日自动化开始（date=2026-10-15）=====
+[2026-10-15 14:00:01] [daily-auto] → 开始：森空岛凭证续期
+[2026-10-15 14:00:01] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py status
+[2026-10-15 14:00:03] [daily-auto]    | 凭证有效，sign_token 已续期（uid=218193258）。
+[2026-10-15 14:00:03] [daily-auto]    |   uid=218193258  官服  铭叙#5386  Lv?
+[2026-10-15 14:00:03] [daily-auto]    |   uid=762277661  官服    Lv?
+[2026-10-15 14:00:03] [daily-auto] ← 结束：森空岛凭证续期 rc=0（2s）
+[2026-10-15 14:00:03] [daily-auto] → 开始：森空岛签到
+[2026-10-15 14:00:03] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py checkin
+[2026-10-15 14:00:04] [daily-auto]    | 龙门币 x500
+[2026-10-15 14:00:04] [daily-auto] ← 结束：森空岛签到 rc=0（1s）
+[2026-10-15 14:00:04] [daily-auto] → 开始：跑当天日常
+[2026-10-15 14:00:04] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py run --date 2026-10-15 --timeout 7200
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] 今天分配：Annihilation×1、YW-6×10、1-7×15   理智 325
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] 未检测到在线设备 → 启动雷电模拟器…
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] 已请求启动雷电实例 index=0
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] append StartUp   -> id=1
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] append Fight     -> id=2
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] append Fight     -> id=3
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] append Fight     -> id=4
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] append Recruit   -> id=5
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] append Infrast   -> id=6
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] append Mall      -> id=7
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] append Award     -> id=8
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] 已启动，共 8 任务；轮询中（超时 7200s）…
+[2026-10-15 15:17:38] [daily-auto]    | [maa-week] 跑完，用时 4607s
+[2026-10-15 15:17:38] [daily-auto]    | Exception in thread Thread-1 (_readerthread):
+[2026-10-15 15:17:38] [daily-auto]    | Traceback (most recent call last):
+[2026-10-15 15:17:38] [daily-auto]    |   File "C:\Python314\Lib\threading.py", line 1082, in _bootstrap_inner
+[2026-10-15 15:17:38] [daily-auto]    |     self._context.run(self.run)
+[2026-10-15 15:17:38] [daily-auto]    |     ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+[2026-10-15 15:17:38] [daily-auto]    |   File "C:\Python314\Lib\threading.py", line 1024, in run
+[2026-10-15 15:17:38] [daily-auto]    |     self._target(*self._args, **self._kwargs)
+[2026-10-15 15:17:38] [daily-auto]    |     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-10-15 15:17:38] [daily-auto]    |   File "C:\Python314\Lib\subprocess.py", line 1614, in _readerthread
+[2026-10-15 15:17:38] [daily-auto]    |     buffer.append(fh.read())
+[2026-10-15 15:17:38] [daily-auto]    |                   ~~~~~~~^^
+[2026-10-15 15:17:38] [daily-auto]    |   File "<frozen codecs>", line 325, in decode
+[2026-10-15 15:17:38] [daily-auto]    | UnicodeDecodeError: 'utf-8' codec can't decode byte 0xd0 in position 0: invalid continuation byte
+[2026-10-15 15:17:38] [daily-auto] ← 结束：跑当天日常 rc=0（4654s）
+[2026-10-15 15:17:38] [daily-auto] → 开始：刷仓库读数（MAA Depot）
+[2026-10-15 15:17:38] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py depot
+[2026-10-15 15:18:11] [daily-auto]    | [maa-week] 模拟器已在线：['127.0.0.1:5555', 'emulator-5554']
+[2026-10-15 15:18:11] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-15 15:18:11] [daily-auto]    | [maa-week] 仓库已写入 C:\MAA\data\DepotData.json（87 项）
+[2026-10-15 15:18:11] [daily-auto] ← 结束：刷仓库读数（MAA Depot） rc=0（33s）
+[2026-10-15 15:18:11] [daily-auto] → 开始：收益账本结算（settle --auto）
+[2026-10-15 15:18:11] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scheduling\tools\revenue_ledger.py settle --auto --note daily-auto 结算段
+[2026-10-15 15:18:12] [daily-auto]    | settled 2026-10-14T04:00 -> 2026-10-15T04:00  (train 0, farm 23 材料, spend 理智 240.0)
+[2026-10-15 15:18:12] [daily-auto] ← 结束：收益账本结算（settle --auto） rc=0（1s）
+[2026-10-15 15:18:12] [daily-auto] 关闭雷电实例 0…
+[2026-10-15 15:18:15] [daily-auto] 已确认：雷电实例 0 已关闭。
+[2026-10-15 15:18:15] [daily-auto] ===== 每日自动化结束：maa_rc=0 仓库rc=0 账本rc=0 ok=True 关雷电=closed =====
+[2026-10-16 14:00:01] [daily-auto] ===== 每日自动化开始（date=2026-10-16）=====
+[2026-10-16 14:00:01] [daily-auto] → 开始：森空岛凭证续期
+[2026-10-16 14:00:01] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py status
+[2026-10-16 14:00:03] [daily-auto]    | 凭证有效，sign_token 已续期（uid=218193258）。
+[2026-10-16 14:00:03] [daily-auto]    |   uid=218193258  官服  铭叙#5386  Lv?
+[2026-10-16 14:00:03] [daily-auto]    |   uid=762277661  官服    Lv?
+[2026-10-16 14:00:03] [daily-auto] ← 结束：森空岛凭证续期 rc=0（2s）
+[2026-10-16 14:00:03] [daily-auto] → 开始：森空岛签到
+[2026-10-16 14:00:03] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py checkin
+[2026-10-16 14:00:04] [daily-auto]    | 转质盐组 x1
+[2026-10-16 14:00:04] [daily-auto] ← 结束：森空岛签到 rc=0（1s）
+[2026-10-16 14:00:04] [daily-auto] → 开始：跑当天日常
+[2026-10-16 14:00:04] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py run --date 2026-10-16 --timeout 7200
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] 今天分配：Annihilation×1、YW-EX-1×1、YW-EX-2×1、YW-EX-3×1、YW-EX-4×1、YW-EX-5×1、YW-EX-6×1、YW-EX-7×1、YW-EX-8×1   理智 265
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 截图失败/为空（dev=127.0.0.1:5555 rc=4294967295 size=0 字节）: C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-1_140004.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 跳过 YW-EX-1：MAA resource 里没有该关卡任务（导航会失败）→ 截图 C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-1_140004.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week]    处理：先 python scripts/maa-update/maa_update.py check 看远端资源是否已收录；仍未收录 → 走作业链（Copilot 用作业导航）或手点——可直接复制：
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week]          python scripts/event-copilot/event_copilot.py run act52side --chain ex --try
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 截图失败/为空（dev=127.0.0.1:5555 rc=4294967295 size=0 字节）: C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-2_140008.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 跳过 YW-EX-2：MAA resource 里没有该关卡任务（导航会失败）→ 截图 C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-2_140008.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 截图失败/为空（dev=127.0.0.1:5555 rc=4294967295 size=0 字节）: C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-3_140012.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 跳过 YW-EX-3：MAA resource 里没有该关卡任务（导航会失败）→ 截图 C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-3_140012.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 截图失败/为空（dev=127.0.0.1:5555 rc=4294967295 size=0 字节）: C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-4_140016.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 跳过 YW-EX-4：MAA resource 里没有该关卡任务（导航会失败）→ 截图 C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-4_140016.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 截图失败/为空（dev=127.0.0.1:5555 rc=4294967295 size=0 字节）: C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-5_140021.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 跳过 YW-EX-5：MAA resource 里没有该关卡任务（导航会失败）→ 截图 C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-5_140021.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 截图失败/为空（dev=127.0.0.1:5555 rc=4294967295 size=0 字节）: C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-6_140025.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 跳过 YW-EX-6：MAA resource 里没有该关卡任务（导航会失败）→ 截图 C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-6_140025.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 截图失败/为空（dev=127.0.0.1:5555 rc=4294967295 size=0 字节）: C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-7_140029.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 跳过 YW-EX-7：MAA resource 里没有该关卡任务（导航会失败）→ 截图 C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-7_140029.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 截图失败/为空（dev=127.0.0.1:5555 rc=4294967295 size=0 字节）: C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-8_140033.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! 跳过 YW-EX-8：MAA resource 里没有该关卡任务（导航会失败）→ 截图 C:\Users\39007\AppData\Local\Temp\maa-week\fail_unsupported_YW-EX-8_140033.png
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] 未检测到在线设备 → 启动雷电模拟器…
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] 已请求启动雷电实例 index=0
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] append StartUp   -> id=1
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] append Fight     -> id=2
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! Raid YW-EX-1：MAA Fight 做不了活动突袭 → 走 Copilot is_raid 或手点；跳过 append——可直接复制：
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week]          python scripts/event-copilot/event_copilot.py run act52side --chain raid --try
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! Raid YW-EX-2：MAA Fight 做不了活动突袭 → 走 Copilot is_raid 或手点；跳过 append——可直接复制：
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week]          python scripts/event-copilot/event_copilot.py run act52side --chain raid --try
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! Raid YW-EX-3：MAA Fight 做不了活动突袭 → 走 Copilot is_raid 或手点；跳过 append——可直接复制：
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week]          python scripts/event-copilot/event_copilot.py run act52side --chain raid --try
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! Raid YW-EX-4：MAA Fight 做不了活动突袭 → 走 Copilot is_raid 或手点；跳过 append——可直接复制：
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week]          python scripts/event-copilot/event_copilot.py run act52side --chain raid --try
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! Raid YW-EX-5：MAA Fight 做不了活动突袭 → 走 Copilot is_raid 或手点；跳过 append——可直接复制：
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week]          python scripts/event-copilot/event_copilot.py run act52side --chain raid --try
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! Raid YW-EX-6：MAA Fight 做不了活动突袭 → 走 Copilot is_raid 或手点；跳过 append——可直接复制：
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week]          python scripts/event-copilot/event_copilot.py run act52side --chain raid --try
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! Raid YW-EX-7：MAA Fight 做不了活动突袭 → 走 Copilot is_raid 或手点；跳过 append——可直接复制：
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week]          python scripts/event-copilot/event_copilot.py run act52side --chain raid --try
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] !! Raid YW-EX-8：MAA Fight 做不了活动突袭 → 走 Copilot is_raid 或手点；跳过 append——可直接复制：
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week]          python scripts/event-copilot/event_copilot.py run act52side --chain raid --try
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] append Recruit   -> id=3
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] append Infrast   -> id=4
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] append Mall      -> id=5
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] append Award     -> id=6
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] 已启动，共 6 任务；轮询中（超时 7200s）…
+[2026-10-16 14:20:40] [daily-auto]    | [maa-week] 跑完，用时 1166s
+[2026-10-16 14:20:40] [daily-auto]    | error: device '127.0.0.1:5555' not found
+[2026-10-16 14:20:40] [daily-auto]    | error: device '127.0.0.1:5555' not found
+[2026-10-16 14:20:40] [daily-auto]    | error: device '127.0.0.1:5555' not found
+[2026-10-16 14:20:40] [daily-auto]    | error: device '127.0.0.1:5555' not found
+[2026-10-16 14:20:40] [daily-auto]    | error: device '127.0.0.1:5555' not found
+[2026-10-16 14:20:40] [daily-auto]    | error: device '127.0.0.1:5555' not found
+[2026-10-16 14:20:40] [daily-auto]    | error: device '127.0.0.1:5555' not found
+[2026-10-16 14:20:40] [daily-auto]    | error: device '127.0.0.1:5555' not found
+[2026-10-16 14:20:40] [daily-auto]    | Exception in thread Thread-49 (_readerthread):
+[2026-10-16 14:20:40] [daily-auto]    | Traceback (most recent call last):
+[2026-10-16 14:20:40] [daily-auto]    |   File "C:\Python314\Lib\threading.py", line 1082, in _bootstrap_inner
+[2026-10-16 14:20:40] [daily-auto]    |     self._context.run(self.run)
+[2026-10-16 14:20:40] [daily-auto]    |     ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+[2026-10-16 14:20:40] [daily-auto]    |   File "C:\Python314\Lib\threading.py", line 1024, in run
+[2026-10-16 14:20:40] [daily-auto]    |     self._target(*self._args, **self._kwargs)
+[2026-10-16 14:20:40] [daily-auto]    |     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-10-16 14:20:40] [daily-auto]    |   File "C:\Python314\Lib\subprocess.py", line 1614, in _readerthread
+[2026-10-16 14:20:40] [daily-auto]    |     buffer.append(fh.read())
+[2026-10-16 14:20:40] [daily-auto]    |                   ~~~~~~~^^
+[2026-10-16 14:20:40] [daily-auto]    |   File "<frozen codecs>", line 325, in decode
+[2026-10-16 14:20:40] [daily-auto]    | UnicodeDecodeError: 'utf-8' codec can't decode byte 0xd0 in position 0: invalid continuation byte
+[2026-10-16 14:20:40] [daily-auto] ← 结束：跑当天日常 rc=0（1236s）
+[2026-10-16 14:20:40] [daily-auto] → 开始：刷仓库读数（MAA Depot）
+[2026-10-16 14:20:40] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py depot
+[2026-10-16 14:21:20] [daily-auto]    | [maa-week] 模拟器已在线：['127.0.0.1:5555', 'emulator-5554']
+[2026-10-16 14:21:21] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-16 14:21:21] [daily-auto]    | [maa-week] 仓库已写入 C:\MAA\data\DepotData.json（85 项）
+[2026-10-16 14:21:21] [daily-auto] ← 结束：刷仓库读数（MAA Depot） rc=0（41s）
+[2026-10-16 14:21:21] [daily-auto] → 开始：收益账本结算（settle --auto）
+[2026-10-16 14:21:21] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scheduling\tools\revenue_ledger.py settle --auto --note daily-auto 结算段
+[2026-10-16 14:21:23] [daily-auto]    | settled 2026-10-15T04:00 -> 2026-10-16T04:00  (train 1, farm 7 材料, spend 理智 240.0)
+[2026-10-16 14:21:23] [daily-auto] ← 结束：收益账本结算（settle --auto） rc=0（3s）
+[2026-10-16 14:21:23] [daily-auto] 关闭雷电实例 0…
+[2026-10-16 14:21:26] [daily-auto] 已确认：雷电实例 0 已关闭。
+[2026-10-16 14:21:26] [daily-auto] ===== 每日自动化结束：maa_rc=0 仓库rc=0 账本rc=0 ok=True 关雷电=closed =====
+[2026-10-17 15:10:53] [daily-auto] ===== 每日自动化开始（date=2026-10-17）=====
+[2026-10-17 15:10:53] [daily-auto] → 开始：森空岛凭证续期
+[2026-10-17 15:10:53] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py status
+[2026-10-17 15:11:00] [daily-auto]    | 凭证有效，sign_token 已续期（uid=218193258）。
+[2026-10-17 15:11:00] [daily-auto]    |   uid=218193258  官服  铭叙#5386  Lv?
+[2026-10-17 15:11:00] [daily-auto]    |   uid=762277661  官服    Lv?
+[2026-10-17 15:11:00] [daily-auto] ← 结束：森空岛凭证续期 rc=0（6s）
+[2026-10-17 15:11:00] [daily-auto] → 开始：森空岛签到
+[2026-10-17 15:11:00] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py checkin
+[2026-10-17 15:11:01] [daily-auto]    | 褐素纤维 x1
+[2026-10-17 15:11:01] [daily-auto] ← 结束：森空岛签到 rc=0（1s）
+[2026-10-17 15:11:01] [daily-auto] → 开始：跑当天日常
+[2026-10-17 15:11:01] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py run --date 2026-10-17 --timeout 7200
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] 今天分配：Annihilation×1、YW-6×10、1-7×5   理智 265
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] 未检测到在线设备 → 启动雷电模拟器…
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] 已请求启动雷电实例 index=0
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] append StartUp   -> id=1
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] append Fight     -> id=2
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] append Fight     -> id=3
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] append Fight     -> id=4
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] append Recruit   -> id=5
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] append Infrast   -> id=6
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] append Mall      -> id=7
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] append Award     -> id=8
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] 已启动，共 8 任务；轮询中（超时 7200s）…
+[2026-10-17 15:38:31] [daily-auto]    | [maa-week] 跑完，用时 1600s
+[2026-10-17 15:38:31] [daily-auto]    | Exception in thread Thread-1 (_readerthread):
+[2026-10-17 15:38:31] [daily-auto]    | Traceback (most recent call last):
+[2026-10-17 15:38:31] [daily-auto]    |   File "C:\Python314\Lib\threading.py", line 1082, in _bootstrap_inner
+[2026-10-17 15:38:31] [daily-auto]    |     self._context.run(self.run)
+[2026-10-17 15:38:31] [daily-auto]    |     ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+[2026-10-17 15:38:31] [daily-auto]    |   File "C:\Python314\Lib\threading.py", line 1024, in run
+[2026-10-17 15:38:31] [daily-auto]    |     self._target(*self._args, **self._kwargs)
+[2026-10-17 15:38:31] [daily-auto]    |     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-10-17 15:38:31] [daily-auto]    |   File "C:\Python314\Lib\subprocess.py", line 1614, in _readerthread
+[2026-10-17 15:38:31] [daily-auto]    |     buffer.append(fh.read())
+[2026-10-17 15:38:31] [daily-auto]    |                   ~~~~~~~^^
+[2026-10-17 15:38:31] [daily-auto]    |   File "<frozen codecs>", line 325, in decode
+[2026-10-17 15:38:31] [daily-auto]    | UnicodeDecodeError: 'utf-8' codec can't decode byte 0xd0 in position 0: invalid continuation byte
+[2026-10-17 15:38:31] [daily-auto] ← 结束：跑当天日常 rc=0（1649s）
+[2026-10-17 15:38:31] [daily-auto] → 开始：刷仓库读数（MAA Depot）
+[2026-10-17 15:38:31] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py depot
+[2026-10-17 15:39:05] [daily-auto]    | [maa-week] 模拟器已在线：['127.0.0.1:5555', 'emulator-5554']
+[2026-10-17 15:39:05] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-17 15:39:05] [daily-auto]    | [maa-week] 仓库已写入 C:\MAA\data\DepotData.json（85 项）
+[2026-10-17 15:39:05] [daily-auto] ← 结束：刷仓库读数（MAA Depot） rc=0（35s）
+[2026-10-17 15:39:05] [daily-auto] → 开始：收益账本结算（settle --auto）
+[2026-10-17 15:39:05] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scheduling\tools\revenue_ledger.py settle --auto --note daily-auto 结算段
+[2026-10-17 15:39:06] [daily-auto]    | settled 2026-10-16T04:00 -> 2026-10-17T04:00  (train 0, farm 8 材料, spend 理智 240.0)
+[2026-10-17 15:39:06] [daily-auto] ← 结束：收益账本结算（settle --auto） rc=0（1s）
+[2026-10-17 15:39:06] [daily-auto] 关闭雷电实例 0…
+[2026-10-17 15:39:09] [daily-auto] 已确认：雷电实例 0 已关闭。
+[2026-10-17 15:39:09] [daily-auto] ===== 每日自动化结束：maa_rc=0 仓库rc=0 账本rc=0 ok=True 关雷电=closed =====
+[2026-10-18 14:00:01] [daily-auto] ===== 每日自动化开始（date=2026-10-18）=====
+[2026-10-18 14:00:01] [daily-auto] → 开始：森空岛凭证续期
+[2026-10-18 14:00:01] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py status
+[2026-10-18 14:00:02] [daily-auto]    | 凭证有效，sign_token 已续期（uid=218193258）。
+[2026-10-18 14:00:02] [daily-auto]    |   uid=218193258  官服  铭叙#5386  Lv?
+[2026-10-18 14:00:02] [daily-auto]    |   uid=762277661  官服    Lv?
+[2026-10-18 14:00:02] [daily-auto] ← 结束：森空岛凭证续期 rc=0（1s）
+[2026-10-18 14:00:02] [daily-auto] → 开始：森空岛签到
+[2026-10-18 14:00:02] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py checkin
+[2026-10-18 14:00:03] [daily-auto]    | 中级作战记录 x2
+[2026-10-18 14:00:03] [daily-auto] ← 结束：森空岛签到 rc=0（1s）
+[2026-10-18 14:00:03] [daily-auto] → 开始：跑当天日常
+[2026-10-18 14:00:03] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py run --date 2026-10-18 --timeout 7200
+[2026-10-18 14:26:54] [daily-auto]    | [maa-week] 今天分配：YW-6×10、1-7×19   理智 324
+[2026-10-18 14:26:54] [daily-auto]    | [maa-week] 未检测到在线设备 → 启动雷电模拟器…
+[2026-10-18 14:26:54] [daily-auto]    | [maa-week] 已请求启动雷电实例 index=0
+[2026-10-18 14:26:54] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-18 14:26:54] [daily-auto]    | [maa-week] append StartUp   -> id=1
+[2026-10-18 14:26:54] [daily-auto]    | [maa-week] append Fight     -> id=2
+[2026-10-18 14:26:54] [daily-auto]    | [maa-week] append Fight     -> id=3
+[2026-10-18 14:26:54] [daily-auto]    | [maa-week] append Recruit   -> id=4
+[2026-10-18 14:26:54] [daily-auto]    | [maa-week] append Infrast   -> id=5
+[2026-10-18 14:26:54] [daily-auto]    | [maa-week] append Mall      -> id=6
+[2026-10-18 14:26:54] [daily-auto]    | [maa-week] append Award     -> id=7
+[2026-10-18 14:26:54] [daily-auto]    | [maa-week] 已启动，共 7 任务；轮询中（超时 7200s）…
+[2026-10-18 14:26:54] [daily-auto]    | [maa-week] 跑完，用时 1578s
+[2026-10-18 14:26:54] [daily-auto]    | Exception in thread Thread-1 (_readerthread):
+[2026-10-18 14:26:54] [daily-auto]    | Traceback (most recent call last):
+[2026-10-18 14:26:54] [daily-auto]    |   File "C:\Python314\Lib\threading.py", line 1082, in _bootstrap_inner
+[2026-10-18 14:26:54] [daily-auto]    |     self._context.run(self.run)
+[2026-10-18 14:26:54] [daily-auto]    |     ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+[2026-10-18 14:26:54] [daily-auto]    |   File "C:\Python314\Lib\threading.py", line 1024, in run
+[2026-10-18 14:26:54] [daily-auto]    |     self._target(*self._args, **self._kwargs)
+[2026-10-18 14:26:54] [daily-auto]    |     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2026-10-18 14:26:54] [daily-auto]    |   File "C:\Python314\Lib\subprocess.py", line 1614, in _readerthread
+[2026-10-18 14:26:54] [daily-auto]    |     buffer.append(fh.read())
+[2026-10-18 14:26:54] [daily-auto]    |                   ~~~~~~~^^
+[2026-10-18 14:26:54] [daily-auto]    |   File "<frozen codecs>", line 325, in decode
+[2026-10-18 14:26:54] [daily-auto]    | UnicodeDecodeError: 'utf-8' codec can't decode byte 0xd0 in position 0: invalid continuation byte
+[2026-10-18 14:26:54] [daily-auto] ← 结束：跑当天日常 rc=0（1612s）
+[2026-10-18 14:26:54] [daily-auto] → 开始：刷仓库读数（MAA Depot）
+[2026-10-18 14:26:54] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py depot
+[2026-10-18 14:27:28] [daily-auto]    | [maa-week] 模拟器已在线：['127.0.0.1:5555', 'emulator-5554']
+[2026-10-18 14:27:28] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-18 14:27:28] [daily-auto]    | [maa-week] 仓库已写入 C:\MAA\data\DepotData.json（47 项）
+[2026-10-18 14:27:28] [daily-auto] ← 结束：刷仓库读数（MAA Depot） rc=0（34s）
+[2026-10-18 14:27:28] [daily-auto] → 开始：收益账本结算（settle --auto）
+[2026-10-18 14:27:28] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scheduling\tools\revenue_ledger.py settle --auto --note daily-auto 结算段
+[2026-10-18 14:27:30] [daily-auto]    | settled 2026-10-17T04:00 -> 2026-10-18T04:00  (train 0, farm 8 材料, spend 理智 240.0)
+[2026-10-18 14:27:30] [daily-auto] ← 结束：收益账本结算（settle --auto） rc=0（2s）
+[2026-10-18 14:27:30] [daily-auto] 关闭雷电实例 0…
+[2026-10-18 14:27:32] [daily-auto] 已确认：雷电实例 0 已关闭。
+[2026-10-18 14:27:32] [daily-auto] ===== 每日自动化结束：maa_rc=0 仓库rc=0 账本rc=0 ok=True 关雷电=closed =====
+[2026-10-19 14:00:01] [daily-auto] ===== 每日自动化开始（date=2026-10-19）=====
+[2026-10-19 14:00:01] [daily-auto] → 开始：森空岛凭证续期
+[2026-10-19 14:00:01] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py status
+[2026-10-19 14:00:02] [daily-auto]    | 凭证有效，sign_token 已续期（uid=218193258）。
+[2026-10-19 14:00:02] [daily-auto]    |   uid=218193258  官服  铭叙#5386  Lv?
+[2026-10-19 14:00:02] [daily-auto]    |   uid=762277661  官服    Lv?
+[2026-10-19 14:00:02] [daily-auto] ← 结束：森空岛凭证续期 rc=0（1s）
+[2026-10-19 14:00:02] [daily-auto] → 开始：森空岛签到
+[2026-10-19 14:00:02] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py checkin
+[2026-10-19 14:00:02] [daily-auto]    | 龙门币 x500
+[2026-10-19 14:00:02] [daily-auto] ← 结束：森空岛签到 rc=0（0s）
+[2026-10-19 14:00:02] [daily-auto] → 开始：跑当天日常
+[2026-10-19 14:00:02] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py run --date 2026-10-19 --timeout 7200
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 今天分配：Annihilation×1、1-7×20   理智 265
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 未检测到在线设备 → 启动雷电模拟器…
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 已请求启动雷电实例 index=0
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 活动突袭 YW-EX-1：改由 Copilot 突袭链补打（ex_auto --with-raid）
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 活动突袭 YW-EX-2：改由 Copilot 突袭链补打（ex_auto --with-raid）
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 活动突袭 YW-EX-3：改由 Copilot 突袭链补打（ex_auto --with-raid）
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 活动突袭 YW-EX-4：改由 Copilot 突袭链补打（ex_auto --with-raid）
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 活动突袭 YW-EX-5：改由 Copilot 突袭链补打（ex_auto --with-raid）
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 活动突袭 YW-EX-6：改由 Copilot 突袭链补打（ex_auto --with-raid）
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 活动突袭 YW-EX-7：改由 Copilot 突袭链补打（ex_auto --with-raid）
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 活动突袭 YW-EX-8：改由 Copilot 突袭链补打（ex_auto --with-raid）
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] append StartUp   -> id=1
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] append Fight     -> id=2
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] append Fight     -> id=3
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] append Recruit   -> id=4
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] append Infrast   -> id=5
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] append Mall      -> id=6
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] append Award     -> id=7
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 已启动，共 7 任务；轮询中（超时 7200s）…
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 跑完，用时 1343s
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 活动 EX：自动补打未通关（ex_auto --auto）…
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week]   |     [x] TaskChainError
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week]   |     [x] 该候选未过，尝试下一个
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week]   | [!] YW-EX-2 所有候选均未成功（可能已 2 星通关，或需更高练度/换作业）
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week]   | [!] 链模式：卡在 YW-EX-2 → **链停**，不再打后面的关（后面本来就没解锁）
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week]   | === 完成 ===
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week]   | [ex]   → 全部候选失败 ❌（983s）
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week]   | [*] 已回写进度 -> C:\Users\39007\Desktop\arknights-mcp\docs\state.json
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week]   | [ex]   链停在这里（后面的关本来就没解锁）
+[2026-10-19 14:53:00] [daily-auto]    | [maa-week] 活动 EX 自动补打结束：rc=1（1803s）
+[2026-10-19 14:53:00] [daily-auto] ← 结束：跑当天日常 rc=0（3178s）
+[2026-10-19 14:53:00] [daily-auto] → 开始：读理智（主界面→药剂面板 OCR，只读不用药）
+[2026-10-19 14:53:00] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py sanity --tries 2 --back 1
+[2026-10-19 14:55:51] [daily-auto]    | [maa-week] 模拟器已在线：['127.0.0.1:5555', 'emulator-5554']
+[2026-10-19 14:55:51] [daily-auto]    | [maa-week] 点理智条「+」(79,910) 开药剂面板（第 1 次）
+[2026-10-19 14:55:51] [daily-auto]    | [maa-week] !! 没打开药剂面板（截图 C:\Users\39007\AppData\Local\Temp\maa-week\sanity_panel.png）→ 不动其它按钮，退出
+[2026-10-19 14:55:51] [daily-auto] ← 结束：读理智（主界面→药剂面板 OCR，只读不用药） rc=3（171s）
+[2026-10-19 14:55:51] [daily-auto] !! 理智读数未成功（rc=3）—— 账本仍按估算。
+[2026-10-19 14:55:51] [daily-auto] → 开始：刷仓库读数（MAA Depot）
+[2026-10-19 14:55:51] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py depot
+[2026-10-19 14:56:34] [daily-auto]    | [maa-week] 模拟器已在线：['127.0.0.1:5555', 'emulator-5554']
+[2026-10-19 14:56:34] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-19 14:56:34] [daily-auto]    | [maa-week] 第 1 次识别：90 项
+[2026-10-19 14:56:34] [daily-auto]    | [maa-week] 仓库已写入 C:\MAA\data\DepotData.json（90 项，上次 78）
+[2026-10-19 14:56:34] [daily-auto] ← 结束：刷仓库读数（MAA Depot） rc=0（43s）
+[2026-10-19 14:56:34] [daily-auto] → 开始：收益账本结算（settle --auto）
+[2026-10-19 14:56:34] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scheduling\tools\revenue_ledger.py settle --auto --note daily-auto 结算段
+[2026-10-19 14:56:35] [daily-auto]    | !! 仓库读数不完整，本次差分作废（farm/spend 已清空，未推进上次快照）
+[2026-10-19 14:56:35] [daily-auto]    |    原因：仓库差分异常：一天内新出现 12 种物品（赤金、近卫芯片、重装芯片、狙击芯片、术师芯片…）→ 上一次或本次读数不全，作废
+[2026-10-19 14:56:35] [daily-auto]    |    处理：确认游戏仓库页正常后重跑 depot，再 settle
+[2026-10-19 14:56:35] [daily-auto] ← 结束：收益账本结算（settle --auto） rc=4（1s）
+[2026-10-19 14:56:35] [daily-auto] !! 收益账本结算未成功（rc=4）—— 不中断。
+[2026-10-19 14:56:35] [daily-auto] 关闭雷电实例 0…
+[2026-10-19 14:56:37] [daily-auto] 已确认：雷电实例 0 已关闭。
+[2026-10-19 14:56:37] [daily-auto] ===== 每日自动化结束：maa_rc=0 理智rc=3 仓库rc=0 账本rc=4 ok=True 关雷电=closed =====
+[2026-10-20 14:00:01] [daily-auto] ===== 每日自动化开始（date=2026-10-20）=====
+[2026-10-20 14:00:01] [daily-auto] → 开始：森空岛凭证续期
+[2026-10-20 14:00:01] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py status
+[2026-10-20 14:00:03] [daily-auto]    | 凭证有效，sign_token 已续期（uid=218193258）。
+[2026-10-20 14:00:03] [daily-auto]    |   uid=218193258  官服  铭叙#5386  Lv?
+[2026-10-20 14:00:03] [daily-auto]    |   uid=762277661  官服    Lv?
+[2026-10-20 14:00:03] [daily-auto] ← 结束：森空岛凭证续期 rc=0（2s）
+[2026-10-20 14:00:03] [daily-auto] → 开始：森空岛签到
+[2026-10-20 14:00:03] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py checkin
+[2026-10-20 14:00:03] [daily-auto]    | 技巧概要·卷2 x2
+[2026-10-20 14:00:03] [daily-auto] ← 结束：森空岛签到 rc=0（0s）
+[2026-10-20 14:00:03] [daily-auto] → 开始：跑当天日常
+[2026-10-20 14:00:03] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py run --date 2026-10-20 --timeout 7200
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] 今天分配：Annihilation×1、YW-6×10、1-7×5   理智 300
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] 未检测到在线设备 → 启动雷电模拟器…
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] 已请求启动雷电实例 index=0
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] 活动突袭 YW-EX-5：改由 Copilot 突袭链补打（ex_auto --with-raid）
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] 活动突袭 YW-EX-8：改由 Copilot 突袭链补打（ex_auto --with-raid）
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] append StartUp   -> id=1
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] append Fight     -> id=2
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] append Fight     -> id=3
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] append Fight     -> id=4
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] append Recruit   -> id=5
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] append Infrast   -> id=6
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] append Mall      -> id=7
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] append Award     -> id=8
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] 已启动，共 8 任务；轮询中（超时 7200s）…
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] 跑完，用时 1452s
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] 活动 EX：自动补打未通关（ex_auto --auto）…
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week]   | [*] YW-EX-8（突袭） 候选2 id=106919 昨日海 - YW-EX-8 一摆到底版 -> act52side_YW-EX-8.json
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week]   |     [x] TaskChainError
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week]   |     [x] 该候选未过，尝试下一个
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week]   | [!] YW-EX-8 所有候选均未成功（可能已 2 星通关，或需更高练度/换作业）
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week]   | [!] YW-EX-8 候选已试完，本关结束（后续是否继续由链决定）
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week]   | === 完成 ===
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week]   | [ex]   → 本批候选失败 ❌（第二遍换作业）（516s）
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week]   | [*] 已回写进度 -> C:\Users\39007\Desktop\arknights-mcp\docs\state.json
+[2026-10-20 14:59:24] [daily-auto]    | [maa-week] 活动 EX 自动补打结束：rc=1（2073s）
+[2026-10-20 14:59:24] [daily-auto] ← 结束：跑当天日常 rc=0（3561s）
+[2026-10-20 14:59:24] [daily-auto] → 开始：读理智（主界面→药剂面板 OCR，只读不用药）
+[2026-10-20 14:59:24] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py sanity --tries 5 --back 4
+[2026-10-20 15:07:24] [daily-auto] !! 读理智（主界面→药剂面板 OCR，只读不用药） 超时（480s）
+[2026-10-20 15:07:24] [daily-auto]    | [maa-week] 模拟器已在线：['127.0.0.1:5555', 'emulator-5554']
+[2026-10-20 15:07:24] [daily-auto]    | [maa-week] 画面停在结算/关卡界面（含「行动结束」）→ 按 BACK 回主界面再试（第 1 次）
+[2026-10-20 15:07:24] [daily-auto]    | [maa-week] 画面还在加载/无文字 → 等 3s 再试（不点击）
+[2026-10-20 15:07:25] [daily-auto]    | [maa-week] 没看到主界面「理智/上限」（可能不在主界面）→ 按一次 BACK 再试
+[2026-10-20 15:07:25] [daily-auto]    | [maa-week] 画面停在结算/关卡界面（含「作战结束」）→ 按 BACK 回主界面再试（第 4 次）
+[2026-10-20 15:07:25] [daily-auto] ← 结束：读理智（主界面→药剂面板 OCR，只读不用药） rc=-1（480s）
+[2026-10-20 15:07:25] [daily-auto] !! 理智读数未成功（rc=-1）—— 账本仍按估算。
+[2026-10-20 15:07:25] [daily-auto] → 开始：刷仓库读数（MAA Depot）
+[2026-10-20 15:07:25] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py depot
+[2026-10-20 15:08:03] [daily-auto]    | [maa-week] 模拟器已在线：['127.0.0.1:5555', 'emulator-5554']
+[2026-10-20 15:08:03] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-20 15:08:03] [daily-auto]    | [maa-week] 第 1 次识别：90 项
+[2026-10-20 15:08:03] [daily-auto]    | [maa-week] 仓库已写入 C:\MAA\data\DepotData.json（90 项，上次 90）
+[2026-10-20 15:08:03] [daily-auto] ← 结束：刷仓库读数（MAA Depot） rc=0（39s）
+[2026-10-20 15:08:03] [daily-auto] → 开始：收益账本结算（settle --auto）
+[2026-10-20 15:08:03] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scheduling\tools\revenue_ledger.py settle --auto --note daily-auto 结算段
+[2026-10-20 15:08:04] [daily-auto]    | settled 2026-10-19T04:00 -> 2026-10-20T04:00  (train 1370, farm 10 材料, spend 理智 240.0)
+[2026-10-20 15:08:04] [daily-auto] ← 结束：收益账本结算（settle --auto） rc=0（1s）
+[2026-10-20 15:08:04] [daily-auto] 关闭雷电实例 0…
+[2026-10-20 15:08:06] [daily-auto] 已确认：雷电实例 0 已关闭。
+[2026-10-20 15:08:06] [daily-auto] ===== 每日自动化结束：maa_rc=0 理智rc=-1 仓库rc=0 账本rc=0 ok=True 关雷电=closed =====
+[2026-10-21 14:00:01] [daily-auto] ===== 每日自动化开始（date=2026-10-21）=====
+[2026-10-21 14:00:01] [daily-auto] → 开始：森空岛凭证续期
+[2026-10-21 14:00:01] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py status
+[2026-10-21 14:00:03] [daily-auto]    | 凭证有效，sign_token 已续期（uid=218193258）。
+[2026-10-21 14:00:03] [daily-auto]    |   uid=762277661  官服    Lv?
+[2026-10-21 14:00:03] [daily-auto]    |   uid=218193258  官服  铭叙#5386  Lv?
+[2026-10-21 14:00:03] [daily-auto] ← 结束：森空岛凭证续期 rc=0（2s）
+[2026-10-21 14:00:03] [daily-auto] → 开始：森空岛签到
+[2026-10-21 14:00:03] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py checkin
+[2026-10-21 14:00:03] [daily-auto]    | 合成玉 x100
+[2026-10-21 14:00:03] [daily-auto] ← 结束：森空岛签到 rc=0（0s）
+[2026-10-21 14:00:03] [daily-auto] → 开始：跑当天日常
+[2026-10-21 14:00:03] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py run --date 2026-10-21 --timeout 7200
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] 今天分配：Annihilation×1、YW-6×10、1-7×5   理智 265
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] 未检测到在线设备 → 启动雷电模拟器…
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] 已请求启动雷电实例 index=0
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] append StartUp   -> id=1
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] append Fight     -> id=2
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] append Fight     -> id=3
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] append Fight     -> id=4
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] append Recruit   -> id=5
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] append Infrast   -> id=6
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] append Mall      -> id=7
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] append Award     -> id=8
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] 已启动，共 8 任务；轮询中（超时 7200s）…
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] 跑完，用时 1351s
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] 活动 EX：自动补打未通关（ex_auto --auto）…
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week]   | [*] YW-EX-8（突袭） 候选2 id=106919 昨日海 - YW-EX-8 一摆到底版 -> act52side_YW-EX-8.json
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week]   |     [x] TaskChainError
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week]   |     [x] 该候选未过，尝试下一个
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week]   | [!] YW-EX-8 所有候选均未成功（可能已 2 星通关，或需更高练度/换作业）
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week]   | [!] YW-EX-8 候选已试完，本关结束（后续是否继续由链决定）
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week]   | === 完成 ===
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week]   | [ex]   → 本批候选失败 ❌（第二遍换作业）（558s）
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week]   | [*] 已回写进度 -> C:\Users\39007\Desktop\arknights-mcp\docs\state.json
+[2026-10-21 14:59:40] [daily-auto]    | [maa-week] 活动 EX 自动补打结束：rc=1（2189s）
+[2026-10-21 14:59:40] [daily-auto] ← 结束：跑当天日常 rc=0（3577s）
+[2026-10-21 14:59:40] [daily-auto] → 开始：读理智（主界面→药剂面板 OCR，只读不用药）
+[2026-10-21 14:59:40] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py sanity --tries 5 --back 4
+[2026-10-21 15:07:32] [daily-auto]    | [maa-week] 模拟器已在线：['127.0.0.1:5555', 'emulator-5554']
+[2026-10-21 15:07:32] [daily-auto]    | [maa-week] 画面停在结算/关卡界面（含「行动结束」）→ 按 BACK 回主界面再试（第 1 次）
+[2026-10-21 15:07:32] [daily-auto]    | [maa-week] 画面还在加载/无文字 → 等 3s 再试（不点击）
+[2026-10-21 15:07:32] [daily-auto]    | [maa-week] 没看到主界面「理智/上限」（可能不在主界面）→ 按一次 BACK 再试
+[2026-10-21 15:07:32] [daily-auto]    | [maa-week] 画面停在结算/关卡界面（含「作战结束」）→ 按 BACK 回主界面再试（第 4 次）
+[2026-10-21 15:07:32] [daily-auto]    | [maa-week] 没看到主界面「理智/上限」（可能不在主界面）→ 按一次 BACK 再试
+[2026-10-21 15:07:32] [daily-auto]    | [maa-week] !! 读不到理智（截图 C:\Users\39007\AppData\Local\Temp\maa-week\sanity.png）—— 不写 sanity.json
+[2026-10-21 15:07:32] [daily-auto] ← 结束：读理智（主界面→药剂面板 OCR，只读不用药） rc=3（473s）
+[2026-10-21 15:07:32] [daily-auto] !! 理智读数未成功（rc=3）—— 账本仍按估算。
+[2026-10-21 15:07:32] [daily-auto] → 开始：刷仓库读数（MAA Depot）
+[2026-10-21 15:07:32] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py depot
+[2026-10-21 15:08:35] [daily-auto]    | [maa-week] 模拟器已在线：['127.0.0.1:5555', 'emulator-5554']
+[2026-10-21 15:08:35] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-21 15:08:35] [daily-auto]    | [maa-week] 第 1 次识别：0 项
+[2026-10-21 15:08:35] [daily-auto]    | [maa-week]    偏少（<60 项），重试一次…
+[2026-10-21 15:08:35] [daily-auto]    | [maa-week] 第 2 次识别：91 项
+[2026-10-21 15:08:35] [daily-auto]    | [maa-week] 仓库已写入 C:\MAA\data\DepotData.json（91 项，上次 90）
+[2026-10-21 15:08:35] [daily-auto] ← 结束：刷仓库读数（MAA Depot） rc=0（63s）
+[2026-10-21 15:08:35] [daily-auto] → 开始：收益账本结算（settle --auto）
+[2026-10-21 15:08:35] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scheduling\tools\revenue_ledger.py settle --auto --note daily-auto 结算段
+[2026-10-21 15:08:36] [daily-auto]    | settled 2026-10-20T04:00 -> 2026-10-21T04:00  (train 0, farm 9 材料, spend 理智 240.0)
+[2026-10-21 15:08:36] [daily-auto] ← 结束：收益账本结算（settle --auto） rc=0（1s）
+[2026-10-21 15:08:36] [daily-auto] 关闭雷电实例 0…
+[2026-10-21 15:08:38] [daily-auto] 已确认：雷电实例 0 已关闭。
+[2026-10-21 15:08:38] [daily-auto] ===== 每日自动化结束：maa_rc=0 理智rc=3 仓库rc=0 账本rc=0 ok=True 关雷电=closed =====
+[2026-10-22 14:07:23] [daily-auto] ===== 每日自动化开始（date=2026-10-22）=====
+[2026-10-22 14:07:23] [daily-auto] → 开始：森空岛凭证续期
+[2026-10-22 14:07:23] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py status
+[2026-10-22 14:07:28] [daily-auto]    | 凭证有效，sign_token 已续期（uid=218193258）。
+[2026-10-22 14:07:28] [daily-auto]    |   uid=218193258  官服  铭叙#5386  Lv?
+[2026-10-22 14:07:28] [daily-auto]    |   uid=762277661  官服    Lv?
+[2026-10-22 14:07:28] [daily-auto] ← 结束：森空岛凭证续期 rc=0（5s）
+[2026-10-22 14:07:28] [daily-auto] → 开始：森空岛签到
+[2026-10-22 14:07:28] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\skland\skland_cli.py checkin
+[2026-10-22 14:07:29] [daily-auto]    | 中级作战记录 x2
+[2026-10-22 14:07:29] [daily-auto] ← 结束：森空岛签到 rc=0（1s）
+[2026-10-22 14:07:29] [daily-auto] → 开始：跑当天日常
+[2026-10-22 14:07:29] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py run --date 2026-10-22 --timeout 7200
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] 今天分配：Annihilation×1、1-7×40   理智 265
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] 未检测到在线设备 → 启动雷电模拟器…
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] 已请求启动雷电实例 index=0
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] append StartUp   -> id=1
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] append Fight     -> id=2
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] append Fight     -> id=3
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] append Recruit   -> id=4
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] append Infrast   -> id=5
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] append Mall      -> id=6
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] append Award     -> id=7
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] 已启动，共 7 任务；轮询中（超时 7200s）…
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] 跑完，用时 2018s
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] 活动 EX：自动补打未通关（ex_auto --auto）…
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week]   | [ex] 自动发现：act52side 剩 2 关(raid)
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week]   | [ex] 目标活动：act52side（昨日海）
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week]   | [ex] 当前不在主界面/没看到活动入口 → 按 BACK 回退
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week]   | [ex] 当前不在主界面/没看到活动入口 → 按 BACK 回退
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week]   | [ex] 点活动入口 昨日海 (1700,364)
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week]   | [ex] 活动主页没找到 EX 入口（截图见 C:\Users\39007\AppData\Local\Temp\event-ex）
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week]   | [ex] !! 没能自动进到 EX 关卡列表；请手动停在 EX 页后加 --no-goto 重跑
+[2026-10-22 14:51:41] [daily-auto]    | [maa-week] 活动 EX 自动补打结束：rc=3（506s）
+[2026-10-22 14:51:41] [daily-auto] ← 结束：跑当天日常 rc=0（2652s）
+[2026-10-22 14:51:41] [daily-auto] → 开始：读理智（主界面→药剂面板 OCR，只读不用药）
+[2026-10-22 14:51:41] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py sanity --tries 5 --back 4
+[2026-10-22 14:53:55] [daily-auto]    | [maa-week] 模拟器已在线：['127.0.0.1:5555', 'emulator-5554']
+[2026-10-22 14:53:55] [daily-auto]    | [maa-week] 没看到主界面「理智/上限」（可能不在主界面）→ 按一次 BACK 再试
+[2026-10-22 14:53:55] [daily-auto]    | [maa-week] !! 读不到理智（截图 C:\Users\39007\AppData\Local\Temp\maa-week\sanity.png）—— 不写 sanity.json
+[2026-10-22 14:53:55] [daily-auto]    | error: device '127.0.0.1:5555' not found
+[2026-10-22 14:53:55] [daily-auto]    | error: device '127.0.0.1:5555' not found
+[2026-10-22 14:53:55] [daily-auto]    | error: device '127.0.0.1:5555' not found
+[2026-10-22 14:53:55] [daily-auto]    | error: device '127.0.0.1:5555' not found
+[2026-10-22 14:53:55] [daily-auto] ← 结束：读理智（主界面→药剂面板 OCR，只读不用药） rc=3（134s）
+[2026-10-22 14:53:55] [daily-auto] !! 理智读数未成功（rc=3）—— 账本仍按估算。
+[2026-10-22 14:53:55] [daily-auto] → 开始：刷仓库读数（MAA Depot）
+[2026-10-22 14:53:55] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scripts\maa-week\maa_week.py depot
+[2026-10-22 14:55:21] [daily-auto]    | [maa-week] 未检测到在线设备 → 启动雷电模拟器…
+[2026-10-22 14:55:21] [daily-auto]    | [maa-week] 已请求启动雷电实例 index=0
+[2026-10-22 14:55:21] [daily-auto]    | [maa-week] 模拟器已在线：['emulator-5554']
+[2026-10-22 14:55:21] [daily-auto]    | [maa-week] 已连接设备：127.0.0.1:5555
+[2026-10-22 14:55:21] [daily-auto]    | [maa-week] 第 1 次识别：0 项
+[2026-10-22 14:55:21] [daily-auto]    | [maa-week]    偏少（<60 项），重试一次…
+[2026-10-22 14:55:21] [daily-auto]    | [maa-week] 第 2 次识别：0 项
+[2026-10-22 14:55:21] [daily-auto]    | 未捕获 DepotInfo —— 可能未进到仓库
+[2026-10-22 14:55:21] [daily-auto] ← 结束：刷仓库读数（MAA Depot） rc=1（85s）
+[2026-10-22 14:55:21] [daily-auto] !! 仓库读数未成功（rc=1）—— 收益账本改用现有 DepotData.json。
+[2026-10-22 14:55:21] [daily-auto] → 开始：收益账本结算（settle --auto）
+[2026-10-22 14:55:21] [daily-auto]   命令：C:\Python314\pythonw.exe C:\Users\39007\Desktop\arknights-mcp\scheduling\tools\revenue_ledger.py settle --auto --note daily-auto 结算段
+[2026-10-22 14:55:22] [daily-auto]    | settled 2026-10-21T04:00 -> 2026-10-22T04:00  (train 3, farm 0 材料, spend 理智 240.0)
+[2026-10-22 14:55:22] [daily-auto] ← 结束：收益账本结算（settle --auto） rc=0（1s）
+[2026-10-22 14:55:22] [daily-auto] 关闭雷电实例 0…
+[2026-10-22 14:55:24] [daily-auto] 已确认：雷电实例 0 已关闭。
+[2026-10-22 14:55:24] [daily-auto] ===== 每日自动化结束：maa_rc=0 理智rc=3 仓库rc=1 账本rc=0 ok=True 关雷电=closed =====

@@ -16,6 +16,7 @@ import os
 import io
 import sys
 import json
+import contextlib
 import time
 import base64
 import pathlib
@@ -526,6 +527,96 @@ def ark_infrast_status() -> dict:
         return _skland_box().fetch_base()
     except Exception as e:  # noqa: BLE001
         return {"error": str(e)}
+
+
+# ----------------------------------------------------------------------------
+# 干员养成成本（**离线算账**，不碰设备）：官方表算需求、比仓库算缺口、折理智。
+# 实现见 scheduling/tools/oper_cost.py（+ material_cost.py 材料→理智估值）。
+# ----------------------------------------------------------------------------
+def _oper_cost_mod():
+    p = str(pathlib.Path(__file__).resolve().parent / "scheduling" / "tools")
+    if p not in sys.path:
+        sys.path.insert(0, p)
+    import oper_cost  # noqa: PLC0415
+    return oper_cost
+
+
+@mcp.tool()
+def ark_oper_cost(names: list = None, targets: list = None, elite: int = -1,
+                  level: int = -1, mastery: list = None, module: int = -1,
+                  module_key: str = "", from_skland: bool = True,
+                  include_exp: bool = True, save_to: str = "") -> dict:
+    """计算「选中干员 + 指定练度目标」养成所需的资源（精英化 / 等级 / 技能专精 / 模组）。
+
+    选中干员（二选一或并用）：
+      · names   —— 干员中文名列表，如 ["乌尔比安", "德克萨斯"]
+      · targets —— 逐干员精确目标，每项
+                   {"name":"乌尔比安","elite":2,"level":90,
+                    "skill_lvl":7,"mastery":[3,3,0],"modules":{"1":3}}
+    公用目标（作用于 names 里的每个干员；targets 里单独给的可覆盖）：
+      · elite/level      目标精英阶段 0/1/2 与目标等级（-1 = 按星级标准：6★E2L60 / 5★E2L50 / ≤4★E2L1）
+      · mastery          一/二/三技能各自的专精目标，如 [3,3,0]（省略 = 不专精）
+      · module           模组目标等级 1/2/3（-1 = 不管模组）；默认作用于该干员第一个「可升级」模组
+      · module_key       选哪个模组：序号("1"/"2"/"3") / 模组中文名 / 完整 uniEquipId
+    当前练度：from_skland=True（默认）从森空岛读（含技能等级/专精/模组）；False 用本地 MAA 干员箱。
+
+    返回每个干员的 材料缺口（需/有/缺）、升级经验与龙门币、模组材料，以及折合理智合计。
+    只读查询，不用开模拟器。
+    """
+    try:
+        oc = _oper_cost_mod()
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": "加载 oper_cost 失败: %r" % e}
+
+    specs = []
+    if targets:
+        for t in targets:
+            specs.append(dict(t))
+    if names:
+        try:
+            chars, _idx, _depot = oc.load()
+            uni = oc.load_modules()
+        except Exception as e:  # noqa: BLE001
+            return {"ok": False, "error": "加载官方表失败: %r" % e}
+        for n in names:
+            s = {"name": n}
+            if elite is not None and elite >= 0:
+                s["elite"] = elite
+            if level is not None and level >= 0:
+                s["level"] = level
+            if mastery:
+                s["mastery"] = mastery
+            if module is not None and module >= 0:
+                sel = module_key
+                if not sel:
+                    cid, _ch = oc.find_char(chars, n)
+                    fe = oc.first_upgradable(uni, cid or "") if cid else None
+                    sel = fe.get("uniEquipId") if fe else None
+                if sel:
+                    s["modules"] = {sel: module}
+            specs.append(s)
+    if not specs:
+        return {"ok": False, "error": "需要 names 或 targets"}
+
+    # ⚠ MCP 的 stdout 是传输通道：oper_cost 内部偶有 print（如森空岛取数失败提示），
+    #   必须重定向捕获、转写日志文件，绝不能泄漏到 stdout。
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            res = oc.compute_custom(specs, box=None, from_skland=from_skland,
+                                    include_exp=include_exp)
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": "计算失败: %r" % e}
+    noise = buf.getvalue().strip()
+    if noise:
+        log("[ark_oper_cost] " + noise.replace("\n", " | "))
+    res.pop("val", None)  # 估值器对象不可 JSON 化
+    res["ok"] = True
+    if save_to:
+        with io.open(save_to, "w", encoding="utf-8") as f:
+            json.dump(res, f, ensure_ascii=False, indent=2)
+        res["saved_to"] = save_to
+    return res
 
 
 # 页面锚点：页面名 -> MAA 模板（用于 ark_where；可被 custom 覆盖/追加）

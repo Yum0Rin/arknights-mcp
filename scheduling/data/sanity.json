@@ -1,6 +1,6 @@
 {
   "ts": "2026-10-14 09:55:14",
-  "current_sanity": 160,
+  "current_sanity": 64,
   "theoretical_total": 520,
   "potion_sanity": 360,
   "bottom_delta": 360,
@@ -25,5 +25,8 @@
       "counted": false,
       "src": "pill"
     }
-  ]
+  ],
+  "panel_total": 144,
+  "current_sanity_ts": "2026-10-18 19:00:51",
+  "current_sanity_src": "maa_week sanity（药剂面板 OCR，只读不用药）"
 }
