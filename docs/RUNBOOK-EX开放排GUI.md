@@ -104,7 +104,7 @@ python -c "import json;d=json.load(open(r'docs/state.json',encoding='utf-8'));pr
    ```powershell
    python scripts/maa-week/maa_week.py write --date 2026-10-16
    ```
-   （`write` 只刷当天：Fight 槽按关卡匹配、非当天槽 `IsEnable=false`；`Infrast.Mode=Rotation`；空 `OperProgress` 停用；`UseMedicine/MedicineCount` 同步当天药量。）
+   （`write` 只刷当天：Fight 槽按关卡匹配、非当天槽 `IsEnable=false`；`Infrast.Mode=Custom`（`plan_index` 14:00→1 A班）；空 `OperProgress` 停用；`UseMedicine/MedicineCount` 同步当天药量。）
 2. 启动 `C:\MAA\MAA.exe`，等主窗口就绪。
 3. **点开始**（两种）：
    - 人工点界面右上角 **「Link Start!」**；

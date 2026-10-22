@@ -551,7 +551,7 @@ TASK_DEFAULTS = {
    `enable` 由 Core 默认 `true`，并非它们返回 0 的原因。
 2. **`Infrast` 默认值补齐**：`{"enable": True}` 下 `{}` 必 0。建议给一个安全默认，如
    `{"enable": True, "mode": 0, "facility": ["Mfg","Trade","Power","Reception","Office","Dorm","Processing","Training","Control"]}`；
-   若走"只收菜/不换班"取向，另留 `mode=20000` 配方（见 §6.4）。**前提**：我们的基建已改由 **MAA 自带的「队列轮换」**（`Infrast` `mode=20000`）承担——MAA 进基建 → 当前班有人心情 0 → 点游戏内「一键轮换」→ 各设施收菜（Rotation 下 MAA 不换干员、不由 MAA 自动排班），所以默认值取 `mode=20000`（不触发 MAA 自动换班）。
+   若走"只收菜/不换班"取向，另留 `mode=20000` 配方（见 §6.4）。**前提**：我们的基建已改由 **MAA 的 `Infrast` `mode=10000`（Custom 自定义换班）**承担（2026-10-14 改定）——按《搓玉·合成玉》方案表 `scheduling/MAA基建排班/243_搓玉_定制.json`（一图流「243 搓玉两换」转出）**逐设施摆干员**（含宿舍/发电站/办公室/控制中枢）+ **菲亚梅塔置换**，`plan_index` 必传（14:00→1 A班 / 02:00→0 B班），所以默认值应取 **`mode=Custom` 口径**（含 `filename`/`plan_index`），而非 `mode=20000`。
 3. **`Recruit` 默认 `confirm` 建议改 `[]`**：默认 `[3,4,5,6]` 会**自动确认**高星（真消耗许可/加急），对"只想看能不能出"的场景有副作用；若确实自动公招，可保留，但建议在注释里写明"会真实招募"。
 4. **`StartUp` 补 `start_game_enabled`**：当前默认不含该项（默认 false），需要自动开游戏时调用方还要手动传。可考虑默认 `{"client_type":"Official","start_game_enabled":True}`（与我们 `ark_operbox` 内部一致）。
 5. **`Fight` 建议加最小默认**（可选）：如 `{"medicine":0, "stone":0, "series":1}`，避免调用方漏传导致 `series` 语义不明；但 `stage` 必须调用方给，别设默认。

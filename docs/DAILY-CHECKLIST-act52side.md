@@ -1,6 +1,6 @@
 # 每日清单 · act52side 活动期（2026-10-10 起）
 
-> 口径：搓玉向（合成玉最高优先、长期不停）；作业只抄 E2+；基建走《搓玉》A/B 轮换，**由 MAA `Infrast` `mode=20000` 驱动**；队列**按天编辑**。
+> 口径：搓玉向（合成玉最高优先、长期不停）；作业只抄 E2+；基建走《搓玉》A/B 轮换，**由 MAA `Infrast` `mode=10000`（Custom 自定义换班）驱动**；队列**按天编辑**。
 > 数据源：`docs/MASTER-PLAN.md`（判据）、`docs/state.json`（状态）、`scheduling/tools/sanity_plan.json`（理智规划）。
 > **时间（官方 activity_table + PRTS 双证）：作战/关卡结束 2026-10-23 03:59；商店/兑换结束 2026-10-30 03:59。**
 
@@ -29,8 +29,8 @@
 > **顺序铁律（2026-10-10 用户定）**：**领奖 `Award` 尽量往后排** —— 先做任务（刷关/公招/基建产出）才产生可领的奖励，先领会漏。
 
 0. **MAA 更新检查**：`python scripts/maa-update/maa_update.py check`；有更新则 `apply`（资源更新后**重启 MCP** 才生效）。
-1. **基建**：**交给 MAA**（`Infrast` `mode=20000`，含在当天队列里）——进基建 → 当前班心情 0 → 点游戏内「一键轮换」→ 各设施收菜。
-   > 2026-10-12 起换口径：手搓换班脚本已归档（`历史版本/基建改MAA轮换+队列按天-2026-10-12/`）；MAA 侧只需 `Mode=Rotation`。
+1. **基建**：**交给 MAA `Infrast` `mode=10000`（Custom 自定义换班，含在当天队列里）**——MAA 按方案表 `scheduling/MAA基建排班/243_搓玉_定制.json`（《搓玉·合成玉》A/B 两班）逐设施摆干员（含宿舍/发电站/办公室/控制中枢）+ 菲亚梅塔置换。
+   > 2026-10-14 改定：由 2026-10-12 的 `Mode=Rotation`（队列轮换）改为 `Mode=Custom`（`plan_index` 14:00→1 A班 / 02:00→0 B班）；手搓换班脚本仍归档（`历史版本/基建改MAA轮换+队列按天-2026-10-12/`）。
 2. **森空岛签到**：`python scripts/skland/skland_cli.py checkin`。
 3. **公招**：`ark_run_task("Recruit")`（有券就挂）。
 4. **信用商店**：`ark_run_task("Mall")`。
@@ -56,7 +56,7 @@
    - **MAA `Fight` 做不了活动突袭**（`is_raid` 只在 Copilot `copilot_list` 里，见 `MAA-INTERNALS.md` §2.10）
      → 走 Copilot/手点；`maa_week` 遇 `Raid` 只提示（并打印可复制命令）、不 append。
    - 一条命令跑链：`python scripts/event-copilot/event_copilot.py run act52side --chain raid --try`。
-   - **突袭理智暂按与普通关相同计**（EX 10/10/15/15/15/15/20/20、S 15）—— **口径待数据层核实**。
+   - **突袭理智与普通关同价**（EX 10/10/15/15/15/15/20/20、S 15）—— **2026-10-19 实机确认**。
 
 > 首通按作业抄（E2 准入铁律）。`--chain` 跑完/失败都回写 `docs/state.json.progress.event_act52side`。
 
@@ -111,7 +111,7 @@
 
 ## 8. 一页速查（每天照做）
 
-1. 基建由 MAA `Infrast`（mode=20000）一次做完（收菜 + 按需一键轮换）。
+1. 基建由 MAA `Infrast`（mode=10000 Custom）一次做完（逐设施摆干员 + 菲亚梅塔置换 + 收菜）。
 2. 签到 / 领奖 / 公招 / 信用商店。
 3. 周一：剿灭 5 次。
 4. 活动：EX 开放后**按 EX-1→EX-8 顺序**首通，每关普通后紧跟该关**突袭**（Raid，走 Copilot/手点）。

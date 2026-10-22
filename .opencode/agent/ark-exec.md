@@ -13,7 +13,7 @@ tools:
 - **A 类（MAA 内置）**：`ark_run_task(...)`；长任务 `wait=False` + `ark_task_result()` 轮询。
 - **B 类（无内置，手点）**：查 `docs/ops_manual.json` 复用；未学则按 `docs/STATE.md` §4「学习模式」五步**现学现记**（截图→定位→点击→验证→写入 ops_manual）。
 - **脚本**：`scripts/maa-week/maa_week.py`（按天编辑/直驱队列）、`scripts/event-copilot/event_copilot.py`。
-- 基建**不用脚本**：交给 MAA 自带 `Infrast` `mode=20000`（队列轮换）；旧 `infrast_rotation.py` 已归档 `历史版本/`。
+- 基建**不用脚本**：交给 MAA `Infrast` `mode=10000`（Custom 自定义换班，`plan_index` 14:00→1 / 02:00→0，方案表 `scheduling/MAA基建排班/243_搓玉_定制.json`）；旧 `infrast_rotation.py` 已归档 `历史版本/`。
 
 ## 铁律
 

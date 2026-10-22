@@ -327,3 +327,327 @@
 - **落地**：`scripts/ldplayer-ad/ldplayer_ad_guard.py`（`--status` / `--once`(默认,force-stop) / `--watch` /
   `--disable` / `--enable` / `--uninstall`）。注：禁用是 **per-user**，模拟器**重置/重装后需重跑 `--disable`**。
 
+## 24. 基建 `Infrast` **Rotation（队列轮换）** 到底做了什么 —— 「换班没换成 + 菲亚梅塔没置换」的根因（2026-10-14，源码+日志双证）
+
+- **起因**：用户反馈上次基建「有一些换班没换成，菲亚梅塔也没有置换」，问 `gui.new.json` 里的 `InfrastTask` 是不是配错了。
+- **结论：配置没错，这是 `Mode=Rotation` 的**能力边界** —— 那两件事它天生做不到，不是配错。**
+- **源码依据**（MaaCore 6.19；本地 clone 在 `%TEMP%\MaaAssistantArknights`，与 GitHub 同源）：
+
+  | 事实 | 出处 | 含义 |
+  |---|---|---|
+  | `fiammetta_recovery_enabled = (mode == Default) && …` | `InfrastTask.cpp:74` | **菲亚梅塔只在 `mode=0` 生效**；Rotation/Custom 下永不置换 |
+  | `task->set_skip_shift(mode == Rotation)`（Mfg/Trade/Reception） | `InfrastTask.cpp:81` | **Rotation 下 MAA 不摆干员** |
+  | `rotation_skips = { "Dorm","Power","Office","Control" }` 直接 `continue` | `AsstInfrastDef.h:85-91` | Rotation **整个跳过**宿舍/发电站/办公室/控制中枢 |
+  | `if (mode == Rotation) m_subtasks.emplace_back(m_queue_rotation_task)` | `InfrastTask.cpp:126-127` | Rotation 唯一的「换班」= 点一次游戏内**「队列轮换」** |
+  | `filename` 只在 Custom 用（`if (mode != Custom) …` / `:259`） | `InfrastTask.cpp:203,259` | Rotation 下 `Filename` 指向的 `maa-243-custom.json` **根本没被读** |
+  | Custom 模式读 plan 的 `Fiammetta` 块，插一个 DormTask 放 `[target, 菲亚梅塔]` | `InfrastTask.cpp:420-464` | **想做菲亚梅塔置换 → 必须 `mode=10000 (Custom)` + 带 `Fiammetta` 的排班表** |
+
+- **日志实证**（`C:\MAA\debug\asst.log`，最后一次 Rotation 运行 2026-10-12 19:29–19:32）：
+  - `run subtask 2 / 13` = `InfrastEnterRotation`：点 `InfrastOverviewEnter.png` → **点 `InfrastQueueRotation.png`(1070,644)**
+    （= 游戏内「队列轮换」按钮）→ `InfrastEnterTrim` → `InfrastTrimClick` → Return。**这就是全部的「换班」动作。**
+  - `skip shift in rotation mode` **出现 7 次** = 制造站 4 + 贸易站 2 + 会客室 1（正好对上 243 布局）→ 生产/贸易/会客室**一个干员都没换**。
+  - 13 个子任务里**没有** Power/Office/Control/Dorm（被 `rotation_skips` 砍掉）→「有些设施没换」是结构性的。
+  - 全日志 `Fiammetta` **0 次命中** → MAA 从没做过菲亚梅塔置换。
+- **所以**：
+  - 「有些换班没换成」= Rotation 只点一次「队列轮换」，**整基地一次性切到另一套队列**；切完哪些设施变了，
+    完全取决于**游戏内队列 1/2 各自的进驻表**（哪边没配/配空，那边就不变）。要「每个设施都换」得把**游戏内两套队列都配满**。
+  - 「菲亚梅塔没置换」= Rotation 能力边界；2026-10-12 归档说明（`历史版本/基建改MAA轮换+队列按天-2026-10-12/README-历史版本说明.md`）
+    里已写明「菲亚梅塔恢复：**不再做**（MAA Rotation 下 `skip_shift=true`）」。
+- **⚠ 配置自相矛盾（待用户裁定）**：`gui.new.json` 里 `Mode=Rotation` **却**把 `Filename` 指向
+  `C:\MAA\resource\custom_infrast\maa-243-custom.json`（一图流 243 两换，**两份 plan 都 `Fiammetta.enable=true, target=但书`**）
+  —— Rotation 下这文件是死的。要它生效必须 `Mode=Custom`。
+- **⚠ 改 Mode 的坑**：`scripts/maa-week/maa_week.py` 的 `cmd_write` **硬把 `Infrast.Mode` 写回 `Rotation`**
+  （`maa_week.py:331-334`）→ 只改 `gui.new.json` 会被下次 `maa_week write` 覆盖，**必须同时改 `maa_week` / `plan_week` 的口径**。
+- **三条可选（供裁定）**：
+
+  1. **保持 Rotation**（现状）：换班全靠游戏内队列 1/2；要「逐设施都能换」→ 去游戏里把**两套队列都补满**。
+  2. **`Mode=Custom(10000)` + `maa-243-custom.json`**：MAA 按一图流 A/B 方案**逐设施摆干员**并**执行菲亚梅塔置换**
+     （`Fiammetta.target=但书`）—— 这才是这个文件存在的意义；代价 = MAA 排班覆盖游戏内队列、方案里的干员要齐。
+  3. **`Mode=Default(0)` + `FiammettaRecoveryEnabled=true` + `FiammettaTarget1/2/3`**：MAA 自带算法换班 + 菲亚梅塔恢复；
+     代价 = MAA 会按它自己的逻辑改你的基地（见 §13）。
+
+### 24.1 裁定与落地（2026-10-14 当日执行「选 2」）
+
+**用户裁定：选 2** —— `Mode=Custom(10000)` + `C:\MAA\resource\custom_infrast\maa-243-custom.json`。
+
+**先取证降风险**：用森空岛干员箱比对方案表 → 两份 plan 各 29 名干员，**缺失 0**（`菲亚梅塔`、`但书` 均在 box 内）。
+⇒ 「方案里有你没的干员，摆不上」这条风险**排除**。
+
+**关键坑（写代码前必须知道）**：
+- `plan_index` **必须显式传**：MAA 不读 plan 的 `period`（那是 GUI `PlanSelect=-1`「按时间自动」才用的逻辑，
+  且我们 14:00/02:00 落在文件的 08:00-10:00 / 20:00-22:00 窗口**之外**，GUI 那条路会 fallback 到 plan 0 + 报错）；
+  更致命的是 `index < 0` → `set_params` false → **append 0 打死整队**（`InfrastTask.cpp:302`）。
+- `filename` 只在 `mode=Custom` 时被读（`:259-279`）；GUI 的 `PlanSelect == -1` 在 Serialize 时**不传** `plan_index`。
+- Custom 下 `drones` / `threshold` 由**方案表**决定（Core 侧 `if (mode != Custom)` 才吃 `drones` 参数）。
+
+**班次映射**（各 720min，对齐 12h）：
+| 时刻 | 任务 | `plan_index` | 理由 |
+|---|---|---|---|
+| 14:00 | 「方舟·每日日常」 | **1（A班）** | A班 `period` 20:00-22:00 落在 14:00→02:00 这一班内 |
+| 02:00 | 「方舟·凌晨基建换班」 | **0（B班）** | B班 `period` 08:00-10:00 落在 02:00→14:00 这一班内 |
+
+（映射本身是**约定**，两份 plan 质量等价；要翻只需改 `maa_week.INFRAST_PLAN_DAY / INFRAST_PLAN_NIGHT`。）
+
+**落地清单（唯一事实源 = `maa_week.INFRAST_*` / `infrast_params()`）**：
+| 文件 | 改动 |
+|---|---|
+| `scripts/maa-week/maa_week.py` | 新增 `INFRAST_CUSTOM_FILE / INFRAST_PLAN_DAY=1 / INFRAST_PLAN_NIGHT=0 / INFRAST_FACILITY / infrast_params()`；`TASK_DEFAULTS["Infrast"]` 与 `cmd_write` 的 `Infrast` 分支从强制 Rotation 改为写 Custom+Filename+PlanSelect |
+| `scheduling/tools/plan_week.py` | `RULE` 新增 `infra_mode/infra_custom_file/infra_plan_day/infra_plan_night`；生成的 Infrast 任务 params 改 Custom 口径 |
+| `scheduling/data/weekly_plan.json` | 原地把 `Infrast` 任务 params 改成 Custom 口径（**没重新生成整份计划**，保住 W42 逐日分配） |
+| `scripts/night-infrast/night_infrast.py` | Infrast params 改走 `mw.infrast_params(mw.INFRAST_PLAN_NIGHT)`；新增 `_custom_plan_check()` 前置校验（坏方案表/越界 → 返回 4，**连模拟器都不拉**） |
+| `C:\MAA\config\gui.new.json` | `InfrastTask.Mode: Rotation → Custom`、`PlanSelect: -1 → 1`（备份 `gui.new.json.bak-20261014-220126`） |
+| 文档 | `AGENTS.md` 铁律 2、`docs/state.json`、`CHANGELOG.md`、以及 MASTER-PLAN / STATE-一键长草 / DAILY-CHECKLIST / PLAN-一键长草 / ops_manual 等口径同步 |
+
+**离线验证（未碰模拟器）**：
+- `maa_week run --dry` → `Infrast {'mode': 10000}`；`_today_tasks` 展开 = `plan_index 1`，夜间 = `plan_index 0` ✓
+- `maa_week write --dry` → **只剩 3 条 Fight 改动、无 Infrast 改动** ⇒ `gui.new.json` 与代码口径已一致，
+  且 `write` **不会再把 Mode 写回 Rotation** ✓
+- `_custom_plan_check(1)` → `plan[1]=A班（29 名干员，Fiammetta 开→但书）`；`(0)` → `plan[0]=B班（…）` ✓
+- `InfrastTask.cpp:302` 的越界分支 ⇒ **绝不能**给 `plan_index` 传 `-1`（判据已写进代码注释与本文档）
+
+**待实测（2026-10-15 02:00 首次真跑）**：看 `scripts/night-infrast/运行日志.txt` + `%TEMP%\maa-week\` 截图 +
+`C:\MAA\debug\asst.log` 是否出现 `custom json:` / `Fiammetta's target:`，以及**不再**出现 `skip shift in rotation mode`。
+
+### 24.2 方案表换成《搓玉·合成玉》版（2026-10-14，用户「更新方案表」）
+
+**⚠ 承上：改成 Custom 才暴露出的坑** —— `Filename` 一旦生效，就发现它指的是**错的方案**：
+- `C:\MAA\resource\custom_infrast\maa-243-custom.json` 与 `scheduling/一图流产物/243-钱书均衡-龙门币优先-MAA.json`
+  **sha256 完全相同**（`fbf144b2…`）⇒ 它是**钱书均衡·龙门币优先**版（制造 `[BR,PG,BR,PG]`、贸易 `[LMD,LMD]`），
+  **不是《搓玉·合成玉》方案**（搓玉 = 制造产**源石碎片** + 贸易卖**合成玉**）。`MASTER-PLAN.md §5.6` 早就标注了这个坑，
+  但 Rotation 时代该文件根本不参与运行，所以一直没暴露；`Mode=Custom` 一开就会**真的按龙门币优先摆**。
+- 结论：不改就违反「基建一律《搓玉·合成玉》」这条铁律。
+
+**处理**：
+1. `scheduling/tools/convert_to_maa.py` 增强后，把一图流导出转成 MAA `custom_infrast`：
+   `243-搓玉-合成玉-MAA.json` → **`scheduling/MAA基建排班/243_搓玉_定制.json`**。
+2. **方案表放仓库**（`scheduling/MAA基建排班/`）而不是 MAA 的 `resource/custom_infrast/`：防 MAA 更新覆盖 + 可版本管理。
+3. 三处引用 + yuMAArin GUI 全部改指这一份：`maa_week.INFRAST_CUSTOM_FILE`、`plan_week.RULE["infra_custom_file"]`、
+   `C:\MAA\config\gui.new.json` 的 `Infrast.Filename`、`skland_gui.py` 的 `MAA_CUSTOM_INFRAST`（原硬编码 MAA resource 路径，
+   会和自动化**打架**，一并统一）。
+4. **`period` 按我们的换班时刻改写**（用户要求「方案表的时间改成我们现在商量的」）：源文件是 08:00-10:00 / 20:00-22:00
+   （一图流建议窗口），与我们 14:00/02:00 不符 → 改成 **B班 `02:00-04:00` / A班 `14:00-16:00`**
+   （生成时用 `--periods "B班=02:00-04:00,A班=14:00-16:00"`）。⚠ MaaCore 不读 `period`，只有 **GUI 的「按时间自动」**用它；
+   我们的自动化一律显式传 `plan_index`，所以 `period` 改动不影响自动化，只是让 GUI 显示/自动模式与我们一致。
+
+**转换器顺带修的两点**（一图流导出不是直接可用）：
+- 一图流的 `plans[]` **没有 `index`** → MAA GUI 读 `CustomInfrastConfig.Plan.Index` 时每份方案都是 0，
+  方案下拉里选哪个都等于 plan 0（`InfrastSettingsUserControlModel` 用 `Index` 当 `Value`）→ 转换时补 `index = 0..n-1`。
+- **透传** `period` / `duration` / `scheduleType` / `description_post`（原版转换器把它们丢了）。
+
+**产物核对**（`scheduling/MAA基建排班/243_搓玉_定制.json`）：
+| 项 | 值 |
+|---|---|
+| plans | 2 份：`index 0 = B班`（period 02:00-04:00, duration 720）、`index 1 = A班`（14:00-16:00, 720） |
+| manufacture | `["Battle Record", "Originium Shard", "Pure Gold", "Pure Gold"]` → 1 站产**源石碎片** ✓ |
+| trading | `["LMD", "Orundum"]` → 1 站卖**合成玉** ✓ |
+| 产物合法性 | 全部落在 MaaCore `ProductNames` 白名单内（`Originium Shard` / `Orundum` 都是**合法值**，
+不会被当成 Unknown 而「不校验不更换」） |
+| Fiammetta | `{"enable": true, "target": "但书", "order": "pre"}`（A/B 两班都是） |
+| drones | `trading` index **1**（= 卖合成玉那个贸易站） |
+| 干员 | 每班 29 名，**29/29 全持有**；⚠ 名单与钱书均衡版**不同**（差集 B班 8 个 / A班 6 个）⇒ 换表确实改变了排班 |
+
+**离线验证**：`maa_week run --dry` / `_today_tasks` → `mode=10000 + filename=仓库方案表 + plan_index 14:00→1 / 02:00→0`；
+`maa_week write --dry` → **只剩 3 条 Fight 改动、无 Infrast**（说明 gui.new.json 与代码口径一致）；
+`_custom_plan_check(1)/(0)` → `plan[1]=A班 / plan[0]=B班（29 名干员，Fiammetta 开→但书）`，而 `(-1)` → **正确报越界**（守卫生效）；
+`plan_week.py --dry` exit 0 且 Infrast params 已带新路径；`py_compile` 全过。
+
+**快照**：`历史版本/基建方案表-钱书均衡改搓玉-2026-10-14/`（含改动前的 `convert_to_maa.py`、旧方案表、gui config）。
+
+### 24.3 yuMAArin「基建配置」：保存前先预览排班表 → 确认（2026-10-14）
+
+**起因**：GUI 的「保存」原本是**一步落盘**（贴 JSON → 点保存 → 直接覆盖方案表）。贴错内容（尤其**原始一图流导出**：
+没有 `plans[].index`、`period` 也不是我们商量的窗口）会**静默覆盖**生产方案表；而「方案份数不足 / 产物名不在白名单 /
+干员没持有」这些**肉眼看不出来**，却会让 14:00/02:00 的自动化「看着跑了却没换成」。用户要求：**先预览排班表，再确认**。
+
+**改法**（`scripts/skland/skland_gui.py`，见 `历史版本/yuMAArin-基建保存加预览确认-2026-10-14/`）：
+- 新增「预览排班表」按钮 + 只读预览框；新增 `_infra_parse / _infra_render_preview / _infra_preview / _infra_summary_lines / _infra_owned_names`。
+- `_infra_save` 三步：**① 预览（解析不过就一个字节都不写）→ ② MessageBox 确认（路径 + 每班要点 + 提醒）→ ③ 才备份+写入**。
+- **致命项判据 = 与转换器共用同一份**：`scheduling/tools/convert_to_maa.py` 的 `plan_fatals(cfg, room_cn=…, owned=…)`
+  （纯 stdlib，`skland_gui.py` 直接 import —— 避免 GUI 与转换器两处判据漂移）。
+- **校验分两级**（用户 2026-10-14 追加要求：致命项**直接禁止保存**；又问「干员未持有」是否也硬拦 → 用户答**也硬拦**）：
+  | 级别 | 判据（会让 MAA 出问题的**机制**） | 项 |
+  |---|---|---|
+  | **✗ 致命 → 禁止保存** | 会让整队废掉 / 方案结构性无效 / **静默失效** | ① 方案份数 < 2（自动化 `plan_index=1` 越界 → `set_params` false → `append 0` **打死整队**）② 产物名不在 MaaCore 白名单（`InfrastTask.cpp:330-337` → 该房间**照常换人但不切换产物**，静默失效）③ 某班在 制造/贸易/发电/控制中枢/会客室/办公室 **一个人都没写**（等于没换班）④ **有干员未持有**（含菲亚梅塔目标 → 摆不上/置换失败，换不齐） |
+  | ⚠ 提醒 → 可保存 | 只影响 GUI 显示 | 缺 `plans[].index`（GUI 方案下拉全 0）、`index` 为负 |
+  （`plans` 缺失 / 不是数组 / 某 plan 缺 `rooms` 属**解析层**错误 → 更早就挡住，连预览都不给。
+  ④ 只在 caller 传了 `owned` 时判 —— **转换器没有账号数据 → 自动跳过这条**，GUI 传当前 box。）
+- 致命项判定与落盘在**同一处**（`_infra_save` 第 1.5 步）：`fatals` 非空 → toast「禁止保存：N 项致命问题」+ 日志 `err` + **return，不写任何字节**，且**连确认框都不弹**。
+
+**两个写方案表的入口都拦住了**：
+| 入口 | 拦法 |
+|---|---|
+| yuMAArin GUI「保存」 | `plan_fatals(..., owned=当前box)` → 非空即拒绝（见上） |
+| `scheduling/tools/convert_to_maa.py`（脚本直写） | `convert()` 落盘前调 `plan_fatals(out)` → 打印每条 `!! 致命：…` 后 **`SystemExit`（退出码 2）拒绝写出**（**不给 `--force` 绕过**；要单班方案请另说） |
+
+
+**顺带核对到的事实**（都可复用）：
+- MaaCore 的 `drones` 只读 **`enable` / `index` / `order` / `room`** 四个键（`InfrastTask.cpp:466-515`），
+  且 `index` 是 **1-based**（Core 里 `-1`）；一图流导出里的 `rule` 是**一图流特有**字段，MAA 不读
+  —— MAA 自带排班文件（`243_layout_*.json`）的 `drones` 也只有这四个键。⇒ 转换器丢掉 `rule` **无影响**。
+- 产物白名单（`InfrastTask.cpp:330-337`）：`Battle Record` / `Pure Gold` / `Dualchip` / `Originium Shard` / `LMD` / `Orundum`；
+  不在其中 → 该房间**照常换人，但不校验、不更换产物**（只留一行 warning，极易漏）—— 故把它列为**致命项**。
+
+**离线验证**：`py_compile` 过。
+- **致命闸 + 确认框三条路径**（把 `MAA_CUSTOM_INFRAST`/`INFRA_CFG_LOCAL` 指到临时目录、用假 `MessageBox`，**不启动 GUI**，5 条断言全过）：
+  | 用例 | 期望 | 实测 |
+  |---|---|---|
+  | A 只有 1 份方案 + 点「确定」 | **不写**、无确认框 | ✅ 禁止保存 |
+  | B 产物写成 `OriginStone`（非法） | **不写** | ✅ 禁止保存 |
+  | C 某班关键设施全空 | **不写** | ✅ 禁止保存 |
+  | D 合法方案 + 点「取消」 | 弹确认框但**不写** | ✅ 已取消保存 |
+  | E 合法方案 + 点「确认」 | **写入**（目标 + 留档） | ✅ 已保存 |
+  （A 特意让确认框返回「确定」，证明**不是靠用户点取消**挡住的，而是闸本身拦下。）
+- **`plan_fatals` 的 ownership 分支**：不传 `owned` → 致命 0 条（转换器路径）；传一个小 `owned` → **1 条致命**
+  「有 N 名干员未持有…」（消息已**截断到前 8 名 + 共 N 名**，实测 238 字符，不会撑爆 toast）；传全量 owned → 致命 0 条。
+- **转换器也在落盘前拦**（同 4 条规则，`convert()` 直调）：正常源 → 写出；`bad_product` / `one_plan` / `empty_plan`
+  三种篡改源 → 各打印 `!! 致命：…` 后 `SystemExit`，**输出文件不产生**。
+- 预览渲染：真方案表 → **致命 0 / 提醒 0**；**原始一图流导出** → 致命 0 / 提醒 2（缺 `index`）⇒ 可保存（只提醒）；
+  6 种坏输入（空/非 JSON/是数组/无 plans/plans 空/plan 无 rooms）→ 各自给出可读原因。
+- **离屏 Qt 实跑**（`QT_QPA_PLATFORM=offscreen` + 裸 `QWidget` 绑 `App` 的方法，**不显示窗口、不登录、不抢实例**）：
+  这一节真能构建 → 按钮 `['载入当前配置', '预览排班表', '保存', '应用']`、预览框 `TextEdit` 且只读、摘要 label 正确；
+  把真方案表塞进编辑框调 `_infra_preview()` → 预览框 45 行、含 `Originium Shard`/`Orundum`、结论行「✓ 校验通过」、
+  致命/提醒 = 0/0；坏 JSON → 预览框显示 `✗ 无法预览：JSON 解析失败…` 且不标记为已预览。
+- ⚠ 仍未验的只有**视觉观感**（「基建」页要点导航才能到，无法程序化截图那一页）。
+
+
+
+
+## 25. 活动 EX 关：MAA 能打，但要注意「导航名」和「专精」（2026-10-18 实测纠正）
+
+**结论：MAA Copilot 完全能打活动 EX 关**（`event_copilot run <event> --chain ex`）。踩过的三个坑：
+
+1. **tile-pos/overview 才是导航依据，不是 stages.json**
+   - `stages.json`（616 关）里 **0 条 `-EX-`** —— 它只服务「理智/掉落」相关逻辑（Fight 需要），不代表不能导航。
+   - Copilot 的导航走 `Copilot@FullStageNavigation` + `ClickStageName`：扫关卡列表、**按 OCR 关卡名点关**，
+     关卡名来自 `Arknights-Tile-Pos/overview.json`（`code` 字段，如 `YW-EX-1`）。
+   - 所以 `sync`（补 overview + tile-pos）之后 EX 就能导航；**资源更新必须重启 MCP/MAA 才生效**（10-18 我就是
+     在资源刚落地前跑的，误判成「MAA 不支持 EX」）。
+
+2. **`nav_name_override` 不能传 null**
+   - `append_task("Copilot", {"copilot_list":[{..., "nav_name_override": None}]})` → MaaCore 抛 C++
+     异常（`OSError 0xe06d7363 / WinError -529697949`），append 直接崩。
+   - 而且活动 EX **必须给值**：作业里的 `stage_name` 是 level id（`act52side_ex01`），MAA 靠 stages.json 把
+     level id 映射成显示名；EX 不在 stages.json → 不给 `nav_name_override=\"YW-EX-1\"` 就找不到关。
+   - 已在 `event_copilot.run_plan` 里改成固定传 `stage[0]`（关卡代号）。
+
+3. **「全员 E2」不等于能抄：极限作业还要看专精**
+   - 10-18 实测：YW-EX-1 用 3 人作业（凛御银灰/圣聆初雪/结城理）**一次通过**；
+     YW-EX-2 三个「全员 E2」候选（2-3 人极限作业）**全败**。
+   - 原因：`凛御银灰 专0`、`予愿安洁莉娜 专0` —— 2~3 人极限作业靠技能等级跑时间轴，专0 基本必崩。
+   - **现状**（10-18 22:05 更新）：`score()` 已扩成 6 元组，加「专精总缺口 / 缺专三人数」；
+     但**只用于排序**，`copyable()` 仍只看「未拥有/空组/低练/低练组」四项 → 专0 的作业照样会试。
+     因此 YW-EX-2 这类 2~3 人极限作业仍可能反复失败（10-19 突袭链再次卡在 EX-2 即此原因）。
+
+
+## 26. 2026-10-19 每日自动化两处失败：理智锚点误匹配 + 坏仓库基线永久卡死
+
+当天 14:00 的每日日常 `maa_rc=0`，但 `理智rc=3`、`账本rc=4`（`运行日志.txt:364-389`）。
+不是设备/网络问题，是两段代码各自的逻辑缺陷；已在同一天修掉。
+
+### 26.1 `sanity` 把结算界面的「理智返还」当成主界面理智条 → 点进加载
+
+- **现象**：`14:55:51` 日志「点理智条「+」(79,910)」→ 紧接着「没打开药剂面板」；
+  `%TEMP%\maa-week\sanity.png` OCR 出来是 **YW-EX-2 行动结束（MISSION RESULTS）**，
+  底部有「理智返还」四个字。
+- **根因**：`_parse_sanity()` 旧逻辑只要 OCR 文本里含「理智」就返回锚点。结算界面的
+  「理智返还」box 中心 `(203,974)` → 按 `(Δ-124, Δ-64)` 算出 `(79,910)`，直接点在结算界面上；
+  随后 `sanity_panel.png` 是 `RHODESISLAND` 加载画面（游戏被打进加载）。
+  为什么会在结算界面：EX 突袭链在 YW-EX-2 全候选失败（专精/练度，见 §25），
+  `ex_auto` 停在结算界面没退回主界面。
+- **修法**（`scripts/maa-week/maa_week.py`）：
+  - `_parse_sanity()` 收紧：优先认独立 `/205` 框 / 合并「理智/205」框 / 拆框「理智+相邻 /205」，
+    排除「返还/恢复/药剂/消耗…」；锚点只接受 `0.12H~0.60H`（主界面理智条约 0.32H，
+    结算界面的「理智返还」在 ~0.90H）；容量数字没被 OCR 到时，只认 `sanity_potion.PLUS=(1107,282)`
+    推出的已知主界面坐标带（右侧中部），不再全屏模糊匹配。
+  - `cmd_sanity()` 改成状态机：结算/关卡界面 → **只按 BACK**（不点击）；加载/无文字 → **只等待**；
+    认不出主界面 → 按 BACK，次数用完就退出；点了 `+` 但面板没开 → **等 2s 重试**（不再一次失败就退出）。
+    仍然只有「点 +」和「点 ✕」两条点击路径，**没有点 ✓ 的路径**。
+  - `daily_auto.py`：`sanity --tries 5 --back 4`（原 2/1），步骤超时 180s→480s。
+- **验证**：用当天 `sanity.png` 的 OCR 框跑新 `_parse_sanity` → 返回 `None`（旧逻辑会返回 `(203,974)`）；
+  按 `sanity_potion` 的真实坐标造主界面框（`/205` @ `(1231,346)`、合并框、拆框、只有「理智」）→ 均返回锚点；
+  「理智返还」即使放在同一坐标 → `None`；1280×720 缩放同样命中。
+
+### 26.2 仓库基线是「78 项缺货币」的坏快照 → 每天都会判新出现 12 种、永远不推进
+
+- **现象**：`14:56:35` 账本 `rc=4`：「一天内新出现 12 种物品（赤金、近卫芯片…）→ 作废」。
+- **证据**：`%TEMP%\opencode\ark\bundle-last.json`（10-18 18:51 建立）只有 **78** 类目，
+  **连 `4001 龙门币`、`4002 至纯源石`、`4003 合成玉`、`4006 采购凭证` 都没有**；
+  10-19 的 `DepotData.json` 是 **90** 类目，新增 12 项 = 4 种货币 + 赤金 + 7 种芯片，且
+  **旧 78 项一个没少** → 说明上次读数不全，不是今天真「凭空多了 12 种」。
+- **根因**：`revenue_ledger.build_entry()` 的护栏只判断「新出现 ≥8 种 → 作废」，而
+  `cmd_settle()` 在 `depot_incomplete` 时**不推进快照**。坏基线因此永远留着：
+  第二天仍与 78 项比、仍判 12 种新物品、仍 rc=4 —— **自我锁死**。
+- **修法**（`scheduling/tools/revenue_ledger.py`）：
+  - 护栏分岔：本次是上次的**严格超集**（原有物品一个没丢、类目更多）→ 判「上次读数不全」，
+    `depot_rebased=True`；否则（物品有丢失/类目更少）仍按「本次可疑」处理。
+  - `cmd_settle()`：`depot_rebased` 时虽然**本次差分仍作废**（写 `invalid` 语义、rc=4），
+    但**用本次读数重建 `bundle-last.json`** → 下一次即可正常差分。
+  - 账本行新增 `depot_rebased` 字段（纯追加），issues 文案区分「上次读数不全，本次重建基线」。
+- **验证**：用 10-18 的 78 项快照 + 10-19 的 90 项 DepotData 跑 `cmd_settle`：
+  `depot_incomplete=True / depot_rebased=True`，`bundle-last.json` 推进到 90 项，
+  账本行 farm/spend 清空、无假收益；反向用 10 项残缺读数测试 → **不推进**快照。
+
+### 26.3 后续口径
+
+- 今天的账本行依旧是 `invalid`（诚实缺口），但基线已在 **10-19 16:32** 用当天 90 项读数
+  （`revenue_ledger collect`，理智仍取 `sanity.json` 的 64）重建为 `bundle-last.json`
+  → **10-19→10-20 这一窗可以从 10-20 起正常差分**，不会再白丢一天。
+- 若下次仍出现「新出现 ≥8 种」且 `rebased=False`，说明本次读数反而更差（或两次都坏），
+  仍会保留旧快照并 rc=4 —— 这是有意保守，不要改成无条件推进。
+- EX 链失败后停在结算界面属于正常结果；现在 `sanity` 会自己按 BACK 回主界面，不再需要额外兜底。
+
+### 26.4 长草页「今天跑完了」≠ 突袭打完了（2026-10-19 用户指出）
+
+- **现象**：同屏出现「今日日常 ✅ 14:56」+ 日卡「突袭：YW-EX-1..8」+「需要处理：突袭 8 关」——
+  看着像自相矛盾。
+- **原因**：`daily_run.ok` 只由 `daily_auto` 的 `maa_rc` 决定；计划里的 Raid 槽在 `maa_week run`
+  里被改道给 `ex_auto`。10-19 `ex_auto` 在 YW-EX-2 全候选失败 → 突袭没打完，但 MAA 日常主体**确实** ok。
+  两边说的都是真话，UI 把它们并排展示却没说明「完成」的范围。
+- **修法**（`scripts/skland/skland_gui.py`）：
+  - 新增 `_today_raid_progress()`：今日计划 `raids` vs `state.json.raid_clear_done`。
+  - 未清完时「今日日常」磁贴显示 `⚠ 部分完成`（不再光秃秃 ✅）；今日日卡标「突袭已通 x/n」；
+    计划下加一行「日常主体完成 ≠ 今天全部跑完」。
+  - 10-19 的 `daily_run` / 账本最后一条加 `repaired_at` / `repaired_note`（只加标注，不改 rc/invalid），
+    GUI 把这两条历史失败降为灰字 `info` 并写「已修复，明日生效」；突袭未清仍是橙字 `warn`。
+  - **`daily_run.ok` 语义不动**：改成「突袭没清就不 ok」会让 `_already_ran_today()` 失效，
+    手动/补跑可能重跑一遍 MAA、多花理智。状态只改展示层。
+- **验证**：离屏 Qt 渲染 10-19 长草页 → 磁贴「⚠ 14:56 部分完成」、日卡「已通 1/8」、
+  告警首条仍是突袭 8 关（warn），另两条为灰字 info；`collect_alerts()` 直接调用同样输出。
+
+### 26.5 突袭链「一关失败就整链停」是错的（2026-10-19 用户指出）
+
+- **现象**：10-19 突袭链打通 YW-EX-1 后，EX-2 的 5 个候选全败，日志写
+  「链停，不再打后面的关（后面本来就没解锁）」→ EX-3..8 突袭一次都没试。
+- **为什么错**：**突袭的解锁只看「该关普通是否已通」**，与前一关突袭是否通过无关。
+  当时普通 EX 已经 8/8 全通 → EX-3..8 突袭本来就都开着，不该停。
+  （普通 EX 关才是顺序解锁：EX-3 普通要等 EX-2 普通通，所以普通链失败即停是对的。）
+- **EX-2 为什么败**：不是脚本没启动。`%TEMP%\arknights-mcp-maa\debug\asst.log` 14:51-14:52
+  显示编队完成、正常部署（遥/凛御银灰放技能），最后 OCR 到「任务失败」→ `TaskChainError`。
+  5 个候选分别有 6/15 点专精缺口、2/5 人缺专三 → 2~3 人极限轴打不过（见 §25）。
+- **修法**（`scripts/event-copilot/ex_auto.py`）：
+  - `run_chain` 里 `not ok` 分岔：`is_raid` → 记录失败后 **continue**，继续试后面的突袭；
+    普通链仍 `break`（顺序解锁）。
+  - `无候选` 同样：突袭跳过继续，普通停。
+  - 新增 `--budget`（默认 4800s）：本次 ex_auto 总预算，避免 7 关 × 单候选 900s 把 14:00 日常的
+    外层 5400s 直接顶爆（被 kill 会停在战斗中途）；预算用完只记日志，剩余下次再打。
+  - `event_copilot.run_plan` 里误导性的「链停…后面本来就没解锁」改为中性文案，链决策只由 `ex_auto` 打。
+- **验证**（mock，不动设备）：EX-2 失败 → 实际调用序列 `EX-2,3,4,5,6,7,8`，EX-3..8 继续；
+  普通链同样的失败 → 只到 `EX-1,EX-2`；deadline 已过 → 一关不打。
+
+### 26.6 10-19 实跑：普通补 3 星 + 突袭 6/8 + 预算空转修复
+
+- **普通 EX：8/8 全 3 星**。EX-4 从 2 星补到 3 星（候选 106940，262s）；EX-5~8 从 0 星补到 3 星
+  （EX-5 448s、EX-6 356s、EX-7 658s、EX-8 539s），各换过 1~2 次作业。
+- **突袭：已过 EX-1/2/3/4/6/7**；EX-5 连试 15 个作业（含 relaxed）未过，EX-8 只跑了第一遍。
+  二者已排入 10-20 计划（`raids=[YW-EX-5,YW-EX-8]`，sanity 300、medicine 120）。
+- **口径纠正**：突袭理智 = **普通同价**（EX 10/15/15/20…），**不是双倍**（2026-10-19 用户实机确认）；
+  普通 2 星 = 未过（突袭解锁要普通 3 星）；突袭本身**只判过/不过**（2 星结束也算过）。
+- **修复**：
+  - `run_plan`：普通 2 星=失败、**超时=失败**（旧逻辑把 900s 超时当 MAA 完成）；
+    `deadline` 改为**每个候选前**检查（旧逻辑只在关卡之间检查 → EX-5 第二遍 17 个候选 ×900s，
+    空转近 3 小时）。
+  - `ex_auto`：两遍策略（第一遍每关 1 个候选，第二遍回头换作业）；新增
+    `--stages / --skip-ids / --candidate-offset / --relaxed / --second-pass-max`；
+    第二遍默认每关最多再试 6 个，防止单关刷几小时。
+  - 日常 `ex_auto`：单候选 900→600s，总预算 3600s（外层 5400s）。
+- **留痕**：18:05 那条 EX-4「超时误判成功」在 `ex_run.jsonl` 标 `invalid`；真实 3 星记录保留。

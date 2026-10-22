@@ -232,3 +232,47 @@ python scheduling/tools/event_economy.py scheduling/data/event_act52side.json --
 
 ## 8. 一键闭环（C 项：`goto`）
 `event_copilot.py goto`（默认坐标 `主页370,45 → banner1770,205 → 关卡入口1400,860`）是**简易**导航，换活动/分辨率用 `--home-xy/--banner-xy/--hub-xy` 覆盖。更稳的做法仍是 MCP 层 `ark_where`/`ark_find`/`ark_tap`（§3bis）。
+
+
+---
+
+## 9. 活动 EX 关：已并入「一键长草」（2026-10-18 起，**不用手点**）
+
+### 一条命令 / 零点击
+```bash
+python scripts/maa-week/maa_week.py run            # 日常跑完 → 自动补打未通的 EX（Copilot）
+python scripts/event-copilot/ex_auto.py --auto     # 只想单独补 EX
+python scripts/event-copilot/ex_auto.py --auto --dry   # 只看计划，不动设备
+```
+- 每日 14:00「方舟·每日日常」→ `daily_auto.py` → `maa_week run` → 末尾自动 `ex_auto.py --auto`。
+- `ex_auto --auto` **自己扫** `scheduling/data/event_*.json` 里带 `ex_stages` 且没打完的活动，
+  自己导航（主界面 → 活动 → EX 关卡列表），自己选作业、自己回写 `docs/state.json`。
+- 新活动只要补一份 `event_<id>.json`（含 `ex_stages`），第二天 14:00 就会自动开始打 EX，
+  不需要写进 `weekly_plan`，也不需要人点按钮。
+- 失败/没打完会在 **GUI「长草」页顶部「⚠ 需要处理」** 里红字提示（同时进 `scheduling/data/ex_run.jsonl`）。
+
+### 三条硬知识（踩过，详见 FINDINGS §25）
+1. **EX 不在 `stages.json` 里是正常的**：那张表只管「理智/掉落」，`Fight` 用它；**Copilot 不用**。
+   导航靠 `Arknights-Tile-Pos/overview.json` 的 `code` + OCR 点关。
+2. `sync` 补完资源**必须重启 MCP/MAA**（MaaCore 启动时缓存资源），否则会误报「不在 MAA 资源」。
+3. `copilot_list[].nav_name_override` **必须给关卡代号**（`YW-EX-1`），传 `None` 会让 MaaCore 抛
+   `OSError 0xe06d7363`。
+
+### 候选分档（`ex_auto.tiered_candidates`）
+- **strict**：作业里每个干员槽都 E2+（用户铁律）→ 先试；
+- **compat**：`未拥有=0 / 空组=0 / 低练+低练组≤1` 且标题含「单核/挂件/兼容/低配/一摆」→ 兜底。
+- 实测：EX-1 用 3 人 strict 作业一次过；EX-2 三个 strict 全败（**凛御银灰/予愿安洁莉娜 专0**），
+  换 `#4 圣聆初雪单核 挂件兼容高中低配`（核心 圣聆初雪 专3）**一次过**。
+  → 2~3 人极限轴靠技能等级，**专0 不要抱希望**。
+
+### 理智 / 突袭
+- Copilot **不会自动用理智药**；理智不够时该关会失败（会退部分理智），链自动停在该关。
+- **突袭现在也自动打**（2026-10-18 用户定）：`maa_week run` 调 `ex_auto --auto --with-raid`，
+  普通清完后自动接突袭；**理智与普通同价**（2026-10-19 实机确认，本活动 EX-5 15 / EX-8 20），够不够由 MAA 自己停。要关掉整套 EX → `maa_week run --no-ex`。
+
+### 作业排序：专精缺口（2026-10-18 加）
+- `score()` 现在返回 6 项：`(未拥有, 空组, 低练, 低练组, 专精总缺口, 缺专三人数)`。
+- **前三/四项仍是「可抄」硬判据**；后两项**只用于排序**（专精越足越先试），不做过滤。
+- 专精缺口算法：作业 `opers[].skill` 指出用第几个技能 → 我们该技能专精 <3 就记 `3-mastery`。
+  实测 EX-2 三个「全员精二」作业都是 `专精缺=6~9`（凛御银灰/予愿安洁莉娜 专0），
+  所以当时全败；现在这类会排在后面，先试专精足的。

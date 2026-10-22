@@ -28,7 +28,7 @@
 5. adb 带 `-s 127.0.0.1:5555`（否则 `more than one device`）。
 6. 删文件走回收站；同一时刻只让一个客户端驱动设备。
 7. 作业只抄"全部干员槽都 E2+"；取数优先森空岛；**不许** `ignore_requirements` 硬凑练度不齐。
-8. 基建一律《搓玉·合成玉》方案，A/B 班各 720min 轮换，搓玉长期优先；**驱动交给 MAA 自带的「队列轮换」**（`Infrast` `mode=20000`），不再自研脚本。
+8. 基建一律《搓玉·合成玉》方案，A/B 班各 720min 轮换，搓玉长期优先；**驱动交给 MAA 自定义换班（Custom）**（`Infrast` `mode=10000` + 方案表 `maa-243-custom.json`，逐设施摆干员 + 菲亚梅塔置换），不再自研脚本。（2026-10-14 改定，取代 2026-10-12 的队列轮换口径。）
 9. 合成玉（抽卡）最高优先。
 10. 活动商店家具必满；干员信物首发必换满拿黄票。
 
@@ -166,17 +166,23 @@
 
 1. 一律《搓玉·合成玉》方案（A/B 班各 720min，两班轮换）。
 2. **实务配置（2026-10-12 用 MAA 实读产物校正，此前写的「贸易站 2 / 制造站 2」不准）**：
-   当前班 = 制造站 1 产**源石碎片**（`OriginStone`）+ 贸易站 1 卖**合成玉**（`SyntheticJade`）；
+   当前班 = 制造站 1 产**源石碎片**（`Originium Shard`）+ 贸易站 1 卖**合成玉**（`Orundum`）；
    其余制造站产赤金(2)/作战记录(1)，其余贸易站卖龙门币(1)。
-   与仓库 `scheduling/一图流生成器/243-搓玉-合成玉-MAA.json` 一致（制造 `[BR, OriginStone, PG, PG]`、贸易 `[LMD, Orundum]`）。
+   与方案表 `scheduling/MAA基建排班/243_搓玉_定制.json` 一致（制造 `[BR, Originium Shard, PG, PG]`、贸易 `[LMD, Orundum]`）。
    证据：MAA `ProductOfFacility` 回调（`C:\MAA\debug\asst.log`，2026-10-12 19:30-19:31）。
-   ⚠ 注意 GUI 里 `Infrast.Filename` 指的 `C:\MAA\resource\custom_infrast\maa-243-custom.json` 是**龙门币优先**版
-   （制造 `[BR,PG,BR,PG]`、贸易 `[LMD,LMD]`），**不是搓玉版** —— 但已切 `Mode=Rotation` 后该文件不参与运行。
-   > 若将来要回 `Mode=Custom`（MAA 排班替代队列轮换）：用 `scheduling/tools/convert_to_maa.py`
-   > 把 `243-搓玉-合成玉-MAA.json` 转成 custom_infrast 再让 GUI 指它，**别沿用 `maa-243-custom.json`**。
+   ⚠ **历史坑（2026-10-14 修）**：此前 `Infrast.Filename` 一直指 `C:\MAA\resource\custom_infrast\maa-243-custom.json`，
+   那是**钱书均衡·龙门币优先**版（制造 `[BR,PG,BR,PG]`、贸易 `[LMD,LMD]`；仓库里同哈希副本 =
+   `scheduling/一图流产物/243-钱书均衡-龙门币优先-MAA.json`）—— 换成 `Mode=Custom` 后它会**真的生效**，
+   等于悄悄把基建变成龙门币优先。现已改为仓库里的搓玉版，**别再指回那个文件**。
+   > 重新生成：`python scheduling/tools/convert_to_maa.py "scheduling/一图流产物/243-搓玉-合成玉-MAA.json"`
+   > `"scheduling/MAA基建排班/243_搓玉_定制.json" --periods "B班=02:00-04:00,A班=14:00-16:00"`
 3. 核对：森空岛 `ark_infrast_status` 逐设施比对（宿舍自动填充不校验）；森空岛不可用时用 MAA `Infrast` 的
    `ProductOfFacility` 回调读**实际产物**（比进驻干员更直接）。
-4. 轮换：**交给 MAA `Infrast` `mode=20000`** —— MAA 进基建 → 当前班有干员心情为 0 → 点游戏内「一键轮换」（Rotation 下 MAA 不换干员）→ 各设施收菜。
+4. 轮换：**交给 MAA `Infrast` `mode=10000`（Custom 自定义换班）**（2026-10-14 改定，取代 2026-10-12 的队列轮换口径）——
+   MAA 按方案表 `scheduling/MAA基建排班/243_搓玉_定制.json` **逐设施摆干员**（含宿舍/发电站/办公室/控制中枢）并执行**菲亚梅塔置换**；
+   ⚠ `plan_index` 必须显式传：**14:00「每日日常」→ 1（A班）**、**02:00「凌晨基建换班」→ 0（B班）**
+   （MAA 不看 plan 的 `period`、也不吃 `-1` —— `index<0` 会让 `set_params` false→`append 0` 打死整队；
+   `period` 已按我们的换班时刻改写成上述两个窗口，仅供 GUI 显示/「按时间自动」用）。
    `facility` = Mfg/Trade/Power/Control/Reception/Office/Dorm/Processing/Training。旧自研脚本（菲亚梅塔+13 房切队列）已归档 `历史版本/基建改MAA轮换+队列按天-2026-10-12/`。
 
 ---
@@ -210,9 +216,10 @@ python scripts/event-copilot/event_copilot.py shop --pages 8   # 翻商店 OCR
 ### 6.3 基建 / 日常 / 剿灭 / 1-7 / CE-6
 
 ```bash
-# 基建：队列轮换（mode=20000）—— 我们要用的就是这个
-ark_run_task("Infrast", {"mode": 20000, "facility": ["Mfg","Trade","Power","Control","Reception","Office","Dorm","Processing","Training"]})
-# 备查：自定义排班 Mode=Custom 需要绝对 ASCII 路径（一图流导出 MAA JSON）
+# 基建：自定义换班 Custom（mode=10000）+ 方案表 —— 我们要用的就是这个（2026-10-14 改定）
+# plan_index 必传：14:00→1（A班）、02:00→0（B班）
+ark_run_task("Infrast", {"mode": 10000, "filename": r"C:\Users\39007\Desktop\arknights-mcp\scheduling\MAA基建排班\243_搓玉_定制.json", "plan_index": 1, "facility": ["Mfg","Trade","Power","Control","Reception","Office","Dorm","Processing","Training"]})
+# 备查：旧口径为 Mode=Rotation(20000) 队列轮换（能力边界见 docs/FINDINGS.md §24）
 
 # 刷关
 ark_run_task("Fight", {"enable": true, "stage": "CE-6", "times": 5})
@@ -236,7 +243,7 @@ python scheduling/tools/oper_appearance.py --pages 15 --top 25
 
 1. 留痕：所有 adb/MaaCore 调用写 `%TEMP%\arknights-mcp.log`；执行/跳过关卡写 `scheduling/data/run_report.jsonl`；周计划重生成写 `weekly_plan_log.jsonl`。（`infrast_rotation_log.jsonl` 仅存 2026-10-12 前的历史数据，不再追加。）
 2. 数据刷新节奏：活动有变动（EX 开放/商店补货/代币变化）→ 重刷 `event_<id>.json` + 重跑 `event_economy.py`；干员箱变动 → 重跑 `oper_appearance.py`；森空岛 401 → 续期。
-3. 轮换：基建由 MAA `Infrast` `mode=20000` 负责（当前班心情 0 即触发游戏内一键轮换），无需我们计时。
+3. 轮换：基建由 MAA `Infrast` `mode=10000`（Custom）负责，`plan_index` 由两个定时任务显式指定（14:00→1 A班 / 02:00→0 B班），无需我们计时。
 4. 报告：改大件走 `build_report.py → parse_training.py → sanity_plan.py → render_report.py`。
 5. 失败退理智：活动关失败退理智不亏，`--try` 逐个候选重试划算。
 
@@ -260,11 +267,12 @@ python scheduling/tools/oper_appearance.py --pages 15 --top 25
 
 1. ~~理智药存量~~ **已实测（2026-10-10）**：浓缩液(+120)×5 + 加强剂(+60)×10 ≈ **1200 理智** + 流金影×1（流程与实测见 `docs/WORKFLOW-仓库取数.md`）。拼清单时按此数算活动刷关 + 搓玉缺口。
 2. EX/突袭各关理智单价（act52side_09..16）：待企鹅 `stages?server=CN` 取，决定首通总理智。
-   **口径（2026-10-12）**：**只有 EX/S 关有突袭，普通关（YW-1..8）没有**；突袭理智**暂按与普通关相同**计
+   **口径（2026-10-12）**：**只有 EX/S 关有突袭，普通关（YW-1..8）没有**；突袭理智**与普通关相同**（2026-10-19 实机确认）
    （EX 10/10/15/15/15/15/20/20、S 15，见 `event_act52side.json`）→ **待数据层核实**。
    执行：EX 按 **EX-1→EX-8** 顺序首通，每关普通后紧跟该关突袭（计划用 `type=Raid`；MAA `Fight` 做不了，走 Copilot `is_raid`/手点）。
 3. 干员信物阶梯价明细：每档价格待核（首发已换过的话，复刻再换满的黄票收益需具体数）。
-4. ~~基建队列换班的两按钮语义~~ **已由 MAA `mode=20000` 代劳**（MAA 自己认「一键轮换」按钮），不再需要我们记坐标。
+4. ~~基建队列换班的两按钮语义~~ **已由 MAA `mode=10000`（Custom）代劳**（MAA 自己按方案表摆干员），不再需要我们记坐标。
 5. 活动商店第 1 屏之后的价格/限购部分"看图核准"，建议 PRTS/企鹅最终核对。
 6. 养谁截"前 N"的具体 N 值：未定，需用户拍板（建议 5~8 名）。
-7. ~~搓玉是否导成 custom_infrast~~ **已定：用 MAA `mode=20000` 队列轮换**（游戏内队列 1/2 承载 A/B 班），不导 custom_infrast。
+7. ~~搓玉是否导成 custom_infrast~~ **已定（2026-10-14 改定）：用 MAA `mode=10000`（Custom）+ 方案表 `scheduling/MAA基建排班/243_搓玉_定制.json`**（《搓玉·合成玉》A/B 两班，逐设施摆干员 + 菲亚梅塔置换）；此前 2026-10-12 的「用 `mode=20000` 队列轮换（游戏内队列 1/2 承载 A/B 班）、不导 custom_infrast」口径已废弃。
+   （⚠ 也别指回 `C:\MAA\resource\custom_infrast\maa-243-custom.json` —— 那是钱书均衡·龙门币优先版，见 §5.6。）

@@ -13,6 +13,7 @@
 > `scripts/skland/`=森空岛在线取数；`scripts/maa-autoclose/`=MAA 跑完自动关雷电；
 > `scripts/daily-auto/`=**每日定时**（计划任务「方舟·每日日常」，每天 14:00：森空岛签到 → `maa_week run` 跑当天 → 关雷电）；
 > `scripts/weekly-refresh/`=**每周定时**（计划任务「方舟·每周刷新计划」，每周日 20:00：先测药 `sanity-potion` → 生成下周计划 → 弹窗）；
+> `scripts/night-infrast/`=**凌晨定时**（计划任务「方舟·凌晨基建换班」，每天 02:00：若电脑在线 → 跑一次 `Infrast`（**Custom 自定义换班，B班 `plan_index=0`**）→ 关雷电；**2:00 不在线就不跑、不补跑**；同目录 `watch-and-shutdown.ps1`=一次性「跑完关机」看护）；
 > `scripts/sanity-potion/`=测理智药存量（只算「≤7 天到期」的药）；`scripts/ldplayer-ad/`=清雷电广告浮层（`com.android.flysilkworm`，**本机已 `--disable` 永久禁用**，模拟器重置后需重跑）。
 
 ## 环境
@@ -44,9 +45,23 @@
 - 改 MAA 配置：改 `C:\MAA\config\gui.new.json`（活动的连接/设置都在这），**MAA 运行中改会被覆盖**，
   需先退出再改。
 - **每日自动化**：Windows 计划任务「方舟·每日日常」每天 **14:00** 跑 `scripts/daily-auto/daily_auto.py`
-  （森空岛签到 → `maa_week run` 跑当天日常 → 关雷电；签到失败只记日志不中断；错过启动开机补跑）。
+  （森空岛签到 → `maa_week run` 跑当天日常 → **收益账本**（`maa_week depot` 刷仓库 + `revenue_ledger settle --auto`）→ 关雷电；
+  签到/账本步骤失败只记日志不中断；错过启动开机补跑）。
   注册/注销：`scripts/daily-auto/install_task.ps1`（`-At` / `-Uninstall`）。留痕：
   `scripts/daily-auto/运行日志.txt` + `scheduling/data/daily_run.jsonl`。
+  **开机自启已关**（2026-10-14：删 `HKCU\...\Run` 的 `MAA_5F28C3CB` / `leidian9`，`leidian0.config autoRun=false`）
+  → 开机不再自动拉起 MAA/雷电，日常只由本任务驱动。
+- **凌晨基建换班**：Windows 计划任务「方舟·凌晨基建换班」每天 **02:00** 跑 `scripts/night-infrast/night_infrast.py`
+  （若电脑在线 → 确保雷电+游戏在线 → 跑一次 MAA `Infrast`（**Custom `mode=10000`，B班 `plan_index=0`**）→ 关雷电）。
+  **错过不补跑**：`install_task.ps1` **故意不设** `-StartWhenAvailable`（2:00 关机/睡眠就整晚不跑）——
+  这正是需求，**别给它加上**（14:00 那个「每日日常」才是补跑的，两者语义不同）。
+  注册/注销：`scripts/night-infrast/install_task.ps1`（`-At` / `-Uninstall`）。留痕：
+  `scripts/night-infrast/运行日志.txt` + `scheduling/data/night_run.jsonl`。
+  与 14:00 的关系：Custom 下 **14:00 跑 A班(`plan_index=1`)**、**02:00 跑 B班(`plan_index=0`)**，各摆一次干员，
+  对齐 A/B 班 720min（口径细节见上文铁律 §2）。
+  `scripts/night-infrast/watch-and-shutdown.ps1` = **一次性看护关机**（2026-10-18）：等 `night_infrast.py` 退出后
+  `shutdown /s /t 60`；缺省自动按命令行匹配 pythonw 进程，`-TargetPid` 可指定；2h 超时仍在跑则不关机（`exit 2`）。
+  取消关机 `shutdown /a`。**不是计划任务的一部分**，要关机时手动起它。
 
 ## 抄作业 & 基建：两条用户铁律（2026-10-10 定）
 
@@ -54,12 +69,30 @@
    取数**一律用森空岛**（`ark_operbox_online`，含技能/专精）；**仅当森空岛不可用**才退回 MAA 干员箱。
    森空岛 401 = 凭证过期 → `python scripts/skland/skland_cli.py status` 续期。
    **不许用 `ignore_requirements` 硬凑练度不齐的作业。**
-2. **基建交给 MAA 自带的「队列轮换」**（`Infrast` `mode=20000` / GUI `Mode=Rotation`，A/B 班各 720min 由**游戏内队列 1/2** 承载）。
-   MAA 进基建 → 当前班有人心情 0 → 点游戏内「一键轮换」→ 各设施收菜（Rotation 下 MAA 不换干员）。
+2. **基建 = MAA「自定义换班」**（`Infrast` `mode=10000` Custom；2026-10-14 用户裁定「选 2」，**取代 2026-10-12 的 Rotation 口径**）。
+   方案表 = **《搓玉·合成玉》A/B 两班**，落在**仓库** `scheduling/MAA基建排班/243_搓玉_定制.json`
+   （由 `scheduling/tools/convert_to_maa.py` 从一图流 `scheduling/一图流产物/243-搓玉-合成玉-MAA.json` 转出；
+    **index 0 = B班、index 1 = A班**；`period` 已按我们的换班时刻写成 B班 02:00-04:00 / A班 14:00-16:00）。
+   ⚠ **绝不要指回 `C:\MAA\resource\custom_infrast\maa-243-custom.json`** —— 那是「钱书均衡·龙门币优先」版
+   （2026-10-14 核对：与 `scheduling/一图流产物/243-钱书均衡-龙门币优先-MAA.json` 哈希相同），**不是《搓玉》方案**。
+   放仓库而不是 MAA 的 resource 目录：防 MAA 更新覆盖 + 可版本管理；yuMAArin GUI 的「基建配置」也写同一份
+   （**保存前先预览排班表 + 确认**，**致命项直接禁止保存**：份数<2 / 产物名不在 MaaCore 白名单 / 某班关键设施全空 /
+   有干员未持有；**判据只有一份** = `scheduling/tools/convert_to_maa.py` 的 `plan_fatals()`，GUI 直接 import；
+   **转换器落盘前也用它拦**，见 `docs/FINDINGS.md §24.3`）。
+   Custom 下 MAA **逐设施摆干员**（宿舍/发电站/办公室/控制中枢都进）并执行**菲亚梅塔置换**
+   （方案里的 `Fiammetta` 块 → 宿舍放 `[但书, 菲亚梅塔]`；已核对：该表 29/29 干员全持有）。
+   ⚠ **`plan_index` 必须显式传**：MAA **不看** plan 里的 `period`（那是 GUI「按时间自动」用的），也**不吃** `-1`
+   （Core 里 `index<0` → set_params false → **append 0 打死整队**）。
+   班次：**14:00「每日日常」→ A班(1)**；**02:00「凌晨基建换班」→ B班(0)** —— 各换一次，对齐 A/B 班 720min。
+   唯一事实源：`maa_week.INFRAST_CUSTOM_FILE / INFRAST_PLAN_DAY / INFRAST_PLAN_NIGHT / infrast_params()`；
+   `maa_week write` 写同一口径（**不再强制 Rotation**）。**别在别处手写 `mode=20000`。**
+   ⚠ 旧口径 Rotation(20000) 的能力边界（源码+日志实证见 `docs/FINDINGS.md` §24）：只点一次游戏内「队列轮换」、
+   `skip shift` **不摆干员**、整个跳过宿舍/发电站/办公室/控制中枢、**不做菲亚梅塔** ——
+   这正是当初「有些换班没换成 / 菲亚梅塔没置换」的原因；**不要再退回 Rotation**。
    `facility` = Mfg/Trade/Power/Control/Reception/Office/Dorm/Processing/Training（见 `plan_week.RULE.infra_facilities`）。
    **自研换班脚本已于 2026-10-12 归档**（`历史版本/基建改MAA轮换+队列按天-2026-10-12/`），不再使用。
    核对：森空岛 `ark_infrast_status` 拉当前进驻 → 与方案逐设施比对（宿舍「自动填充」不校验）。
-   > 详见 skill `arknights-event-copilot` 与 `docs/WORKFLOW-活动关作业.md`。
+   > 详见 `docs/FINDINGS.md §24`；skill `arknights-event-copilot` 与 `docs/WORKFLOW-活动关作业.md`。
 3. **MAA 队列「一天一天编辑」，不写整周**：`maa_week.py write`（默认今天，`--date` 可指定）只把**当天那一份**
    刷进 `gui.new.json`（Fight 槽位按关卡匹配、非当天的槽位停用），`run` 也只跑当天（`--whole-week` 才跑整周）。
    > 判据：当天该刷多少由 `weekly_plan.json.daily`（`plan_util.distribute_daily` 产出）决定。
@@ -80,4 +113,4 @@
   既有消费方 `event-copilot` / `oper_appearance` / `base_gap` / 一图流导入 **零改动**即可换源）。
 - 取数细节（登录链、`sign` 签名、`dId`、字段映射）见 **`docs/DATA-SOURCES.md` §7**。
 - **首次使用**：`python scripts/skland/skland_cli.py login` 存凭证到 `~/.arknights_skland.json`
-  （会过期，重登即可）。GUI 看板：`scripts/skland/skland_gui.py`。
+  （会过期，重登即可）。GUI 看板 **yuMAArin**：`scripts/skland/skland_gui.py`（单实例、签到在左侧导航）。

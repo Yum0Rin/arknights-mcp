@@ -53,10 +53,14 @@ python scripts/event-copilot/event_copilot.py run    act52side --stages 8 --loop
 - 方案关键：贸易站 2 卖**源石碎片→合成玉**；制造站 2 产**源石碎片**；其余制造站产经验书/赤金。
   理智侧配套：固源岩日缺 ≈92.4 → 刷 **1-7**（详见报告「理智规划」）。
 
-### 队列轮换（**2026-10-12 起：交给 MAA 自带的「队列轮换」**）
+### 基建换班（**2026-10-14 起：交给 MAA 自定义换班 Custom**）
 
-> **口径变更**：基建轮换现由 MAA `Infrast` `mode=20000`（GUI `Mode=Rotation`）负责 —— MAA 进基建 →
-> 当前班有人心情 0 → 点游戏内「一键轮换」→ 各设施收菜；`facility` = Mfg/Trade/Power/Control/Reception/Office/Dorm/Processing/Training。
+> **口径变更（2026-10-14 用户裁定「选 2」）**：基建换班由 MAA `Infrast` `mode=10000`（GUI `Mode=Custom`）
+> + 方案表 `scheduling/MAA基建排班/243_搓玉_定制.json` 负责 —— MAA **逐设施摆干员**（含宿舍/发电站/办公室/控制中枢）
+> 并执行**菲亚梅塔置换**；`plan_index` 必传：**14:00→1（A班）/ 02:00→0（B班）**。
+> 唯一事实源 `maa_week.infrast_params()`；`facility` = Mfg/Trade/Power/Control/Reception/Office/Dorm/Processing/Training。
+> 2026-10-12 的 `mode=20000`（Rotation 队列轮换）口径**已废弃**（能力边界见 `docs/FINDINGS.md §24`：
+> 不摆干员、跳过宿舍/发电站/办公室/控制中枢、不做菲亚梅塔）。
 > 自研 `infrast_rotation.py` 与旧 skill 已归档 `历史版本/基建改MAA轮换+队列按天-2026-10-12/`。
 > **下面这套手点步骤只作备用**（MAA 不可用 / 需人工核对时），不再是我们每 ~12h 的例行动作。
 
@@ -82,7 +86,8 @@ python scripts/event-copilot/event_copilot.py run    act52side --stages 8 --loop
 （A、B 班名单见本 skill 上方与报告 HTML）。
 
 > 时间线：**2026-10-10 13:15 用户手动完成**（队列1→队列2）→ **下一轮到期 ≥ 2026-10-11 01:15**，方向 `队列2→队列1`。
-> **2026-10-12 起**：改由 MAA `Infrast` `mode=20000` 按「当前班心情 0」自动触发一键轮换，我们不再计时。
+> **2026-10-12 起**：改由 MAA `Infrast` 自动换班，我们不再计时；**2026-10-14 起**用 `mode=10000`（Custom，`plan_index` 14:00→1 / 02:00→0）。
 >
-> 备查：`C:\MAA\resource\custom_infrast\*.json` 是一图流导出的**自定义排班**（`plans[].Fiammetta` 含菲亚梅塔心情置换），
-> 即 GUI 里原先的 `Mode=Custom`（现改用 `Mode=Rotation`，不再走这个文件）。
+> 备查：`C:\MAA\resource\custom_infrast\maa-243-custom.json` 是**钱书均衡·龙门币优先**版（**别用**）；
+> 我们要用的是仓库里的 `scheduling/MAA基建排班/243_搓玉_定制.json`（《搓玉·合成玉》A/B 两班 + 菲亚梅塔块），
+> 由 `scheduling/tools/convert_to_maa.py` 从一图流 `243-搓玉-合成玉-MAA.json` 转出。

@@ -4,7 +4,118 @@
 版本号遵循 [语义化版本 SemVer](https://semver.org/lang/zh-CN/)。
 
 ## [Unreleased]
+### Fixed
+- **每日自动化 2026-10-19 两处失败（理智锚点误匹配 + 坏仓库基线永久卡死）**，详见 `docs/FINDINGS.md` §26：
+  - `maa_week sanity` 把结算界面的「理智返还」当成主界面理智条（旧逻辑只要文本含「理智」），
+    按 `(Δ-124, Δ-64)` 点进结算界面 → 游戏进入加载、理智读不到（`理智rc=3`）。
+    现改为严格锚点（只认 `/205` / 「理智/205」/「理智+相邻 /205」，排除返还/恢复/药剂等词，
+    锚点限定在 0.12H~0.60H 的主界面坐标带），并加状态机：结算/关卡界面**只按 BACK**、
+    加载界面**只等待**、面板没开**重试**（不再一次失败就退出）。
+  - `revenue_ledger settle` 遇到「一天新出现 ≥8 种物品」时既不结算也不推进快照；而 10-18 的基线
+    只有 78 项（连龙门币/源石/合成玉/采购凭证/赤金/7 种芯片都没有），导致**每天**都判「新出现 12 种」→
+    永久 `rc=4`。现分岔：本次是上次的**严格超集**（旧物品一个没丢、类目更多）→ 判「上次读数不全」，
+    本次差分仍作废（`depot_rebased=True`），但**用本次读数重建基线**，下次可正常结算；本次可疑时仍不推进。
+  - `daily_auto`：`sanity --tries 5 --back 4`（原 2/1），步骤超时 180s→480s。
+  - **突袭链不再「一关失败就整链停」**（`scripts/event-copilot/ex_auto.py`）：突袭解锁只看该关普通是否已通，
+    与前一关突袭无关。10-19 普通已 8/8，EX-2 突袭失败后却整链停掉，EX-3..8 一次没试。
+    现改为：突袭失败/无候选 → 记录后继续打后面的突袭；普通链仍按顺序解锁、失败即停。
+    另加 `--budget`（默认 4800s）总预算，避免多关 × 900s 顶爆外层 5400s 被硬杀。
+  - **10-19 实跑修复**：`event_copilot.run_plan` 普通 2 星=失败、**超时=失败**，`deadline` 改为每个候选前检查；
+  `ex_auto` 两遍突袭策略（第一遍每关 1 个候选，第二遍换作业，默认每关最多再试 6 个），
+  新增 `--stages / --skip-ids / --candidate-offset / --relaxed`；日常 `ex_auto` 单候选 900→600s、总预算 3600s。
+  突袭理智口径纠正为**普通同价**（本活动 EX 10/15/15/20，2026-10-19 用户实机确认，不是双倍）。
+  10-20 计划补排 `raids=[EX-5,EX-8]`、sanity 300、medicine 120；18:05 那条超时误判的 EX-4 记录标 `invalid`。
+- **长草页「今日日常」口径**：`daily_run.ok` 只代表 MAA 日常主体；计划内突袭由 `ex_auto` 补打。
+    现在若今日计划含突袭且没清完 → 磁贴 `⚠ 部分完成`、日卡标「已通 x/n」、下面加一行说明
+    「日常主体完成 ≠ 今天全部跑完」。今日两条历史失败记录加 `repaired_at/repaired_note`，
+    GUI 降为灰字 info（不再红字），突袭未清仍是橙字 warn。`ok` 语义**不改**（改了会让「今日已跑」防重复失效）。
+  - 快照：`历史版本/日志问题修复-2026-10-19/`（改前 3 个脚本 + 当天日志/账本/坏基线）。
+- **`maa_update.py` 更新检查在 GBK 控制台解不出输出**（2026-10-18）：
+  `subprocess.run(..., text=True)` 按 UTF-8 解 robocopy / PowerShell 的 **GBK** 输出 → 读线程抛
+  `UnicodeDecodeError`，`local_software_version()` 与 `apply_resource()` 拿不到结果。
+  新增 `_decode()`（先 UTF-8、失败回退 GBK `errors=replace`），两处改 `capture_output=True` 后手动解码。
+  同日实跑：**资源已更新到 2026-10-16**（`resource` 2026-10-09 → 2026-10-16，`robocopy rc=3` = 有文件复制、成功）；
+  **软件仍 6.19.0**（远端已 **6.20.0**，未升级）→ `check` 会持续报 `action_needed=true`，属预期。
+### Added
+- **凌晨看护关机 `scripts/night-infrast/watch-and-shutdown.ps1`**（2026-10-18，一次性工具，非计划任务）：
+  等 `night_infrast.py` 进程退出后 `shutdown /s /t N`（默认 60s，`-DelaySeconds` 可调）关机；
+  缺省按命令行自动匹配 `pythonw.exe`，也可 `-TargetPid` 指定；**2h 超时仍在跑 → 不关机（`exit 2`）**，
+  找不到进程同样不关机（`exit 1`）。状态写 `watch-and-shutdown.state.json`、日志 `watch-and-shutdown.log`。
+  取消关机：`shutdown /a`。
+- **yuMAArin GUI 加「浏览器式刷新」**（2026-10-19，`scripts/skland/skland_gui.py`）：
+  - 标题栏新增 **↻ 刷新**按钮，快捷键 **F5 / Ctrl+R**；点击后重读本地 `weekly_plan.json` /
+    `docs/state.json` / 运行日志 / 收益账本并重绘**当前页**（长草页同时重算「需要处理」+ EX 进度）；
+  - 已登录且当前没有取数任务时，顺带重拉一次森空岛（等同「账号 → 刷新数据」）；正在取数则只刷本地；
+  - 纯读不写，不触发任何游戏/MAA 操作。离屏 Qt 自测：按钮/快捷键存在，长草页与 7 个数据页重绘均无异常。
+- **yuMAArin GUI 改版**（2026-10-14，用户要求；`scripts/skland/skland_gui.py`）：
+  - **改名**：窗口标题 / 文档「明日方舟 · 助手」→ **yuMAArin**。
+  - **单实例**：`QLockFile`（`%TEMP%\yuMAArin.gui.lock`，PID 判活、崩溃自动清理）；已在运行时第二次
+    打开直接弹提示并退出，不再开第二个界面（同一个账号/设备只允许一个界面在驱动）。
+  - **森空岛签到移入左侧导航**：删掉独立「签到」页与「账号」页的签到键，改成一个 `NavigationUserCard`——
+    title = 「签到 / 今日已签到」（已签到时置灰**不可点**），subtitle = 「本月已签到 N 天」。
+  - **基建页 + 两张新卡**：
+    - **排班校验**：「检查排班」比对「森空岛当前进驻」vs「现阶段基建配置」的 A/B 班 → 更像哪一班、
+      整体与**贸易/制造**（Rotation 真正会换的设施）吻合度、逐设施差异；并按最近一次换班时间
+      （读 `infrast_rotation_log` / `daily_run` / `night_run` 三处日志取最新）+ 每班时长判「**是否该换班**」。
+    - **现阶段基建配置**：粘贴排班 JSON → **保存**（备份旧文件后写 `C:\MAA\resource\custom_infrast\maa-243-custom.json`
+      + 留档 `scheduling/data/infra_config.json`）/ **应用**（改 MAA `Infrast.Mode=Custom` 指向该文件）。
+  - **干员页**：左半边合并成**一个大白框**（筛选 + 总览表同卡，不再上半截白框下半截裸表）；
+    养成查询的**模组字段拉长**并单独占一行（「模组名（未锁定）」不再被截断）。
+  - **长草页**：快捷工具从页面最底部**上移到顶部操作台**；灰字改可视化——预算/培养改**数字磁贴**、
+    周合计改**进度条**、决策依据改**金色圆点条目**。
+  - 快照：`历史版本/yuMAArin-GUI改版-2026-10-14/`（改前的 `skland_gui.py` / `README.md`）。
 ### Changed
+- **基建换班口径：MAA `Rotation`(队列轮换) → `Custom`(自定义换班 + 菲亚梅塔置换)**（2026-10-14，用户裁定「选 2」）：
+  - **起因**：用户反馈「有些换班没换成、菲亚梅塔也没置换」。取证（MaaCore 6.19 源码 + `asst.log` 实证，详见
+    `docs/FINDINGS.md` §24）确认**配置没错，是 Rotation 的能力边界**：`InfrastTask.cpp:81` 对 Mfg/Trade/Reception
+    `set_skip_shift(mode==Rotation)`（日志 `skip shift in rotation mode` ×7 = 制造4+贸易2+会客1）、
+    `AsstInfrastDef.h:85-91` 整个跳过 Dorm/Power/Office/Control、`:74` **菲亚梅塔只在 `mode=0` 生效**、`:259` `filename`
+    只在 Custom 用 ⇒ 配好的 `maa-243-custom.json` 在 Rotation 下**根本没被读**。
+  - **改法**：`Infrast.Mode = Custom(10000)` + `filename = C:\MAA\resource\custom_infrast\maa-243-custom.json`
+    （一图流「243 两换」，index 0 = B班 / index 1 = A班）。Custom 下 MAA **逐设施摆干员**并**执行菲亚梅塔置换**
+    （方案 `Fiammetta` 块 → 宿舍放 `[但书, 菲亚梅塔]`）。**先核对**：方案两份各 29 干员、缺失 0，菲亚梅塔/但书均在箱内。
+  - ⚠ **`plan_index` 必须显式传**：MAA **不看** plan 的 `period`（那是 GUI「按时间自动」用的），更**不吃 `-1`**
+    （`index<0` → `set_params` false → append 0 打死整队）。班次：**14:00 → A班(1)**、**02:00「凌晨基建换班」→ B班(0)**。
+  - 唯一事实源：`maa_week.INFRAST_CUSTOM_FILE / INFRAST_PLAN_DAY / INFRAST_PLAN_NIGHT / infrast_params()`；
+    `plan_week.RULE` 加同口径；`scheduling/data/weekly_plan.json` 原地改 Infrast params（**未重生成整份计划**）；
+    `night_infrast.py` 增加 `_custom_plan_check()` 前置校验（坏方案表 → 返回 4、不拉模拟器）；
+    `C:\MAA\config\gui.new.json` 的 `Mode: Rotation→Custom`、`PlanSelect: -1→1`。
+    `maa_week write` 不再强制 Rotation（`write --dry` 实测已无 Infrast 改动）。
+  - 快照：`历史版本/基建改MAA自定义换班+菲亚梅塔-2026-10-14/`。
+  - **方案表换成《搓玉·合成玉》版**（同日，用户「更新方案表」）：改成 Custom 后才暴露 —— `Filename` 指的
+    `C:\MAA\resource\custom_infrast\maa-243-custom.json` 与 `scheduling/一图流产物/243-钱书均衡-龙门币优先-MAA.json`
+    **sha256 相同** ⇒ 它是**钱书均衡·龙门币优先**版（制造 `[BR,PG,BR,PG]`/贸易 `[LMD,LMD]`），**违反「基建一律搓玉」铁律**
+    （`MASTER-PLAN §5.6` 早标注过，但 Rotation 时代该文件不参与运行才没暴露）。改用 `scheduling/tools/convert_to_maa.py`
+    从 `243-搓玉-合成玉-MAA.json` 转出、落在**仓库** `scheduling/MAA基建排班/243_搓玉_定制.json`
+    （制造 `[BR, Originium Shard, PG, PG]` / 贸易 `[LMD, Orundum]`；index 0=B班 / 1=A班；干员 29/29 全持有）。
+    **`period` 按我们的换班时刻改写**成 B班 `02:00-04:00` / A班 `14:00-16:00`（源文件是 08:00-10:00 / 20:00-22:00）。
+    三处引用（`maa_week.INFRAST_CUSTOM_FILE` / `plan_week.RULE` / `gui.new.json`）+ yuMAArin GUI 的 `MAA_CUSTOM_INFRAST` 统一到这一份。
+    转换器顺带补 `plan.index`（一图流导出没有 → GUI 方案下拉每项都会是 0）、透传 `period/duration/scheduleType/description_post`、
+    新增 `--periods` 选项改换班窗口。快照：`历史版本/基建方案表-钱书均衡改搓玉-2026-10-14/`。
+  - **yuMAArin「基建配置」保存前必须先预览排班表 + 确认**（同日，用户要求）：`_infra_save` 从「一步落盘」改成
+    ① 先预览（解析不过就**一个字节都不写**）→ ② `MessageBox` 确认（列出目标路径、每班 时长/换班窗口、布局、菲亚梅塔、
+    以及提醒项）→ ③ 才备份旧文件并写入。新增「预览排班表」按钮 + 只读预览框：把排班表渲染成 逐房间干员/产物/菲亚梅塔/无人机。
+  - **校验分两级，致命项直接禁止保存**（同日追加；用户先要求「对致命项比如方案份数<2 直接禁止保存」，
+    再确认「干员未持有也硬拦」+「3 条规则也加到转换器」）：
+    **✗ 致命（不写任何字节、连确认框都不弹）** = ① 方案份数 < 2（自动化 `plan_index=1` 越界 → `set_params` false →
+    `append 0` **打死整队**）② 产物名不在 **MaaCore 白名单**（`Battle Record`/`Pure Gold`/`Dualchip`/`Originium Shard`/`LMD`/`Orundum`
+    —— 否则该房间**照常换人但不切换产物**，静默失效）③ 某班在 制造/贸易/发电/控制中枢/会客室/办公室 **一个人都没写**
+    ④ **有干员未持有**（含菲亚梅塔目标 → 摆不上/置换失败，换不齐）；
+    **⚠ 提醒（可保存）** = 缺 `plans[].index`、`index` 为负。
+  - **判据只写一份**：`scheduling/tools/convert_to_maa.py` 新增 `MAA_INFRA_PRODUCTS` / `INFRA_KEY_FACILITIES` /
+    `INFRA_REQUIRED_PLANS=2` / **`plan_fatals(cfg, room_cn=None, owned=None)`**；GUI 直接 `import plan_fatals`
+    （不再自带一份白名单，避免两处漂移）。
+  - **两个写方案表的入口都拦**：GUI「保存」用 `plan_fatals(..., owned=当前box)`；
+    `convert_to_maa.py` 的 `convert()` 落盘前调 `plan_fatals(out)` → 打印每条 `!! 致命：…` 后 **`SystemExit`（退出码 2）拒绝写出**
+    （**不给 `--force` 绕过**）。
+  - 顺带修 `_infra_apply` 里过期的「`maa_week write` 会把 Mode 写回 Rotation」提示。
+    快照/回退配方：`历史版本/yuMAArin-基建保存加预览确认-2026-10-14/`。
+  - 离线验证见 `docs/FINDINGS.md` §24.1；**真跑验证待 2026-10-15 02:00**。
+- **关闭 MAA / 雷电的「开机自启」**（2026-10-14，用户要求）：删掉 `HKCU\...\Run` 下的
+  `MAA_5F28C3CB`（= `"C:\MAA\MAA.exe"`）与 `leidian9`（= `ldconsole.exe autorun`）两个启动项，
+  并把 `C:\leidian\LDPlayer9\vms\config\leidian0.config` 的 `basicSettings.autoRun` 改为 `false`。
+  目的：开机不再自动拉起雷电 + MAA GUI，日常改由「方舟·每日日常」计划任务（14:00）**独家驱动**，避免双开/抢设备。
+  （MAA 的 `StartUpSettings.StartEmulator` **未动** —— 手动开 MAA 点「开始」仍会自动拉雷电。）
 - **规划支持「剩余 X 天」+ 自然理智按上限 205/天**（2026-10-14，用户裁定）：
   - `plan_week.plan(date, start=None)` 新增 `start`（默认=今天）→ **只排 `start..本周日`**（按现状算剩余 X 天），
     不再固定整周 7 天；CLI 加 `--from`。周一跑=7 天、周三跑=5 天、周日跑=1 天。
@@ -44,6 +155,50 @@
   ⚠ 单一客户端铁律：测药要驱动设备，跑时别同时用 MAA GUI / 别的客户端驱动同一台；脚本本身**绝不盲点**，最坏是这次没测到。
 
 ### Added
+- **凌晨基建换班（Windows 计划任务「方舟·凌晨基建换班」，每天 02:00）**（2026-10-14，用户要求）：
+  - 新增 `scripts/night-infrast/night_infrast.py`：**若电脑在线** → 单客户端检查（MAA GUI 在跑则跳过）→ 确保雷电+游戏在线
+    （冷启动自动拉起雷电并点游戏图标）→ 跑一次 MAA `Infrast`（`mode=20000` Rotation）→ 跑完关雷电；
+    带「今晚已跑」防重复（`night_run.jsonl` 有 `ok=True` 就跳过）、`--dry` / `--no-close` / `--force`。
+    留痕：`scripts/night-infrast/运行日志.txt` + `scheduling/data/night_run.jsonl`。
+  - 新增 `scripts/night-infrast/install_task.ps1`（`-At 02:00` / `-Uninstall`）：**故意不设 `-StartWhenAvailable`**
+    → 2:00 关机/睡眠就**整晚不跑、不补跑**（用户要的「不在就算了」）；已实跑注册，核过
+    `StartWhenAvailable=False` / `WakeToRun=False` / `NextRunTime=2026-10-15 02:00`。
+  - 为什么 02:00：Rotation 下**每次 Infrast = 点一次游戏内「队列轮换」**（整套 A/B 切换）→ 与 14:00「每日日常」
+    正好各换一次，对齐 A/B 班 720min。
+- **收益账本接进每日自动化（「方舟·每日日常」14:00）**（2026-10-14，用户要求）：
+  - `scripts/maa-week/maa_week.py` 新增 **`depot` 子命令**：直驱 MaaCore 跑 `Depot` 任务、**捕获 `DepotInfo` 回调**
+    并写 `C:\MAA\data\DepotData.json`（原委：直驱 MaaCore **不写**该文件，只有 MAA GUI 会写 → 账本拿不到新鲜仓库）。
+  - `scripts/daily-auto/daily_auto.py` 加 **2.5 步**：当天日常**跑成功且非 MAA GUI 忙**时，先 `maa_week depot`
+    （游戏已开、停在主界面）再 `revenue_ledger.py settle --auto`；两步**只记日志、不中断**，
+    `daily_run.jsonl` 增 `depot_rc`/`ledger_rc`，`ok` 仍 = `maa_rc==0`。
+  - 快照：`历史版本/收益账本接每日-2026-10-14/`。
+- **汇总网页改版：`今天 / 本周 / 培养·工具 / 账本` 4 页 + 接收益账本**（2026-10-14，用户要求）：
+  - `build_site.py` 从「设计文档 + 数据 dump」改为「**今天的决策看板**」。**删** 3 个废页：
+    `一键长草`（把设计文档 `PLAN-一键长草.md` 塞进网页 17k 字符）、`排班`（旧基建排班报告 `index.html`
+    的 5.5MB iframe，自研排班已归档）、`周报`（收益账本空壳）。`概览` 4 卡 → 顶部**常驻状态条**。
+  - **新增「今天」页**：取 `weekly_plan.daily` 当天行 → **关卡×次数×单次理智×小计** + 吃药/活动剩余/超上限提示；
+    计划 stale（`plan_util.plan_day`≠ok）时**顶部红字**提示。本周页加**今天高亮 / 预算进度条 / 各关合计**。
+  - **「周报」→「账本」页回归**，读 `scheduling/data/revenue_ledger.jsonl`；空时给采集命令提示。
+  - **接收益账本**：`revenue_ledger.py` 新增 `collect` 与 `settle --auto`——**自动采集本机数据源**
+    （MAA `DepotData.json` + 森空岛 `ark_operbox_online`（含技能/专精/模组）+ `sanity.json` 理智读数
+    + `weekly_plan` 当日计划）拼 bundle 并差分入账；**基线段不再算 `predict/delta`**（无上期）。
+    仍缺的可选字段：`meds`/`tokens`/`stage_runs`/`secondary_brief`（见 `docs/收益账本与周报.md` §五）。
+  - 生成命令不变：`python scheduling/tools/build_site.py`。快照：`历史版本/汇总网页改版-2026-10-14/`；
+    规划：`docs/PLAN-汇总网页改版.md`。
+- **干员养成成本查询：自定义目标（等级 / 三技能专精 / 模组等级）+ MCP 工具 `ark_oper_cost`**（2026-10-14）：
+  - 新增 MCP 工具 `ark_oper_cost`（只读、不碰设备）：选中干员（`names` 列表 或 `targets` 逐干员），
+    指定目标练度 —— `elite`/`level`（精英/等级）、`mastery`（一/二/三技能各自专精 0-3）、
+    `module`（模组等级 1/2/3，`module_key` 选模组）—— 返回每个干员的**材料缺口（需/有/缺）+
+    升级经验/龙门币 + 模组材料**，以及折合理智合计。当前练度默认走森空岛（含技能/专精/模组），
+    `from_skland=False` 退回本地 MAA 干员箱。
+  - `scheduling/tools/oper_cost.py`：新增 `norm_target` / `plan_need`（精英化 + 技能1-7 + 专精 + 模组）
+    与 `compute_custom`（自定义目标主入口，逐干员输出明细）；`load_current` 增加读森空岛**模组等级**；
+    `find_char` 取 charId（character_table 条目无 `id` 字段，id 是字典键）；CLI 新增
+    `--target-elite/--target-level/--mastery/--module/--module-sel`（`--module` 缺省作用于该干员**第一个可升级模组**）。
+  - **模组成本数据源**：官方 `uniequip_table.json` 的 `equipDict[id].itemCost{"1"/"2"/"3"}`（升到 1/2/3 级；
+    `type=GOLD` 的折龙门币），已随 `fetch_gamedata.py` 补下。
+  - `scripts/skland/skland_box.py`：`to_operbox` 超集新增 `modules`（`[{id,level,locked}]`，与 MAA 箱同构、不破坏消费方）。
+  - 旧口径（`compute()` / 星级标准目标）保持不变，`plan_week` R3.5 培养不受影响。
 - **雷电广告守护脚本 `scripts/ldplayer-ad/ldplayer_ad_guard.py`**（2026-10-14，用户要求）：
   - 定位：雷电的广告是**独立包 `com.android.flysilkworm`**（**用户应用**，装 `/data/app`，非系统应用），
     拿 `SYSTEM_ALERT_WINDOW` 在**任意界面之上**弹浮层——有时是启动器整屏广告，有时**直接盖在明日方舟上**，
@@ -100,7 +255,63 @@
   MaaCore `AllTasksCompleted`（finished_tasks [1..7]），用时 925s，`run_report.jsonl` ok=true。
   注：本机 tool 会话对 >2min 的子进程会杀（实测 120s 定点），故执行以 **detached** 方式启动（等价于 GUI 按钮的 spawn）。
 
+### Added
+- **森空岛 GUI「干员」页新增「养成资源查询」面板（与干员总览并排）**（2026-10-14，用户要求）：
+  - 右侧面板：选干员 + 目标（精英 / 等级 / 一·二·三技能专精 / 模组等级）→ 点「计算」，
+    调 `scheduling/tools/oper_cost.py` 的 `compute_custom` 算「当前→目标」的**材料缺口 + 经验/龙门币 + 折合理智**。
+  - **当前练度直接用 GUI 已拉的森空岛数据**（`skland_box.to_operbox(self.data)`，不重新联网）；选干员时自动把目标
+    预填为当前练度（用户再上调），并显示当前练度提示。结果按**显示宽度对齐**（`dpad`）列材料表。
+  - 版面：干员页改为左右两栏（左=筛选+总览表，右=查询面板），左 3 : 右 2（总览表列都短、不要那么宽）。
+  - 干员选择支持**输入搜索**（`EditableComboBox` + `QCompleter(MatchContains)`，输片段即匹配）。
+  - 目标细分：**技能等级 1/4/7**（`skill_lvl`）；**专精前提是技能 7 级**——<7 时专精下拉锁定为 M0；
+    **模组可选具体哪一个**（干员常有多个模组，按 `uniequip` 列出、标当前等级/未解锁）；等级 `SpinBox` 加宽（原来数字被箭头盖住）。
+  - **干员总览表补「模组」列**（各模组当前等级，如 `1/1`）；表列多 → 单列最小宽 52，整表**无横向滚动**。
+  - **等级控件**由 `qfw.SpinBox` 改 **`LineEdit` + `QIntValidator`**（SpinBox 自绘的上下箭头会把数字盖住）。
+  - **干员总览筛选栏换行**：星级/职业一行、排序单独一行（左栏变窄后三项挤一行会超宽）。
+  - **缺口自动按合成关系降级**（参考 MAA `OperProgress` 的「即缺即合」）：`oper_cost.resolve_needs()`
+    把「缺的材料」按配方**递归兑成下一级**（中间材料先用库存抵扣）；结果给「降级后要弄的材料」表 +
+    **降级备注**（哪个成品 ×几 → 哪些投入 + 龙门币）。配方源 = `building_data.workshopFormulas`（加工站）
+    + `manufactFormulas`（制造站）。**芯片只允许「双芯片」降级**（→ 芯片组 ×2 + 芯片助剂 ×1）；
+    芯片/芯片组的「转换」配方会成链爆炸（MAA 口径：加工站无法合成芯片）→ 排除。
+    例：`聚合剂 缺5 → 提纯源岩×5 + 异铁块×5 + 酮阵列×5（龙门币 2000）`、`双芯片 ×4 → 芯片组×8 + 芯片助剂×4`。
+    降级备注标题不含芯片说明（按用户要求）。
+  - **支持未拥有干员**：查询下拉含**全部干员**（452 名，排除召唤物/装置）；选中未拥有的 → 备注「我没有」，
+    并按**「刚获得」E0L1** 模拟到目标，给出所需资源（目标默认给星级标准：6★ E2L60 / 5★ E2L50 / ≤4★ E2L1）。
+  - **并入「养成安排」**：`oper_cost.compute()`（`plan_week` R3.5 培养用的旧接口）改为**内部走 `compute_custom`**——
+    统一「当前练度只算剩余段 + 缺口按合成递归降级 + 折理智」；`plan["training"]` 新增
+    `resolved` / `downgrades` / `craft_gold`，`plan_week --dry` 实跑通过（rc=0）。
+
+### Changed
+- **森空岛 GUI 版面调整（战绩 / 长草）**（2026-10-14，用户要求）：
+  - **战绩页→ 2 列网格**：`剿灭作战 / 保全派驻 / 集成战略（肉鸽）/ 任务` 排成两行两列（剿灭卡吃满行高、
+    长列表用内部滚动收纳），**整页一屏放下、不需要页面滚动**。
+  - **长草页「计划」→ 两张表 2 列并排**：左「任务表」、右「逐日安排表」（原先上下堆叠）。
+  - **基建页 → 各设施卡片 2 列网格**（控制中枢/贸易/制造/发电/宿舍/会客/办公/训练 + 无人机），
+    整页一屏放下、**不需要页面滚动**。
+  - **表格支持换行**：`make_table(..., wrap=True)`（`setWordWrap(True)` + 竖向 `ResizeToContents`），
+    单元格写不下自动换行、行高自适应；长草两表启用，逐日 `安排` 列不再被截断。
+
 ### Fixed
+- **森空岛 GUI「战绩」页剿灭盒子过高**（2026-10-14，用户反馈）：剿灭 `records` 有 16 条，逐行铺开把整张卡片撑得很高。
+  新增 `_scroll_list()`（`QScrollArea`；`expand=True` 占满卡片高、否则 `maximumHeight` 封顶）——内容少时贴合内容、
+  超长才出**内部滚动条**；剿灭/保全派驻/肉鸽的长列表都改用它。
+- **森空岛 GUI（`scripts/skland/skland_gui.py`）一批界面问题**（2026-10-14，用户反馈）：
+  - **签到「今日」误显「不可签」**：旧逻辑按 `calendar[].available` 判定，但**已签当天该字段同样是
+    `false`** → 已签时 `today` 为空、落到 else 显「不可签」。改用**签到记录**判定：
+    `records[]` 里出现今天（以 `currentTs` 为准）的日期 = 已签到；未签则显示下一档奖励
+    （用 `resourceInfoMap` 取奖励名，比原来的 id 更可读）。
+  - **概览「时装 / 家具」拆成两块磁贴**（原来挤在一个 `/` 里）。
+  - **账号页删掉「角色」下拉**：一个账号只对应一个角色，登录后静默用第一个绑定 uid（不再需要选）。
+  - **登录方式选「密码」时隐藏「发送验证码」键**（并同步密码框 placeholder 验证码/密码）。
+  - **公招推荐表列对不齐**：等宽字体下中文占 2 列，`str.ljust/rjust` 按字符数补空格会错位 →
+    新增 `dwidth/dpad/dcut`（按**显示宽度**、用 `unicodedata.east_asian_width` 计算）重排。
+  - **助战干员「专3」表述与「干员」页不统一**：改为同口径显示 技=技能等级(1-7) + 专精依次 S1/S2/S3，
+    并加说明；取不到完整三技能时退回 `S{序号}={等级}` 以免歧义。
+  - **干员排序乱**：排序键只有 `(星级, 等级)`、**漏了精英阶段** → 同星级里「精1 满级」会排到「精2」前面。
+    改为 星级=(稀有度,精英,等级)、等级=(等级,精英,稀有度)、技能等级=(技能等,专精和,精英,稀有度)；
+    并**关掉干员表的表头点击排序**（`fill_table(..., sortable=False)`）——表头按**显示文本**排序会把
+    "精0 Lv1" 排到最前、且旧的排序指示会残留覆盖下拉排序；`fill_table` 现在每次填表先清排序指示(-1)。
+    （其它表 gacha/任务/逐日 的表头排序保持可用。）
 - **`plan_week.py` R3.5 培养的 `train_budget` 未定义（潜在 `NameError`）**（2026-10-14）：该名此前从未赋值 →
   一旦有可刷材料行就 `NameError` → 被 `except` 吞成「培养估值失败」→ **培养恒为 0**（当前场景 `rows` 为空才侥幸没炸）。
   按 RULE 顺序显式给值 `train_budget = max(0, budget − ann_san − extra_san − san17 − ev_runs·ev_san)`（活动吃完的剩余给培养）。

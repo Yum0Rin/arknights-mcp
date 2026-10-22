@@ -1,17 +1,18 @@
 {
   "_schema": "arknights-decision-state-v1",
   "_doc": "机器可读的决策状态（单一事实源）。agent 每次醒来：读它 -> 判触发 -> 执行 -> 回写。循环协议见 docs/STATE.md，判据/公式见 docs/MASTER-PLAN.md。",
-  "updated_at": "2026-10-14 09:50",
+  "updated_at": "2026-10-21 14:59",
   "cycle": {
     "strategy": "搓玉向（合成玉最高优先，长期不停）",
-    "last_decision_at": "2026-10-10 演练（森空岛在线取数，未驱动设备）",
-    "last_execution_at": "2026-10-13 23:39（直驱 maa_week run 跑完当天：StartUp + 剿灭×1(+370玉, 1480/1800) + YW-6×20 + 公招 + 基建 + 信用 + 领奖，用时 925s，run_report ok=true）"
+    "last_decision_at": "2026-10-19 16:31（10-19 每日自动化对账：sanity 锚点误匹配 + 账本坏基线自我锁死 → 修两处，详见 FINDINGS §26 / log 末条）",
+    "last_execution_at": "2026-10-19 14:00 每日自动化（maa_rc=0；EX-2 全候选失败；理智rc=3、账本rc=4 → 当日已修）"
   },
   "triggers": {
-    "infrast_next_swap_at": "不适用（基建由 MAA mode=20000 自己按心情 0 触发）",
+    "infrast_next_swap_at": "由我们**显式指定**：14:00「每日日常」跑 plan_index=1（A班）、02:00「凌晨基建换班」跑 plan_index=0（B班）→ 各一次对齐 A/B 班 720min。方案表 = 仓库 `scheduling/MAA基建排班/243_搓玉_定制.json`（《搓玉·合成玉》A/B，convert_to_maa 从一图流转出）；MAA 自定义换班逐设施摆干员 + 菲亚梅塔置换。事实源 maa_week.INFRAST_CUSTOM_FILE / INFRAST_PLAN_DAY / INFRAST_PLAN_NIGHT。见 docs/FINDINGS.md §24",
     "infrast_next_swap_direction": "不适用（同上；旧 A/B 班轮换字段已废弃）",
     "annihilation_week_reset": "每周一（周上限 1800 玉）",
     "daily_auto_at": "每天 14:00（Windows 计划任务「方舟·每日日常」→ scripts/daily-auto/daily_auto.py：森空岛签到 → maa_week run 跑当天 → 关雷电；签到失败只记日志不中断；错过启动开机补跑；今日已有成功记录则跳过）",
+    "night_infrast_at": "每天 02:00（Windows 计划任务「方舟·凌晨基建换班」→ scripts/night-infrast/night_infrast.py：若电脑在线 → 确保雷电+游戏在线 → 跑一次 MAA Infrast（Custom 自定义换班，plan_index=0=B班）→ 关雷电；**2:00 不在线则不跑、不补跑**（install_task.ps1 故意不设 -StartWhenAvailable，WakeToRun=False）；MAA GUI 在跑则跳过；今晚已有成功记录则跳过）",
     "event_combat_end": "2026-10-23 03:59",
     "event_exchange_end": "2026-10-30",
     "event_ex_open": "2026-10-16 16:00（活动主页 EX 入口显示『10月16日 16:00:00 后开启』，实机 OCR 2026-10-10） → 届时由 AI 排一次 MAA GUI：走 scripts/event-copilot/event_copilot.py run act52side --chain ex（再 --chain raid），或先把当天队列写成 EX 首通（MAA Fight 导航不了 EX，需 Copilot/手点）。",
@@ -20,7 +21,7 @@
   "plan": {
     "active_strategy": "搓玉向",
     "daily_todo_priority": [
-      "1. 基建（MAA `Infrast` mode=20000 队列轮换：按需点游戏内「一键轮换」+ 各设施收菜；含在当天队列里，无需本机脚本）",
+      "1. 基建（MAA `Infrast` mode=10000 **Custom 自定义换班**，方案表 scheduling/MAA基建排班/243_搓玉_定制.json；14:00=A班 plan_index=1、02:00=B班 plan_index=0。旧口径 mode=20000 队列轮换已废（2026-10-14 用户裁定））",
       "2. 森空岛签到（skland_cli.py checkin）",
       "3. 公招 Recruit（有券就挂）",
       "4. 信用商店 Mall",
@@ -86,8 +87,8 @@
       ],
       "first_clear_pending": [],
       "first_clear_note": "普通 8 关全部首通（用户 2026-10-10 告知 + 我记账）。此后首通/刷关进度由 agent 自行记录在 state.json。 字段约定（2026-10-12）：first_clear_done=故事关(YW-1..8)已通；ex_clear_done/s_clear_done=EX/S 普通已通；raid_clear_done=突袭已通(EX/S 共用)；ex_pending/raid_pending=未通计数；last_chain_note=最近一次 --chain 结果。由 scripts/event-copilot/event_copilot.py --chain 回写；plan_week R2.5 读这些字段做「只排未通、前缀链」。",
-      "ex_pending": 8,
-      "raid_pending": 8,
+      "ex_pending": 0,
+      "raid_pending": 3,
       "tokens_owned": 39,
       "shop_redeemed": [],
       "shop_todo": [
@@ -97,9 +98,26 @@
         "寻访凭证、模组数据块、聚合剂、技巧概要卷3、高级作战记录"
       ],
       "farm_stage": "YW-6（全新装置 14 人用 + 改量装置 31 人前置）",
-      "ex_clear_done": [],
+      "ex_clear_done": [
+        "YW-EX-1",
+        "YW-EX-2",
+        "YW-EX-3",
+        "YW-EX-4",
+        "YW-EX-5",
+        "YW-EX-6",
+        "YW-EX-7",
+        "YW-EX-8"
+      ],
       "s_clear_done": [],
-      "raid_clear_done": []
+      "raid_clear_done": [
+        "YW-EX-1",
+        "YW-EX-3",
+        "YW-EX-6",
+        "YW-EX-7",
+        "YW-EX-4",
+        "YW-EX-2"
+      ],
+      "last_chain_note": "ex_auto raid：YW-EX-8 失败（第二遍换作业）"
     },
     "oper_train": {
       "candidates_by_rate": [
@@ -133,44 +151,39 @@
     "lmd": null,
     "rock_固源岩": 1128,
     "depot_snapshot": {
-      "source": "MAA Depot 任务（ark_depot，2026-10-12 00:49 执行层）",
+      "source": "MAA Depot 任务（maa_week depot，2026-10-19 14:56 实机重读）",
       "file": "C:\\MAA\\data\\DepotData.json",
-      "syncTime": "2026-10-12T00:50:21.033642+08:00",
-      "categories": 81,
-      "note": "覆盖旧快照 2026-10-09（61 类目，异铁/酮凝集/双酮等读成 0）。旧文件备份 DepotData.json.bak-20261012-0050。API 跑 Depot 不落盘，本文件由 agent 按 MAA 同构 schema 手工写回。",
+      "syncTime": "2026-10-19T14:56:34+08:00",
+      "categories": 90,
+      "note": "10-19 重读 90 类目；10-18 的 78 项基线连龙门币/源石/合成玉/采购凭证/赤金/7 种芯片都没有（上次读数不全）。旧护栏「新出现≥8种→既不结算也不推进」会让坏基线永久卡死；现已改为「本次是严格超集→用本次重建基线、本次差分仍作废」（FINDINGS §26.2）。",
       "key_items": {
-        "30041_异铁碎片": 402,
-        "30042_异铁": 398,
-        "30043_异铁组": 171,
-        "30044_异铁块": 49,
-        "30051_双酮": 443,
-        "30052_酮凝集": 281,
-        "30053_酮凝集组": 141,
-        "30054_酮阵列": 3,
-        "30022_糖": 759,
-        "30023_糖组": 171,
-        "30083_轻锰矿": 120,
-        "30073_扭转醇": 85,
-        "30031_酯原料": 504,
-        "30032_聚酸酯": 382,
-        "30033_聚酸酯组": 84,
-        "30012_固源岩": 1128,
+        "30011_源岩": 936,
+        "30012_固源岩": 1033,
         "30013_固源岩组": 111,
         "30014_提纯源岩": 32,
-        "30062_装置": 233,
-        "30063_全新装置": 154,
-        "3301_技巧概要卷1": 2695,
-        "3302_技巧概要卷2": 545,
-        "3303_技巧概要卷3": 9,
-        "3221_近卫芯片": 9,
-        "3222_近卫芯片组": 8,
-        "32001_芯片助剂": 19
+        "30041_异铁碎片": 409,
+        "30042_异铁": 402,
+        "30043_异铁组": 171,
+        "30044_异铁块": 49,
+        "30051_双酮": 445,
+        "30052_酮凝集": 291,
+        "30053_酮凝集组": 141,
+        "30054_酮阵列": 3,
+        "30061_破损装置": 308,
+        "30062_装置": 239,
+        "30063_全新装置": 193,
+        "30064_改量装置": 16,
+        "3211_先锋芯片": 14,
+        "3301_技巧概要·卷1": 2731,
+        "3302_技巧概要·卷2": 571,
+        "3303_技巧概要·卷3": 9
       }
     },
     "ap_supply_理智药": "≈1200 理智（浓缩液+120×5、加强剂+60×10、月饼×1）；其中约 480 理智（浓缩液×2 + 加强剂×4）到期 10/12，其余 10/19",
     "ap_supply_来源": "docs/WORKFLOW-仓库取数.md §5（2026-10-10 游戏内仓库 OCR 实测）",
-    "sanity_实机": "2/205（2026-10-10 17:44 实机，刷完 YW-6 共27场后）",
-    "note": "仓库只有 MAA 有（DepotData.json）。理智药到期自动转理智（上限 999），只要 sanity<999 不会浪费。"
+    "sanity_实机": "64/205（2026-10-18 19:00 实机读数；10-19 读数失败 rc=3，见 FINDINGS §26.1，别当成 10-19 的新读数）",
+    "note": "仓库只有 MAA 有（DepotData.json）。理智药到期自动转理智（上限 999），只要 sanity<999 不会浪费。",
+    "sanity_采集": "每日 14:00 日常跑完后自动读一次 → scheduling/data/sanity.json 的 current_sanity / current_sanity_ts（maa_week sanity）。`ts` 仍是理智药测量时间，别混。"
   },
   "ops_learning": {
     "doc": "docs/ops_manual.json",
@@ -687,6 +700,96 @@
       "device": "已实机驱动：开面板→清空选择→只点 4 天那张→读数 360→关面板（未用药）。sanity.json 已更新为 360。",
       "open_question": "①是否把广告守护接进 MAA startup/每日流程（best-effort force-stop）；②是否直接 --disable 永久禁用广告包。→ **2026-10-14 用户裁定：禁广告** → 已执行 `ldplayer_ad_guard.py --disable`（`com.android.flysilkworm` new state=disabled-user），adb 复核 `pm list packages -d` 含该包、无广告窗口。注：禁用是 per-user，模拟器重置/重装后需重跑 --disable。",
       "no_commit": "本轮改动待 git commit"
+    },
+    {
+      "ts": "2026-10-14 22:03",
+      "action": "凌晨 02:00 基建换班定时任务 + 基建口径 Rotation→Custom（含菲亚梅塔置换）",
+      "result": "①新增计划任务「方舟·凌晨基建换班」（每天 02:00 → scripts/night-infrast/night_infrast.py）：单客户端检查（MAA GUI 在跑则跳过）→ 前置校验自定义换班方案表 → 确保雷电+游戏在线（冷启动拉起雷电并点游戏图标）→ 跑一次 Infrast → 关雷电；**故意不设 -StartWhenAvailable**（2:00 不在线就整晚不跑、不补跑；WakeToRun=False 不唤醒）；防重复 night_run.jsonl（今晚已有 ok=True 则跳过）；留痕 scripts/night-infrast/运行日志.txt + scheduling/data/night_run.jsonl；已注册并核对 NextRunTime=2026-10-15 02:00。②基建口径改定（用户裁定「选 2」）：Rotation(20000) → Custom(10000) + C:\\MAA\\resource\\custom_infrast\\maa-243-custom.json。根因（源码 InfrastTask.cpp:74/81/126/259 + AsstInfrastDef.h:85-91 + asst.log 实证）：Rotation 会 set_skip_shift（不摆干员，日志 skip shift in rotation mode ×7）、整个跳过宿舍/发电站/办公室/控制中枢、且**菲亚梅塔只在 mode=0 生效**、filename 只在 Custom 用 ⇒ 「有些换班没换成 / 菲亚梅塔没置换」是能力边界不是配错。Custom 逐设施摆干员并执行菲亚梅塔置换（方案 Fiammetta→但书）。先核对：方案两份 plan 各 29 干员、缺失 0。⚠ plan_index 必须显式传（MAA 不看 plan 的 period、也不吃 -1；index<0 → set_params false → append 0 打死整队）：14:00 → A班(1)、02:00 → B班(0)。唯一事实源 maa_week.INFRAST_CUSTOM_FILE/INFRAST_PLAN_DAY/INFRAST_PLAN_NIGHT/infrast_params()；plan_week.RULE 同口径；weekly_plan.json 原地改 Infrast params（未重生成整份计划）；gui.new.json 的 Mode=Custom、PlanSelect=1。③离线验证（未驱动设备）：run --dry → Infrast {'mode': 10000}；_today_tasks 展开 plan_index 14:00→1 / 夜间→0；write --dry 只剩 3 条 Fight 改动、**无 Infrast 改动**（说明配置与代码已一致、且 write 不再回退 Rotation）；_custom_plan_check(1)/(0) 均 True（plan[1]=A班 29 人 Fiammetta 开→但书）。真跑验证待 2026-10-15 02:00。",
+      "changed_files": [
+        "scripts/night-infrast/night_infrast.py",
+        "scripts/night-infrast/install_task.ps1",
+        "scripts/maa-week/maa_week.py",
+        "scheduling/tools/plan_week.py",
+        "scheduling/data/weekly_plan.json",
+        "C:\\MAA\\config\\gui.new.json",
+        "AGENTS.md",
+        "CHANGELOG.md",
+        "docs/FINDINGS.md",
+        "docs/state.json"
+      ],
+      "self_test": "py_compile 三份 .py 全过；maa_week run --dry → Infrast mode=10000；_today_tasks/merged_params 展开 plan_index 14:00→1、02:00→0；maa_week write --dry 只剩 3 条 Fight 改动（无 Infrast）；night_infrast --dry 打印 Custom params；_custom_plan_check 两份方案 OK；计划任务属性 StartWhenAvailable=False / WakeToRun=False / NextRunTime=2026-10-15 02:00；森空岛干员箱比对方案表 29/29 全持有。",
+      "device": "未驱动设备（用户明确要求不实跑，等 02:00 计划任务首跑）",
+      "open_question": "①2026-10-15 02:00 首跑后核对：运行日志.txt / night_run.jsonl / C:\\MAA\\debug\\asst.log 是否出现 `custom json:` 与 `Fiammetta's target:`，且**不再**出现 `skip shift in rotation mode`。②方案表的 period 是 08:00-10:00 / 20:00-22:00，而我们的换班时刻是 14:00 / 02:00（已用显式 plan_index 规避，MAA 本来也不看 period）；若要完全贴合文件的建议窗口，可议把换班挪到 08:00/20:00。",
+      "no_commit": "未 commit"
+    },
+    {
+      "ts": "2026-10-14 22:41",
+      "action": "基建方案表换成《搓玉·合成玉》版（承上：改 Custom 后暴露原方案表是龙门币优先版）",
+      "result": "①起因：改成 mode=Custom 后 Filename 这才真的生效，遂发现 `C:\\MAA\\resource\\custom_infrast\\maa-243-custom.json` 与 `scheduling/一图流产物/243-钱书均衡-龙门币优先-MAA.json` **sha256 相同** ⇒ 是「钱书均衡·龙门币优先」版（制造 [BR,PG,BR,PG] / 贸易 [LMD,LMD]），**不是《搓玉·合成玉》**（搓玉=制造产源石碎片+贸易卖合成玉）→ 违反基建铁律（MASTER-PLAN §5.6 早标注过该坑，Rotation 时代不参与运行才没暴露）。②处理：scheduling/tools/convert_to_maa.py 增强后，把 `243-搓玉-合成玉-MAA.json` 转成 MAA custom_infrast → 落在**仓库** `scheduling/MAA基建排班/243_搓玉_定制.json`（放仓库=防 MAA 更新覆盖 + 可版本管理）。三处引用 + yuMAArin GUI 全部改指这一份：maa_week.INFRAST_CUSTOM_FILE、plan_week.RULE['infra_custom_file']、C:\\MAA\\config\\gui.new.json 的 Infrast.Filename、skland_gui.py 的 MAA_CUSTOM_INFRAST（原硬编码 MAA resource 路径，会与自动化打架）。③**period 按我们的换班时刻改写**（用户：「方案表的时间改成我们现在商量的」）：源文件 08:00-10:00/20:00-22:00 → B班 02:00-04:00 / A班 14:00-16:00（生成时 --periods）。MaaCore 不读 period（只有 GUI「按时间自动」用），自动化一律显式传 plan_index，故不影响自动化。④转换器顺带修：补 plan.index（一图流 plans 无 index → MAA GUI 方案下拉每项都是 0，选谁都等于 plan 0）；透传 period/duration/scheduleType/description_post；新增 --periods。⑤产物核对：制造 [Battle Record, Originium Shard, Pure Gold, Pure Gold]、贸易 [LMD, Orundum]（全在 MaaCore ProductNames 白名单内，不会被当 Unknown 跳过）；Fiammetta enable=true→但书；drones trading index=1；每班 29 干员、29/29 全持有（名单与钱书均衡版不同：差集 B班 8 / A班 6）。⑥离线验证：run --dry / _today_tasks → filename=仓库方案表、plan_index 14:00→1 / 02:00→0；write --dry 只剩 3 条 Fight 改动（无 Infrast）；_custom_plan_check(1)/(0) OK 且 (-1) 正确报越界；plan_week --dry exit 0 带新路径；py_compile 全过。真跑验证待 2026-10-15 02:00。",
+      "changed_files": [
+        "scheduling/MAA基建排班/243_搓玉_定制.json",
+        "scheduling/tools/convert_to_maa.py",
+        "scheduling/data/weekly_plan.json",
+        "scripts/maa-week/maa_week.py",
+        "scheduling/tools/plan_week.py",
+        "scripts/skland/skland_gui.py",
+        "scripts/night-infrast/night_infrast.py",
+        "C:\\MAA\\config\\gui.new.json",
+        "AGENTS.md",
+        "CHANGELOG.md",
+        "docs/FINDINGS.md",
+        "docs/MASTER-PLAN.md",
+        "docs/state.json"
+      ],
+      "self_test": "py_compile 5 份 .py 全过；3 处引用 + GUI 常量均解析为 scheduling/MAA基建排班/243_搓玉_定制.json 且文件存在；maa_week run --dry → mode=10000；_today_tasks 展开 plan_index 14:00→1 / 02:00→0；maa_week write --dry 无 Infrast 改动；_custom_plan_check(0)/(1) True、( -1) 正确 False；plan_week.RULE 新路径；产物白名单校验 0 非法；森空岛干员箱比对搓玉版两份 plan 各 29/29 全持有。",
+      "device": "未驱动设备（离线验证）",
+      "open_question": "①2026-10-15 02:00 首跑核对：asst.log 是否出现 `custom json:` / `Fiammetta's target:`、且不再有 `skip shift in rotation mode`；并用森空岛 ark_infrast_status 或 MAA ProductOfFacility 回调确认**实际产物**已是源石碎片+合成玉（搓玉）。②旧文件 C:\\MAA\\resource\\custom_infrast\\maa-243-custom.json（钱书均衡·龙门币优先）已不再被引用，保留未删（与仓库副本同哈希，无损）。",
+      "no_commit": "未 commit"
+    },
+    {
+      "ts": "2026-10-18 19:10",
+      "action": "日志对账 → 修 8 处缺陷（快照：历史版本/日志问题修复-2026-10-18/改前）",
+      "result": "① 仓库读数 47/85 类目被当「全消耗光」→ 账本假账：maa_week.depot 加「<60 项重试、<上次×75% 拒写」+ 旧文件留 .bak；revenue_ledger.build_entry 加双向护栏（骤降 / 一天新出现≥8 种物品都作废），货币类（源石/合成玉/凭证）不再混入材料。已把 10-17→10-18 那条假账就地标 invalid（farm/spend 清零），坏快照移走、重建基线（first=true）。 ② 活动 EX 0/8（见 progress.last_chain_note），待补。 ③ 凌晨换班卡选人（no custom operators found 数百次 → 25min 超时）：加 _StallWatch，数 MaaCore 日志里这类告警，超 120 次主动 stop（25min 死等 → 几分钟明确失败），run/night 都生效。 ④ tasklist/adb 用 text=True 被 PYTHONUTF8=1 改成 UTF-8 解码 → 读线程崩、_maa_running() 恒 False（单客户端护栏失效）：改 _run_console 走 bytes + UTF-8→GBK 兜底。 ⑤ 理智恒 160：daily 跑完自动跑 maa_week sanity（点「+」读药剂面板→点 ✕ 关闭，绝不用药）→ 写 current_sanity。 ⑥ preflight 截图 0 字节：把 _ensure_device 提到 preflight 之前。 ⑦ 本条 = 留痕补齐（updated_at/depot_snapshot/基建口径/EX 状态）。 ⑧ 森空岛 403「请勿重复签到」不再误报成凭证过期（daily_auto 识别 code 10001，记 checkin_note）。"
+    },
+    {
+      "ts": "2026-10-18 19:20",
+      "action": "② 活动 EX：先误判「MAA 无 EX 索引」，19:50 纠正为可打（详见 FINDINGS §25）",
+      "result": "错判原因：① 资源 19:08 才落地、我 19:03 跑的；② 我方脚本传 nav_name_override=None 让 MaaCore 抛 C++ 异常。纠正后实跑：YW-EX-1 ✅ 通过（3 人作业），YW-EX-2 三个全员 E2 候选全败——极限轴需要专精，而凛御银灰/予愿安洁莉娜 专0。已改 event_copilot 传关卡代号；筛作业待加专精维度。"
+    },
+    {
+      "ts": "2026-10-18 20:20",
+      "action": "EX 自动化并进「一键长草」+ GUI 加偏离提醒（按用户要求：不手操）",
+      "result": "① 新增 scripts/event-copilot/ex_auto.py：--auto 自动扫 event_*.json 里未通的 EX，自己导航/选作业/回写进度；候选两档 strict(E2) → compat(单核/挂件兼容)。② maa_week run 末尾自动跑 ex_auto（计划里有 raids 就带 --with-raid）；预检把 Fight 里的 -EX- 关改道，不再报『不支持』。③ GUI（yuMAArin）：删掉独立「活动 EX」页，改为「长草」页里的只读进度卡 + 手动兜底按钮；长草页顶部新增「⚠ 需要处理」：今天日常/凌晨是否失败、账本是否作废、计划关有没有跑、EX 还剩几关、理智读数是否过期，60s 自动刷新。④ 文档：FINDINGS §25 纠正 + WORKFLOW §9 新增。"
+    },
+    {
+      "ts": "2026-10-18 21:45",
+      "action": "ex_auto --auto 实测跑通：EX 普通 8/8 全通",
+      "result": "自动链一次跑完 YW-EX-3..8（每关 15 分钟左右，strict 候选多数一次过）；总计普通 8/8 通过，突袭仍 0/9。ex_pending=0。留痕：scheduling/data/ex_run.jsonl；GUI 长草页的进度表与「⚠ 需要处理」会自动刷新。"
+    },
+    {
+      "ts": "2026-10-18 22:05",
+      "action": "EX 自动化收尾：突袭默认自动 + 作业排序加「专精缺口」",
+      "result": "① maa_week run → ex_auto --auto --with-raid（普通清完自动接突袭；用户 2026-10-18 定）。② score() 增两位：专精总缺口 / 缺专三人数（作业 opers[].skill 指第几个技能，专精<3 记 3-mastery）；**只用于排序**，可抄判定仍是前四位（未拥有/空组/低练/低练组）——不符合要求的作业照样会试。③ http_json 加 3 次重试 + 进程内缓存（prts 偶发断流会让整条链崩）。④ 实测：ex_auto --auto 一轮把 YW-EX-3..8 全打完（普通 8/8），突袭 0/9 待自动打。"
+    },
+    {
+      "ts": "2026-10-19 16:31",
+      "action": "每日自动化两处失败修复：sanity 锚点误匹配 + 账本坏基线锁死",
+      "result": "① 10-19 14:55 sanity 在 YW-EX-2 结算界面把「理智返还」当主界面锚点，点 (79,910) → 游戏进加载、rc=3。改 maa_week._parse_sanity（必须带 /205、排除返还等词、锚点在屏幕上部、拆框需垂直相邻）+ cmd_sanity 状态机（结算只按 BACK、加载只等待、面板没开重试）；daily_auto 改 --tries 4 --back 3、超时 420s。② 10-18 基线 78 项缺全部货币/赤金/7 种芯片，10-19 读到 90 项 → 旧护栏判「新出现 12 种」且不推进快照，会每天 rc=4 永久锁死。revenue_ledger 现区分「本次可疑（不推进）」与「上次不全（本次是严格超集→重建基线，本次差分仍作废）」，账本行加 depot_rebased。③ 自测：结算界面 OCR 框 → 旧逻辑 (203,974)/新逻辑 None；78→90 快照 settle → rebased=True 且快照推进到 90；10 项残缺 → 不推进。④ 快照 历史版本/日志问题修复-2026-10-19/。 ⑤ 16:32 已用今天 90 项读数 collect 并重建 %TEMP%\\\\opencode\\\\ark\\\\bundle-last.json（理智仍取 sanity.json 的 64），10-19→10-20 起可正常差分；旧 78 项坏基线在 历史版本/日志问题修复-2026-10-19/改前/temp/。"
+    },
+    {
+      "ts": "2026-10-19 16:43",
+      "action": "yuMAArin：标题栏刷新按钮 + 长草页状态口径",
+      "result": "① 标题栏 ↻ + F5/Ctrl+R：重读本地 weekly_plan/state.json/运行日志/收益账本并重绘当前页（长草页同时重算「需要处理」+ EX 进度）；已登录且空闲时顺带重拉森空岛，纯刷新不写文件。② 「今日日常」不再只凭 daily_run.ok 显示 ✅：今日计划含突袭且未清完 → ⚠ 部分完成；日卡标「突袭已通 x/n」并加一行「日常主体完成 ≠ 今天全部跑完」。③ 10-19 的 daily_run / 账本最后一条加 repaired_at/repaired_note（不改 rc/invalid），GUI 降为灰字 info「已修复，明日生效」；突袭未清仍是橙字 warn。④ 离屏 Qt 自测：按钮/快捷键存在，长草页与 7 个数据页重绘无异常。"
+    },
+    {
+      "ts": "2026-10-19 16:48",
+      "action": "突袭链修复：EX-2 失败后继续打 EX-3..8",
+      "result": "① 根因：ex_auto.run_chain 在任意一关失败后 break，并注释「后面本来就没解锁」；但突袭解锁只看该关普通是否已通（当时普通 8/8 全通），所以 EX-3..8 突袭本来就开着。② EX-2 本身是 5 个候选都正常进战斗、最后「任务失败」（asst.log 14:51-14:52），属专精/练度（候选专精缺 6~15 点、2~5 人缺专三），不是脚本没启动。③ 改为：突袭失败/无候选 → 继续后面的突袭；普通链仍失败即停（顺序解锁）。④ 新增 --budget 默认 4800s，防 7 关×900s 顶爆外层 5400s 被硬杀。⑤ mock 自测：EX-2 失败后调用序列 EX-2..8；普通链失败只到 EX-2；预算过期一关不打。"
+    },
+    {
+      "ts": "2026-10-19 23:29",
+      "action": "10-19 活动突袭实跑与收工",
+      "result": "① 普通 EX 8/8 全 3 星（EX-4 从 2 星补到 3 星；EX-5~8 从 0 星补到 3 星）。② 突袭已过 EX-1/2/3/4/6/7，剩 EX-5、EX-8（+S-1）；EX-5 第二遍连试 15 个作业未过（大量 900s 超时），EX-8 第二遍未轮到。③ 修 event_copilot.run_plan：普通 2 星=失败、突袭只判过/不过；超时=失败；总预算按候选检查。ex_auto 加两遍策略 / --stages / --skip-ids / --candidate-offset / --relaxed / --second-pass-max；突袭失败继续；预算 3600、单候选 600s。④ 10-20 计划补排 raids=[EX-5,EX-8]，sanity 265→300、medicine 60→120。⑤ 18:05 那条 EX-4「超时误判成功」记录标 invalid。"
     }
   ]
 }

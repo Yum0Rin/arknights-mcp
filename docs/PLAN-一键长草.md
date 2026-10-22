@@ -31,7 +31,7 @@ StartUp(唤醒/启动客户端)
   → Fight(活动关 ×N)                   # 再活动
   → Fight(1-7 ×M)                      # 搓玉固源岩
   → Recruit(公招)
-  → Infrast(mode=20000)                 # 基建全归 MAA：按需一键轮换 + 各设施收菜
+  → Infrast(mode=10000 Custom)           # 基建全归 MAA：按方案表逐设施摆干员 + 菲亚梅塔置换 + 各设施收菜
   → Mall(信用商店)
   → Award(领取奖励)                     # 必须最后（先产出才有奖领）
 ```
@@ -45,7 +45,7 @@ StartUp(唤醒/启动客户端)
   `python scripts/event-copilot/event_copilot.py run act52side --chain ex --try`（EX 普通）/
   `--chain raid --try`（EX 突袭）/ `--chain s` / `--chain sraid`。
 
-- **基建口径（2026-10-12 改定）**：基建**全部**交给 MAA `Infrast` `mode=20000`（队列轮换 = 当前班心情 0 时点游戏内「一键轮换」+ 收菜）；自研换班脚本作历史版本。
+- **基建口径（2026-10-14 改定）**：基建**全部**交给 MAA `Infrast` `mode=10000`（Custom 自定义换班）——按《搓玉·合成玉》方案表 `scheduling/MAA基建排班/243_搓玉_定制.json`（一图流「243 搓玉两换」转出，index 0=B班 / 1=A班）**逐设施摆干员**（含宿舍/发电站/办公室/控制中枢）+ **菲亚梅塔置换**；`plan_index`：14:00→1（A班）/ 02:00→0（B班）。自研换班脚本作历史版本。（2026-10-12 曾一度改为 `mode=20000` 队列轮换，2026-10-14 已再改回 Custom。）
 - **公招口径（已定）**：日常 `times=4`（攒许可）、`select/confirm=[3,4,5]`、**6 星不自动**。
   - **出 6★ 词条时给推荐**：网页「概览」有 **贴词条 → 推荐** 框，把公招刷出的词条粘进去即可。后端 `scheduling/tools/site_server.py` 按本人 owned（森空岛，取数前自动续期；失败回退 MAA）现算最优组合（含高级资深/资深优先 → P(新)）。
     启动：`python scheduling/tools/site_server.py` → 浏览器开 `http://127.0.0.1:8787/`。
@@ -154,7 +154,7 @@ StartUp(唤醒/启动客户端)
 5. 溢出检查：把总量摊到每天（`day_cap` 为软目标）；逐日视图带 `medicine`（=当天理智−240）。
 6. 产出 `weekly_plan.json` + 人类可读 `rationale`；自检 `_fit_to_schedule` 回退顺序 = **先填充 1-7、其次活动**。
 
-## 4. ~~基建换班脚本优化~~（已作废：脚本归档，基建交给 MAA `mode=20000`）
+## 4. ~~基建换班脚本优化~~（已作废：脚本归档，基建交给 MAA `mode=10000` Custom）
 
 现状：坐标硬编码、每步固定 `sleep`、逐卡裁剪 OCR 猜位置。
 优化（**增量、先备份**）：
@@ -223,14 +223,14 @@ scheduling/data/weekly_plan_log.jsonl # 每周归档（追加）
     {"type": "Fight", "params": {"stage": "YW-6", "times": 100, "series": 10}, "name": "活动刷代币"},
     {"type": "Fight", "params": {"stage": "1-7", "times": 20, "series": 10}},
     {"type": "Recruit", "params": {"select": [3,4,5], "confirm": [3,4,5], "times": 4}},
-    {"type": "Infrast", "params": {"mode": 20000, "facility": ["Mfg","Trade","Power","Control","Reception","Office","Dorm","Processing","Training"]},
-     "name": "基建·队列轮换"},
+    {"type": "Infrast", "params": {"mode": 10000, "filename": "C:\\Users\\39007\\Desktop\\arknights-mcp\\scheduling\\MAA基建排班\\243_搓玉_定制.json", "plan_index": 1, "facility": ["Mfg","Trade","Power","Control","Reception","Office","Dorm","Processing","Training"]},
+     "name": "基建·自定义换班(A班)"},
     {"type": "Mall", "params": {"enable": true}},
     {"type": "Award", "params": {"enable": true}}
   ],
   "medicine_stages": ["1-7", "YW-6"],
   "series": {"normal": 10, "event": 10},
-  "side": [],              // 基建交 MAA 自带队列轮换后不再有附带脚本
+  "side": [],              // 基建交 MAA Custom 后不再有附带脚本
   "rationale": {
     "sanity_alloc": {"annihilation": 125, "EX/S首通": 120, "EX/S突袭": 120, "1-7": 120, "活动": 2100, "培养": 0},
     "notes": ["预算 = 自然 1680 + 药 920 = 2600（已含周常药，不加 240）",

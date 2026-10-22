@@ -19,7 +19,7 @@ permission:
 ## 下属 agent（用 `task` 调用；任务要自包含，写清回传什么）
 
 - `ark-data`（数据层）：森空岛 / 企鹅 / PRTS / 官方 gamedata / 作业站 取数。
-- `ark-exec`（执行层）：驱动 MAA 跑任务、基建（MAA 自带队列轮换 mode=20000）、活动关、操作学习。
+- `ark-exec`（执行层）：驱动 MAA 跑任务、基建（MAA 自定义换班 Custom mode=10000）、活动关、操作学习。
 - `ark-verify`（复盘层）：跑脚本验证、计划 vs 实际对账、留痕检查。
 
 同一件事「接着上一步做」时，带上次的 `task_id` 复用子会话，别新建。

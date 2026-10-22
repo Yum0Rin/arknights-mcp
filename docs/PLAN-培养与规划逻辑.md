@@ -14,7 +14,8 @@
 
 | 数据 | 来源 | 具体字段 / 接口 | 状态 |
 |---|---|---|---|
-| **精英/技能/专精** 的材料+龙门币 | **官方** `character_table.json` | `phases[].evolveCost`、`allSkillLvlup[].lvlUpCost`、`skills[].levelUpCostCond[].levelUpCost` → `[{id,count,type}]` | ⚠️ 需下载（~15MB，**直连易超时截断**，见 §5） |
+| **精英/技能/专精** 的材料+龙门币 | **官方** `character_table.json` | `phases[].evolveCost`、`allSkillLvlup[].lvlUpCost`、`skills[].levelUpCostCond[].levelUpCost` → `[{id,count,type}]` | ✓ 已下（~15MB，**直连易超时截断**，见 §5） |
+| **模组** 的材料+龙门币 | **官方** `uniequip_table.json` | `charEquip[charId]`→模组 id；`equipDict[id].itemCost{"1"/"2"/"3"}`→升到 1/2/3 级的 `[{id,count,type}]`（`type=GOLD` 折龙门币） | ✓ 已下（`fetch_gamedata.py` 含此表） |
 | **升级(1→Lv)** 的经验+龙门币 | 一图流 培养卡片 或 公式 | 卡片 `cost` 文本："经验 239,400；龙门币 371,947；约 3,275.9 理智" | ✓ 一图流卡片在 `一图流产物/243-培养建议-cards.json`（**仅覆盖基建向目标**） |
 | **材料 → 理智 / 关卡掉落率** | **企鹅物流** | `/result/matrix`，用 `quantity/times`（**别用 dropRate**） | ⏳ 待接 |
 | 材料 id ↔ 名称 | 官方 `item_table.json` 或 MAA `resource/item_index.json` | `30012`=固源岩、`3141`=源石碎片… | ✓ MAA 本地有 |
@@ -49,6 +50,7 @@
    - 精英化：`phases[1].evolveCost` + `phases[2].evolveCost`（E0→E1→E2）；
    - 技能 1→7：`allSkillLvlup[0..6].lvlUpCost`；
    - 专精 M3：常用技能的 `levelUpCostCond[0..2].levelUpCost`；
+   - 模组：`equipDict[模组id].itemCost["1"/"2"/"3"]`（按当前模组级→目标级，只算剩余段）；
    - 升级 Lv：经验/龙门币（§1 的一图流/公式）。
 3. **取库存 S**：`DepotData.json`（材料/芯片/龙门币）。
 4. **缺口 G = D − S**（按 itemId 逐项，负数取 0）。
@@ -97,8 +99,11 @@
 
 ## 6. 待补清单（按顺序做）
 
-1. `fetch_gamedata.py`：**可续传**下载 `character_table.json`（+`item_table.json`、`uniequip_table.json`），校验 JSON 完整 + 大小。
-2. `oper_cost.py`：输入干员+标准 → 输出材料清单（itemId+数量）与龙门币/经验。
+1. ✅ `fetch_gamedata.py`：**可续传**下载 `character_table.json`（+`item_table.json`、`uniequip_table.json`），校验 JSON 完整 + 大小。
+2. ✅ `oper_cost.py`：输入干员+标准 → 输出材料清单（itemId+数量）与龙门币/经验。
+   - ✅ **自定义目标**：`compute_custom` / CLI `--target-elite/--target-level/--mastery/--module` /
+     MCP `ark_oper_cost`，可按「选中干员 + 目标精英/等级 + 一/二/三技能专精 + 模组等级」精确算账。
+   - ✅ **模组成本**：接入 `uniequip_table.itemCost`（材料 + `type=GOLD` 龙门币），按当前模组级只算剩余段。
 3. 企鹅物流接入：`材料 → (最优关, 理智)` 映射表。
 4. `plan_week.py` 加 **R3.5 培养**：算缺口 G → 折算理智 → 排进预算；输出"本周投 X 理智，A 还需 Y 天"。
 5. 网页/GUI 增「培养进度」页。

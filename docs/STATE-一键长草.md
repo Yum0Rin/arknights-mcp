@@ -51,13 +51,13 @@ R7 用药：逐日视图带 `medicine = max(0, 当天理智 − 205)`（205 = �
 | 当前活动 | act52side（昨日海）：YW-6 开放 2026-10-09~10-23，EX 2026-10-16，S 2026-10-23 |
 | 固源岩下限 | **条件**：有活动要打 → **500**（1-7 让位）；无活动 → **1000**。W42 库存 1163 > 500 → 下限 0（仅填充）。 |
 | EX/S 理智 | `event_act52side.json`：EX-1~8 = 10/10/15/15/15/15/20/20、S-1 = 15（往期 sidestory 口径，**待实机核**） |
-| EX/S 突袭 | **只有 EX/S 有突袭**（普通关 YW-1..8 无）；突袭依赖「该关普通已通」，按关顺序排在普通之后。突袭理智**暂按普通关同价**计（待数据层核实）。MAA `Fight` 做不了 → 走 `event-copilot`（Copilot `is_raid`）或手点，`maa_week` 遇 `Raid` 只提示不 append。 |
+| EX/S 突袭 | **只有 EX/S 有突袭**（普通关 YW-1..8 无）；突袭依赖「该关普通已通」，按关顺序排在普通之后。突袭理智**与普通关同价**（2026-10-19 实机确认）。MAA `Fight` 做不了 → 走 `event-copilot`（Copilot `is_raid`）或手点，`maa_week` 遇 `Raid` 只提示不 append。 |
 | EX/S 解锁链 | EX-i 未通打不了 EX-(i+1)（**依次解锁**）。执行：`python scripts/event-copilot/event_copilot.py run act52side --chain ex --try`（EX 普通）/ `--chain raid --try`（EX 突袭）/ `--chain s|sraid`（S）。**遇挫即停**（某关无作业/失败 → 不打后面的），跑完回写 `progress.event_act52side`。 |
 | 预算/药 | 预算 = 自然 **205/天 × 剩余天数** + 药**整瓶可用量**（W42 剩余 5 天 → 1025 + **720** = **1745**）。**药读数每周日手动测**：`python scripts/sanity-potion/sanity_potion.py`（写 `scheduling/data/sanity.json`）——该读数**已含周常药**，故不加 240。药**整瓶 60** → 预算只算 `(存量//60)*60`（读数 760 → 整瓶 720，余数 40 不计，避免超发）。 |
 | 用药（R7） | `daily[].medicine = max(0, 当天理智−205)`；只配 1-7/活动关（`plan.medicine_stages`）。W42 剩余 5 天逐日药 240/60/60/120/239=719≤720。**补零**：`distribute_daily` 末尾把每天目标对齐到 `205+60k`，余数用 1-7（6 理智/次）抹平 → 每天跑完剩 ≈0；药不够按瓶数回收 1-7 次数。 |
 | 补零（1-7） | 见上：目的不是刷固源岩，而是**把「整瓶药的余数」花光**（如某天 205+60=265，活动只吃 255 → 补 1-7 把 10 花掉）。保证**每天剩 ≈0**，不再留 60/35 尾巴。 |
 | ⚠️ day_cap 口径 | `day_cap = ceil(周预算/剩余天数)` 是**软目标**（`over` 标记用）；连战批次粒度 210 理智，硬按 day_cap 会放不下第 2 批 → 硬上限 = day_cap+210，部分天会 `over`（靠药覆盖）。 |
-| 基建分工 | **全部交给 MAA 自带的「队列轮换」**：`Infrast` `mode=20000`、`facility` = Mfg/Trade/Power/Control/Reception/Office/Dorm/Processing/Training。MAA 进基建 → 当前班有人心情 0 → 点游戏内「一键轮换」→ 各设施收菜（Rotation 下不换干员）。**自研 `infrast_rotation.py` 已归档**（`历史版本/基建改MAA轮换+队列按天-2026-10-12/`）。 |
+| 基建分工 | **全部交给 MAA 自定义换班（`Infrast` `mode=10000` Custom）**（2026-10-14 改定，取代队列轮换）：方案表 `scheduling/MAA基建排班/243_搓玉_定制.json`（《搓玉·合成玉》A/B 两班，index 0=B班 / 1=A班）；MAA 逐设施摆干员（含宿舍/发电站/办公室/控制中枢）+ **菲亚梅塔置换**；`plan_index` 必传（14:00→1 A班 / 02:00→0 B班）。**自研 `infrast_rotation.py` 已归档**（`历史版本/基建改MAA轮换+队列按天-2026-10-12/`）。 |
 | ⚠️ 队列口径 | **一天一天编辑**：`write`/`run` 默认只处理当天（读 `weekly_plan.daily`），非当天的 Fight 槽位在 GUI 里被**停用**；要整周才加 `--whole-week`。 |
 
 ## 命令
@@ -73,8 +73,10 @@ python scripts/maa-week/maa_week.py write --date 2026-10-13  # 写 MAA GUI（只
 python scripts/maa-week/maa_week.py run   --date 2026-10-13  # 直驱当天（Raid/EX 自动跳过并提示可复制命令）
 python scripts/event-copilot/event_copilot.py run act52side --chain ex --try    # EX 首通解锁链（遇挫即停）
 python scripts/event-copilot/event_copilot.py run act52side --chain raid --try  # EX 突袭链（需该关普通已通）
-python scheduling/tools/build_site.py                      # 生成汇总网页
+python scheduling/tools/build_site.py                      # 生成汇总网页（今天/本周/培养·工具/账本）
 python scheduling/tools/site_server.py                     # 起后端（公招推荐框）
+python scheduling/tools/revenue_ledger.py settle --auto    # 收益账本：自动采集本机数据源并差分入账（首次=基线）
+python scripts/maa-week/maa_week.py depot                  # 读一次仓库→写 DepotData.json（账本的仓库读数；每日自动化已内置）
 python scripts/skland/skland_cli.py status                  # 森空岛续期（401 时）
 ```
 
